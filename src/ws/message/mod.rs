@@ -3,8 +3,8 @@ pub use super::handshake;
 pub use super::server;
 pub use super::client;
 
-pub use self::send::WebSocketSender;
-pub use self::receive::WebSocketReceiver;
+pub use self::send::{WebSocketSender, WebSocketFragmentSerializer};
+pub use self::receive::{WebSocketReceiver, IncomingMessages};
 
 pub mod mask;
 pub mod dataframe;
