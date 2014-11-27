@@ -13,9 +13,14 @@ pub mod receive;
 
 /// Represents a WebSocket message
 pub enum WebSocketMessage {
+	/// A message containing UTF-8 text data
 	Text(String),
+	/// A message containing binary data
 	Binary(Vec<u8>),
+	/// A message which indicates closure of the WebSocket connection
 	Close,
+	/// A ping message - should be responded to with a pong message
 	Ping,
+	/// A pong message
 	Pong,
 }

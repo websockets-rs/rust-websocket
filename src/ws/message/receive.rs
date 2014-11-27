@@ -16,6 +16,8 @@ impl WebSocketReceiver {
 	/// Wait for and accept a message (subjected to the underlying stream timeout).
 	/// If the received message is fragmented, this function will not return
 	/// until the final fragment has been received.
+	/// Currently does not behave correctly if a control frame is interleaved within
+	/// a fragmented message.
 	pub fn receive_message(&mut self) -> IoResult<WebSocketMessage> {
 		let dataframe = try!(self.stream.read_websocket_dataframe());
 		let mut data = dataframe.data.clone();

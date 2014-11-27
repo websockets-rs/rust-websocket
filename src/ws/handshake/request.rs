@@ -12,7 +12,9 @@ use std::clone::Clone;
 /// Represents a WebSocket handshake request, which is sent from the client to the server.
 /// Use the new() function to create a new request.
 pub struct WebSocketRequest {
+	/// The resource name of the request. E.g. /path/to/resource for the URI ws://www.example.com/path/to/resource
 	pub resource_name: String,
+	/// The collection of headers contained in this request
 	pub headers: HeaderCollection,
 }
 

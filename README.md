@@ -30,7 +30,7 @@ use std::io::stdin;
 
 fn handle_client(mut client: WebSocketClient) {
 	//Get the request (but don't move 'client')
-	let request = client.request.clone().unwrap();
+	let request = client.request().unwrap();
 	let key = request.headers.get("Sec-WebSocket-Key").unwrap();
 	
 	//Form a response from the key

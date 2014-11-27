@@ -10,13 +10,18 @@ use std::clone::Clone;
 
 static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
+/// Represents a WebSocket response from a server
 pub struct WebSocketResponse {
+	/// The status code of the response (for a successful handshake, this should be 101)
 	pub status_code: uint,
+	/// The human readable reason phrase for the status code (E.g. Switching Protocols)
 	pub reason_phrase: String,
+	/// The collection of headers contained in this WebSocket response
 	pub headers: HeaderCollection,
 }
 
 impl WebSocketResponse {
+	/// Create a new WebSocket response based on the base-64 encoded key from a client.
 	pub fn new(key: &str, protocol: Option<String>) -> WebSocketResponse {
 		let concat_key = key.to_string() + MAGIC_GUID.to_string();
 		let digested = sha1(concat_key.into_bytes().as_slice());
@@ -42,6 +47,7 @@ impl WebSocketResponse {
 		}
 	}
 	
+	/// Returns true if this response indicates a successful handshake
 	pub fn is_okay(&self) -> bool {
 		self.status_code == 101 && self.headers.check_response()
 	}

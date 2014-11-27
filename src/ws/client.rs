@@ -11,8 +11,8 @@ use std::clone::Clone;
 /// Represents a WebSocket client.
 pub struct WebSocketClient {
 	stream: TcpStream,
-	pub request: Option<WebSocketRequest>,
-	pub response: Option<WebSocketResponse>,
+	request: Option<WebSocketRequest>,
+	response: Option<WebSocketResponse>,
 	mask: bool,
 }
 
@@ -39,6 +39,16 @@ impl WebSocketClient {
 			response: Some(response),
 			mask: true,
 		})
+	}
+	
+	/// Gets the request associated with this client (if any)
+	pub fn request(&self) -> Option<WebSocketRequest> {
+		self.request.clone()
+	}
+	
+	/// Gets the response associated with this client (if any)
+	pub fn response(&self) -> Option<WebSocketResponse> {
+		self.response.clone()
 	}
 	
 	/// Sends the specified WebSocketResponse to this client - only to be used from a server.
