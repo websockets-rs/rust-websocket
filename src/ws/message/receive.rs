@@ -10,32 +10,43 @@ use std::str::from_utf8;
 /// Represents a WebSocket receiver which can receive data from the remote endpoint.
 pub struct WebSocketReceiver {
 	stream: TcpStream,
+	data: Vec<u8>,
 }
 
 impl WebSocketReceiver {
 	/// Wait for and accept a message (subjected to the underlying stream timeout).
 	/// If the received message is fragmented, this function will not return
 	/// until the final fragment has been received.
-	/// Currently does not behave correctly if a control frame is interleaved within
-	/// a fragmented message.
 	pub fn receive_message(&mut self) -> IoResult<WebSocketMessage> {
 		let dataframe = try!(self.stream.read_websocket_dataframe());
 		let mut data = dataframe.data.clone();
 		match dataframe.mask {
-			Some(key) => { data = mask_data(key, data.as_slice()); }
+			Some(key) => { data = mask_data(key, dataframe.data.as_slice()); }
 			None => { }
 		}
+		
+		self.data.push_all(data.as_slice());
+		
 		if !dataframe.finished {
 			loop {
 				let df = try!(self.stream.read_websocket_dataframe());
 				match df.opcode {
 					WebSocketOpcode::Continuation => {
-						let mut d = df.data.clone();
+						let mut data = df.data.clone();
 						match df.mask {
-							Some(key) => { d = mask_data(key, d.as_slice()); }
+							Some(key) => { data = mask_data(key, data.as_slice()); }
 							None => { }
 						}
-						data.push_all(d.as_slice());
+						self.data.push_all(data.as_slice());
+					}
+					WebSocketOpcode::Close => {
+						return Ok(WebSocketMessage::Close);
+					}
+					WebSocketOpcode::Ping => {
+						return Ok(WebSocketMessage::Ping);
+					}
+					WebSocketOpcode::Pong => {
+						return Ok(WebSocketMessage::Pong);
 					}
 					_ => {
 						return Err(IoError {
@@ -48,6 +59,9 @@ impl WebSocketReceiver {
 				if df.finished { break; }
 			}
 		}
+		
+		data = self.data.clone();
+		self.data = Vec::new();
 		
 		match dataframe.opcode {
 			WebSocketOpcode::Continuation => {
@@ -92,6 +106,7 @@ impl WebSocketReceiver {
 pub fn new_receiver(stream: TcpStream) -> WebSocketReceiver {
 	WebSocketReceiver {
 		stream: stream,
+		data: Vec::new(),
 	}
 }
 
