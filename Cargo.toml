@@ -1,0 +1,5 @@
+[package]
+
+name = "websocket"
+version = "0.0.1"
+authors = ["cyderize <admin@cyderize.org>"]
