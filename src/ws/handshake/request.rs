@@ -39,6 +39,7 @@ impl WebSocketRequest {
 		
 		headers.insert("Sec-WebSocket-Key", key);
 		headers.insert("Sec-WebSocket-Version", "13");
+		headers.insert("Sec-WebSocket-Protocol", protocol);
 		
 		WebSocketRequest {
 			resource_name: resource_name,
