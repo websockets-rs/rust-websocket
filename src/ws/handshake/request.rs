@@ -17,11 +17,17 @@ pub struct WebSocketRequest {
 impl WebSocketRequest {
 	pub fn new(uri: &str, protocol: &str) -> WebSocketRequest {
 		// TODO: Deal with secure WebSocket connections
-		let re = regex!(r"ws://([^:^/]*[:\d*]?)(.*)?");
+		let re = regex!(r"ws://([^:^/]+(?::\d+))?(.*)");
 		let captures = re.captures(uri).unwrap();
 		
 		let host = captures.at(1);
-		let resource_name = captures.at(2).to_string();
+		let resource_name =
+			if captures.at(2) == "" {
+				"/".to_string()
+			}
+			else {
+				captures.at(2).to_string()
+			};
 		
 		//Generate random key
 		let mut raw_key = [0u8, ..16];

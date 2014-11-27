@@ -1,7 +1,7 @@
 Rust-WebSocket
 ==============
 
-Rust-WebSocket is a WebSocket (RFC6455) library written in Rust.
+Rust-WebSocket is a WebSocket ([RFC6455](http://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
 
 Rust-WebSocket attempts to provide a framework for WebSocket connections (both clients and servers). The library is currently in an experimental state, but can work as a simple WebSocket server, with more functionality to come. There is no documentation or test code at the moment, however that is being worked on.
 
@@ -49,7 +49,7 @@ fn handle_client(mut client: WebSocketClient) {
 				WebSocketMessage::Text(message) => {
 					println!("Message received: {}", message);
 				}
-				_ => { /* A connection error occurred */ }
+				_ => { /* Non-text message received */ }
 			}
 		}
 	});
