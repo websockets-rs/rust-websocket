@@ -9,7 +9,7 @@ Rust-WebSocket attempts to provide a framework for WebSocket connections (both c
 
 To add the library to a Cargo project, add this to your Cargo.toml:
 ```INI
-[dependencies.color]
+[dependencies.websocket]
 
 git = "https://github.com/cyderize/rust-websocket.git"
 ```
