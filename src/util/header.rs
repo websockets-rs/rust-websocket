@@ -8,21 +8,26 @@ use std::string::ToString;
 use std::io::IoResult;
 use std::clone::Clone;
 
+/// Represents a collection of HTTP headers
 pub struct HeaderCollection {
 	map: HashMap<String, String>,
 }
 
+/// Iterates over the headers present in a HeaderCollection
 pub struct Headers<'a> {
 	inc: Entries<'a, String, String>,
 }
 
 impl HeaderCollection {
+	/// Creates a new HeaderCollection
 	pub fn new() -> HeaderCollection {
 		HeaderCollection {
 			map: HashMap::new(),
 		}
 	}
 	
+	/// Add the given field-value pair to the collection. If the field is already present, 
+	/// the value is appended to the header using comma-separation.
 	pub fn insert<A: ToString, B: ToString>(&mut self, field: A, value: B) {
 		let string = field.to_string();
 		let lowercase = string.as_slice().to_ascii_lower();
@@ -35,12 +40,14 @@ impl HeaderCollection {
 		}
 	}
 	
+	/// Returns true when the specified case-insensitive field name exists in the HeaderCollection.
 	pub fn contains_field<A: ToString>(&self, field: A) -> bool {
 		let string = field.to_string();
 		let lowercase = string.as_slice().to_ascii_lower();
 		self.map.contains_key(&(lowercase.to_string()))
 	}
 	
+	/// Gets the value of the header with the specified field name.
 	pub fn get<A: ToString>(&self, field: A) -> Option<String> {
 		let string = field.to_string();
 		let lowercase = string.as_slice().to_ascii_lower();
@@ -52,6 +59,7 @@ impl HeaderCollection {
 		}
 	}
 	
+	/// Removes the header with the specified field name from the HeaderCollection.
 	pub fn remove<A: ToString>(&mut self, field: A) -> Option<String> {
 		let string = field.to_string();
 		let lowercase = string.as_slice().to_ascii_lower();
@@ -63,6 +71,7 @@ impl HeaderCollection {
 		}
 	}
 	
+	/// Returns an iterator which iterates over each header in the HeaderCollection.
 	pub fn iter(&self) -> Headers {
 		Headers {
 			inc: self.map.iter(),

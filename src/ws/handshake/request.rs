@@ -9,12 +9,15 @@ use std::io::{Reader, Writer, IoResult, IoError, IoErrorKind};
 use serialize::base64::{ToBase64, STANDARD};
 use std::clone::Clone;
 
+/// Represents a WebSocket handshake request, which is sent from the client to the server.
+/// Use the new() function to create a new request.
 pub struct WebSocketRequest {
 	pub resource_name: String,
 	pub headers: HeaderCollection,
 }
 
 impl WebSocketRequest {
+	/// Creates a new WebSocket handshake request for use with WebSocketClient::connect().
 	pub fn new(uri: &str, protocol: &str) -> WebSocketRequest {
 		// TODO: Deal with secure WebSocket connections
 		let re = regex!(r"ws://([^:^/]+(?::\d+))?(.*)");

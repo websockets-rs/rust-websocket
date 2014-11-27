@@ -3,7 +3,7 @@ Rust-WebSocket
 
 Rust-WebSocket is a WebSocket ([RFC6455](http://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
 
-Rust-WebSocket attempts to provide a framework for WebSocket connections (both clients and servers). The library is currently in an experimental state, but can work as a simple WebSocket server, with more functionality to come. There is no documentation or test code at the moment, however that is being worked on.
+Rust-WebSocket attempts to provide a framework for WebSocket connections (both clients and servers). The library is currently in an experimental state, but can work as a simple WebSocket server or client, with more functionality to come. There is some documentation, but no testing code at the moment, however that is being worked on.
 
 ## Installation
 
@@ -80,7 +80,50 @@ fn main() {
 }
 ```
 
-To go with it, an browser-based client:
+And to go with it, a Rust-WebSocket based client:
+```Rust
+extern crate websocket;
+
+use websocket::WebSocketClient;
+use websocket::message::WebSocketMessage;
+use websocket::handshake::WebSocketRequest;
+use std::io::stdin;
+
+fn main() {
+	let request = WebSocketRequest::new("ws://127.0.0.1:1234", "myProtocol");
+	let client = WebSocketClient::connect(request);
+	
+	match client {
+		Ok(client) => {
+			let rx = client.receiver();
+			let mut tx = client.sender();
+			
+			spawn(proc() {
+				//Since this blocks, we'll put it in another task
+				for message in rx.incoming() {
+					match message.unwrap() {
+						WebSocketMessage::Text(message) => {
+							println!("Message received: {}", message);
+						}
+						_ => { /* Non text message */ }
+					}
+				}
+			});
+			
+			loop {
+				println!("Send a message:");
+				let input = stdin().read_line().ok().expect("Failed to read line");
+				let message = WebSocketMessage::Text(input);
+				
+				tx.send_message(&message);
+			}
+		}
+		Err(e) => { println!("Cannot connect: {}", e); }
+	}
+}
+```
+
+Or a browser-based client:
 ```HTML
 <!DOCTYPE html>
 <html>

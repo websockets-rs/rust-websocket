@@ -11,6 +11,7 @@ pub mod dataframe;
 pub mod send;
 pub mod receive;
 
+/// Represents a WebSocket message
 pub enum WebSocketMessage {
 	Text(String),
 	Binary(Vec<u8>),

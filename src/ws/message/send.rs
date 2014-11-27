@@ -5,6 +5,7 @@ use std::io::net::tcp::TcpStream;
 use std::io::IoResult;
 use std::rand;
 
+/// Represents a WebSocket sender, capable of transmitting data to the remote endpoint.
 pub struct WebSocketSender {
 	stream: TcpStream,
 	mask: bool,
@@ -45,12 +46,14 @@ fn message_to_dataframe(message: &WebSocketMessage, mask: bool, finished: bool) 
 }
 
 impl WebSocketSender {
+	/// Sends a message to the remote endpoint.
 	pub fn send_message(&mut self, message: &WebSocketMessage) -> IoResult<()> {
 		let dataframe = message_to_dataframe(message, self.mask, true);
 		try!(self.stream.write_websocket_dataframe(dataframe));
 		Ok(())
 	}
 	
+	/// Returns a fragment serializer, able to send fragments of a message to the remote endpoint.
 	pub fn fragment(&mut self) -> WebSocketFragmentSerializer {
 		WebSocketFragmentSerializer {
 			inc: self,
@@ -59,14 +62,29 @@ impl WebSocketSender {
 	}
 }
 
+/// Allows for the serialization of message fragments, to be sent to the remote endpoint.
 pub struct WebSocketFragmentSerializer<'a> {
 	inc: &'a mut WebSocketSender,
 	started: bool,
 }
 
 impl<'a> WebSocketFragmentSerializer<'a> {
+	/// Send a fragment of a message - if the message is finished, use the WebSocketFragmentSerializer::finish() function.
+	/// Can only be used with a Text or Binary message.
 	pub fn send_fragment(&mut self, message: &WebSocketMessage) -> IoResult<()> {
 		let mut dataframe = message_to_dataframe(message, self.inc.mask, false);
+		
+		match dataframe.opcode {
+			WebSocketOpcode::Text => {  }
+			WebSocketOpcode::Binary => {  }
+			_ => {
+				return Err(IoError {
+					kind: IoErrorKind::InvalidInput,
+					desc: "Cannot fragment a non-text/binary frame",
+					detail: None,
+				});
+			}
+		}
 		
 		if self.started {
 			dataframe.opcode = WebSocketOpcode::Continuation;
@@ -79,8 +97,22 @@ impl<'a> WebSocketFragmentSerializer<'a> {
 		Ok(())
 	}
 	
+	/// Send the final message and tell the remote endpoint the message is complete. Can be used with an empty message if necessary.
+	/// Can only be used with a Text or Binary message.
 	pub fn finish(&mut self, message: &WebSocketMessage) -> IoResult<()> {
 		let mut dataframe = message_to_dataframe(message, self.inc.mask, true);
+		
+		match dataframe.opcode {
+			WebSocketOpcode::Text => {  }
+			WebSocketOpcode::Binary => {  }
+			_ => {
+				return Err(IoError {
+					kind: IoErrorKind::InvalidInput,
+					desc: "Cannot fragment a non-text/binary frame",
+					detail: None,
+				});
+			}
+		}
 		
 		if self.started {
 			dataframe.opcode = WebSocketOpcode::Continuation;

@@ -7,11 +7,15 @@ use std::io::{IoResult, IoError, IoErrorKind};
 use std::option::Option;
 use std::str::from_utf8;
 
+/// Represents a WebSocket receiver which can receive data from the remote endpoint.
 pub struct WebSocketReceiver {
 	stream: TcpStream,
 }
 
 impl WebSocketReceiver {
+	/// Wait for and accept a message (subjected to the underlying stream timeout).
+	/// If the received message is fragmented, this function will not return
+	/// until the final fragment has been received.
 	pub fn receive_message(&mut self) -> IoResult<WebSocketMessage> {
 		let dataframe = try!(self.stream.read_websocket_dataframe());
 		let mut data = dataframe.data.clone();
@@ -75,6 +79,7 @@ impl WebSocketReceiver {
 		}
 	}
 
+	/// Returns an iterator over the incoming messages for/from this client
 	pub fn incoming(self) -> IncomingMessages {
 		IncomingMessages {
 			inc: self,
@@ -88,6 +93,7 @@ pub fn new_receiver(stream: TcpStream) -> WebSocketReceiver {
 	}
 }
 
+/// An iterator over incoming messages
 pub struct IncomingMessages {
 	inc: WebSocketReceiver,
 }
