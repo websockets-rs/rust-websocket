@@ -1,3 +1,6 @@
+#![crate_type = "lib"]
+#![crate_name = "websocket"]
+
 #![feature(phase)]
 extern crate serialize;
 extern crate regex;
