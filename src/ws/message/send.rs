@@ -2,7 +2,7 @@ use super::dataframe::{WebSocketOpcode, WebSocketDataFrame, WebSocketDataFrameLe
 use super::mask::mask_data;
 use super::WebSocketMessage;
 use std::io::net::tcp::TcpStream;
-use std::io::IoResult;
+use std::io::{IoResult, IoError, IoErrorKind};
 use std::rand;
 
 /// Represents a WebSocket sender, capable of transmitting data to the remote endpoint.
