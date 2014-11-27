@@ -19,9 +19,98 @@ extern crate websocket``` to your project.
 
 ## Usage
 
-Simple WebSocket server:
+Simple WebSocket server that can send messages:
 ```Rust
-//TODO: Add code
+extern crate websocket;
+
+use websocket::{WebSocketServer, WebSocketClient};
+use websocket::message::WebSocketMessage;
+use websocket::handshake::WebSocketResponse;
+use std::io::{Listener, Acceptor};
+use std::io::stdin;
+
+fn handle_client(mut client: WebSocketClient) {
+	//Get the request (but don't move 'client')
+	let request = client.request.clone().unwrap();
+	let key = request.headers.get("Sec-WebSocket-Key").unwrap();
+	
+	//Form a response from the key
+	let response = WebSocketResponse::new(key.as_slice(), None);
+	//Send the response to the client
+	client.send_handshake_response(response);
+	
+	//Now we can send and receive messages
+	let mut tx = client.sender();
+	let rx = client.receiver();
+
+	spawn(proc() {
+		//Since this blocks, we'll put it in another task
+		for message in rx.incoming() {
+			match message.unwrap() {
+				WebSocketMessage::Text(message) => {
+					println!("Message received: {}", message);
+				}
+				_ => { /* A connection error occurred */ }
+			}
+		}
+	});
+	
+	loop {
+		println!("Send a message:");
+		let input = stdin().read_line().ok().expect("Failed to read line");
+		let message = WebSocketMessage::Text(input);
+		
+		tx.send_message(&message);
+	}
+}
+
+fn main() {
+	let server = WebSocketServer::bind("127.0.0.1:1234").unwrap();
+	let mut acceptor = server.listen();
+	
+	for client in acceptor.incoming() {
+		match client {
+			Ok(client) => {
+				spawn(proc() {
+					handle_client(client)
+				})
+			}
+			Err(e) => { /* An error occurred */ }
+		}
+	}
+}
+```
+
+To go with it, an browser-based client:
+```
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Websockets</title>
+	</head>
+	<body>
+		<script>
+			var socket = new WebSocket("ws://127.0.0.1:1234", "protocolOne");
+			socket.onmessage = function (event) {
+				document.getElementById("response").innerHTML += event.data + "<br>";
+			}
+			
+			function send() {
+				var messagebox = document.getElementById("message");
+				var message = messagebox.value;
+				socket.send(message); 
+				messagebox.value = "";		
+			}
+		</script>
+		<div id="response">
+		</div>
+		<form action="#" onsubmit="send()">
+			<input type="text" id="message">
+			<input type="submit" value="Send">
+		</form>
+	</body>
+</html>
 ```
 
 ## License
