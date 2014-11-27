@@ -14,7 +14,8 @@ To add the library to a Cargo project, add this to your Cargo.toml:
 git = "https://github.com/cyderize/rust-websocket.git"
 ```
 
-And add ```Rust extern crate websocket``` to your project.
+And add ```Rust
+extern crate websocket``` to your project.
 
 ## Usage
 
