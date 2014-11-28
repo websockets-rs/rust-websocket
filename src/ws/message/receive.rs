@@ -10,6 +10,7 @@ use std::str::from_utf8;
 /// Represents a WebSocket receiver which can receive data from the remote endpoint.
 pub struct WebSocketReceiver {
 	stream: TcpStream,
+	opcode: Option<WebSocketOpcode>,
 	data: Vec<u8>,
 }
 
@@ -17,84 +18,103 @@ impl WebSocketReceiver {
 	/// Wait for and accept a message (subjected to the underlying stream timeout).
 	/// If the received message is fragmented, this function will not return
 	/// until the final fragment has been received.
+	/// If a control frame is received interleaved within a fragmented message,
+	/// The control frame will be returned first, and the message will be returned
+	/// on the next call to the function (or later if more control frames are received).
 	pub fn receive_message(&mut self) -> IoResult<WebSocketMessage> {
 		let dataframe = try!(self.stream.read_websocket_dataframe());
-		let mut data = dataframe.data.clone();
-		match dataframe.mask {
-			Some(key) => { data = mask_data(key, dataframe.data.as_slice()); }
-			None => { }
+		
+		// Deal with the opcode type
+		match dataframe.opcode {
+			WebSocketOpcode::Text | WebSocketOpcode::Binary => {
+				if self.opcode.is_none() {
+					// Set the kind - if the message is fragmented, this is the message type we'll return
+					self.opcode = Some(dataframe.opcode);
+				}
+				else {
+					return Err(IoError {
+						kind: IoErrorKind::InvalidInput,
+						desc: "Unexpected non-continuation dataframe",
+						detail: Some("Found a text or binary frame inside a fragmented message.".to_string()),
+					});
+				}
+			}
+			// Return straight away, even if this is part of a fragment
+			// TODO: Ensure the finish flag is set (although control frames
+			// can never be fragmented) and the data length is zero
+			WebSocketOpcode::Close => { return Ok(WebSocketMessage::Close); }
+			WebSocketOpcode::Ping => { return Ok(WebSocketMessage::Ping); }
+			WebSocketOpcode::Pong => { return Ok(WebSocketMessage::Pong); }
+			_ => {
+				return Err(IoError {
+					kind: IoErrorKind::InvalidInput,
+					desc: "Unsupported dataframe opcode received",
+					detail: None,
+				});
+			}
 		}
 		
+		// Unmask the data if necessary
+		let data = match dataframe.mask {
+			Some(key) => { mask_data(key, dataframe.data.as_slice()) }
+			None => { dataframe.data.clone() }
+		};
+		
+		// Add the data to the buffer
 		self.data.push_all(data.as_slice());
 		
-		if !dataframe.finished {
-			loop {
-				let df = try!(self.stream.read_websocket_dataframe());
-				match df.opcode {
-					WebSocketOpcode::Continuation => {
-						let mut data = df.data.clone();
-						match df.mask {
-							Some(key) => { data = mask_data(key, data.as_slice()); }
-							None => { }
-						}
-						self.data.push_all(data.as_slice());
+		if dataframe.finished {
+			// We're done, so form a message
+			self.create_message()
+		}
+		else {
+			// Not done yet, so keep getting messages
+			self.receive_message()
+		}
+	}
+
+	fn create_message(&mut self) -> IoResult<WebSocketMessage> {
+		let data = self.data.clone();
+		let opcode = self.opcode;
+		
+		self.data = Vec::new();
+		self.opcode = None;
+		
+		match opcode {
+			Some(opcode) => {
+				match opcode {
+					WebSocketOpcode::Text => {
+						let s = try!(from_utf8(data.as_slice()).ok_or(
+							IoError {
+								kind: IoErrorKind::InvalidInput,
+								desc: "Invalid UTF-8 sequence",
+								detail: None,
+							}
+						));
+						Ok(WebSocketMessage::Text(s.to_string()))
 					}
-					WebSocketOpcode::Close => {
-						return Ok(WebSocketMessage::Close);
-					}
-					WebSocketOpcode::Ping => {
-						return Ok(WebSocketMessage::Ping);
-					}
-					WebSocketOpcode::Pong => {
-						return Ok(WebSocketMessage::Pong);
+					WebSocketOpcode::Binary => {
+						Ok(WebSocketMessage::Binary(data))
 					}
 					_ => {
-						return Err(IoError {
+						Err(IoError {
 							kind: IoErrorKind::InvalidInput,
-							desc: "Unexpected non-continuation dataframe",
-							detail: None,
-						});
+							desc: "No opcode received!",
+							detail: Some("This error should never occur. This is a bug in Rust-WebSocket".to_string()),
+						})
 					}
 				}
-				if df.finished { break; }
 			}
-		}
-		
-		data = self.data.clone();
-		self.data = Vec::new();
-		
-		match dataframe.opcode {
-			WebSocketOpcode::Continuation => {
+			None => {
 				Err(IoError {
 					kind: IoErrorKind::InvalidInput,
-					desc: "Unexpected continuation dataframe",
-					detail: None,
-				})
-			}
-			WebSocketOpcode::Text => {
-				let s = try!(from_utf8(data.as_slice()).ok_or(
-					IoError {
-						kind: IoErrorKind::InvalidInput,
-						desc: "No host specified",
-						detail: None,
-					}
-				));
-				Ok(WebSocketMessage::Text(s.to_string()))
-			}
-			WebSocketOpcode::Binary => { Ok(WebSocketMessage::Binary(data)) }
-			WebSocketOpcode::Close => { Ok(WebSocketMessage::Close) }
-			WebSocketOpcode::Ping => { Ok(WebSocketMessage::Ping) }
-			WebSocketOpcode::Pong => { Ok(WebSocketMessage::Pong) }
-			_ => {
-				Err(IoError {
-					kind: IoErrorKind::InvalidInput,
-					desc: "Unsupported opcode received",
-					detail: None,
+					desc: "No opcode received!",
+					detail: Some("This error should never occur. This is a bug in Rust-WebSocket".to_string()),
 				})
 			}
 		}
 	}
-
+	
 	/// Returns an iterator over the incoming messages for/from this client
 	pub fn incoming(self) -> IncomingMessages {
 		IncomingMessages {
@@ -106,6 +126,7 @@ impl WebSocketReceiver {
 pub fn new_receiver(stream: TcpStream) -> WebSocketReceiver {
 	WebSocketReceiver {
 		stream: stream,
+		opcode: None,
 		data: Vec::new(),
 	}
 }
