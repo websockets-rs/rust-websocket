@@ -31,7 +31,7 @@ impl WebSocketReceiver {
 					return Err(IoError {
 						kind: IoErrorKind::InvalidInput,
 						desc: "Unexpected continuation dataframe",
-						detail: Some("Found a continuation dataframe, but no fragmented message received beforehand"),
+						detail: Some("Found a continuation dataframe, but no fragmented message received beforehand".to_string()),
 					});
 				}
 			}
