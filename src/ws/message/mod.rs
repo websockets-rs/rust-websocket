@@ -6,13 +6,14 @@ pub use super::client;
 pub use self::send::{WebSocketSender, WebSocketFragmentSerializer};
 pub use self::receive::{WebSocketReceiver, IncomingMessages};
 
+use std::fmt::{Formatter, Result, Show};
+
 pub mod mask;
 pub mod dataframe;
 pub mod send;
 pub mod receive;
 
 /// Represents a WebSocket message
-#[deriving(Show)]
 pub enum WebSocketMessage {
 	/// A message containing UTF-8 text data
 	Text(String),
@@ -24,4 +25,26 @@ pub enum WebSocketMessage {
 	Ping,
 	/// A pong message
 	Pong,
+}
+
+impl Show for WebSocketMessage {
+    fn fmt(&self, f: &mut Formatter) -> Result {
+		match self {
+			&WebSocketMessage::Text(ref data) => {
+				write!(f, "Text({})", data)
+			}
+			&WebSocketMessage::Binary(ref data) => {
+				write!(f, "Binary({})", data.len())
+			}
+			&WebSocketMessage::Close => {
+				write!(f, "Close")
+			}
+			&WebSocketMessage::Ping => {
+				write!(f, "Ping")
+			}
+			&WebSocketMessage::Pong => {
+				write!(f, "Pong")
+			}
+		}
+    }
 }
