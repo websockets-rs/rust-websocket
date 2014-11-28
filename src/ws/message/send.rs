@@ -75,8 +75,7 @@ impl<'a> WebSocketFragmentSerializer<'a> {
 		let mut dataframe = message_to_dataframe(message, self.inc.mask, false);
 		
 		match dataframe.opcode {
-			WebSocketOpcode::Text => {  }
-			WebSocketOpcode::Binary => {  }
+			WebSocketOpcode::Text | WebSocketOpcode::Binary => {  }
 			_ => {
 				return Err(IoError {
 					kind: IoErrorKind::InvalidInput,
@@ -103,8 +102,7 @@ impl<'a> WebSocketFragmentSerializer<'a> {
 		let mut dataframe = message_to_dataframe(message, self.inc.mask, true);
 		
 		match dataframe.opcode {
-			WebSocketOpcode::Text => {  }
-			WebSocketOpcode::Binary => {  }
+			WebSocketOpcode::Text | WebSocketOpcode::Binary => {  }
 			_ => {
 				return Err(IoError {
 					kind: IoErrorKind::InvalidInput,

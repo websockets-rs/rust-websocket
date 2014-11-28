@@ -12,6 +12,7 @@ pub mod send;
 pub mod receive;
 
 /// Represents a WebSocket message
+#[deriving(Show)]
 pub enum WebSocketMessage {
 	/// A message containing UTF-8 text data
 	Text(String),
