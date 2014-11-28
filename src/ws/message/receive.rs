@@ -26,6 +26,15 @@ impl WebSocketReceiver {
 		
 		// Deal with the opcode type
 		match dataframe.opcode {
+			WebSocketOpcode::Continuation => {
+				if self.opcode.is_none() {
+					return Err(IoError {
+						kind: IoErrorKind::InvalidInput,
+						desc: "Unexpected continuation dataframe",
+						detail: Some("Found a continuation dataframe, but no fragmented message received beforehand"),
+					});
+				}
+			}
 			WebSocketOpcode::Text | WebSocketOpcode::Binary => {
 				if self.opcode.is_none() {
 					// Set the kind - if the message is fragmented, this is the message type we'll return
