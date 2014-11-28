@@ -45,12 +45,7 @@ fn handle_client(mut client: WebSocketClient) {
 	spawn(proc() {
 		//Since this blocks, we'll put it in another task
 		for message in rx.incoming() {
-			match message.unwrap() {
-				WebSocketMessage::Text(message) => {
-					println!("Message received: {}", message);
-				}
-				_ => { /* Non-text message received */ }
-			}
+			println!("Received Message: {}", message.unwrap());
 		}
 	});
 	
@@ -101,12 +96,7 @@ fn main() {
 			spawn(proc() {
 				//Since this blocks, we'll put it in another task
 				for message in rx.incoming() {
-					match message.unwrap() {
-						WebSocketMessage::Text(message) => {
-							println!("Message received: {}", message);
-						}
-						_ => { /* Non text message */ }
-					}
+					println!("Received Message: {}", message.unwrap());
 				}
 			});
 			
