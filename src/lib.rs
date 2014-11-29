@@ -56,12 +56,15 @@
 #![feature(phase)]
 extern crate serialize;
 extern crate regex;
+extern crate url;
 
 pub use self::ws::client::WebSocketClient;
 
 /// Structs for manipulation of HTTP headers
 pub mod headers {
 	pub use util::header::{HeaderCollection, Headers};
+	pub use url::ParseResult;
+	pub use url::ParseError;
 }
 
 /// Structs for WebSocket handshake requests and responses

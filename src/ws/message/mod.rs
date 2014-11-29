@@ -19,11 +19,11 @@ pub enum WebSocketMessage {
 	/// A message containing binary data
 	Binary(Vec<u8>),
 	/// A message which indicates closure of the WebSocket connection
-	Close,
+	Close(Vec<u8>),
 	/// A ping message - should be responded to with a pong message
-	Ping,
+	Ping(Vec<u8>),
 	/// A pong message
-	Pong,
+	Pong(Vec<u8>),
 }
 
 impl Show for WebSocketMessage {
@@ -35,14 +35,14 @@ impl Show for WebSocketMessage {
 			&WebSocketMessage::Binary(ref data) => {
 				write!(f, "Binary({})", data.len())
 			}
-			&WebSocketMessage::Close => {
-				write!(f, "Close")
+			&WebSocketMessage::Close(ref data) => {
+				write!(f, "Close({})", data.len())
 			}
-			&WebSocketMessage::Ping => {
-				write!(f, "Ping")
+			&WebSocketMessage::Ping(ref data) => {
+				write!(f, "Ping({})", data.len())
 			}
-			&WebSocketMessage::Pong => {
-				write!(f, "Pong")
+			&WebSocketMessage::Pong(ref data) => {
+				write!(f, "Pong({})", data.len())
 			}
 		}
     }

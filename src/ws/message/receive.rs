@@ -55,6 +55,12 @@ impl WebSocketReceiver {
 	pub fn receive_message(&mut self) -> IoResult<WebSocketMessage> {
 		let dataframe = try!(self.stream.read_websocket_dataframe());
 		
+		// Unmask the data if necessary
+		let data = match dataframe.mask {
+			Some(key) => { mask_data(key, dataframe.data.as_slice()) }
+			None => { dataframe.data.clone() }
+		};
+		
 		// Deal with the opcode type
 		match dataframe.opcode {
 			WebSocketOpcode::Continuation => {
@@ -82,9 +88,9 @@ impl WebSocketReceiver {
 			// Return straight away, even if this is part of a fragment
 			// TODO: Ensure the finish flag is set (although control frames
 			// can never be fragmented) and the data length is zero
-			WebSocketOpcode::Close => { return Ok(WebSocketMessage::Close); }
-			WebSocketOpcode::Ping => { return Ok(WebSocketMessage::Ping); }
-			WebSocketOpcode::Pong => { return Ok(WebSocketMessage::Pong); }
+			WebSocketOpcode::Close => { return Ok(WebSocketMessage::Close(data)); }
+			WebSocketOpcode::Ping => { return Ok(WebSocketMessage::Ping(data)); }
+			WebSocketOpcode::Pong => { return Ok(WebSocketMessage::Pong(data)); }
 			_ => {
 				return Err(IoError {
 					kind: IoErrorKind::InvalidInput,
@@ -93,12 +99,6 @@ impl WebSocketReceiver {
 				});
 			}
 		}
-		
-		// Unmask the data if necessary
-		let data = match dataframe.mask {
-			Some(key) => { mask_data(key, dataframe.data.as_slice()) }
-			None => { dataframe.data.clone() }
-		};
 		
 		// Add the data to the buffer
 		self.data.push_all(data.as_slice());

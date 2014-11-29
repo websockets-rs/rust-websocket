@@ -24,20 +24,28 @@ pub struct WebSocketSender {
 fn message_to_dataframe(message: &WebSocketMessage, mask: bool, finished: bool) -> WebSocketDataFrame {
 	let mut opcode: WebSocketOpcode;
 	let masking_key = if mask { Some(gen_key()) } else { None };
-	let mut data: Vec<u8> = Vec::new();
-	match *message {
+	let mut data = match *message {
 		WebSocketMessage::Text(ref payload) => {				
 			opcode = WebSocketOpcode::Text;
-			data = payload.clone().into_bytes();
+			payload.clone().into_bytes()
 		}
 		WebSocketMessage::Binary(ref payload) => {
 			opcode = WebSocketOpcode::Binary;
-			data = payload.clone();
+			payload.clone()
 		}
-		WebSocketMessage::Close => { opcode = WebSocketOpcode::Close; }
-		WebSocketMessage::Ping => { opcode = WebSocketOpcode::Ping; }
-		WebSocketMessage::Pong => { opcode = WebSocketOpcode::Pong; }
-	}
+		WebSocketMessage::Close(ref payload) => {
+			opcode = WebSocketOpcode::Close;
+			payload.clone()
+		}
+		WebSocketMessage::Ping(ref payload) => {
+			opcode = WebSocketOpcode::Ping;
+			payload.clone()
+		}
+		WebSocketMessage::Pong(ref payload) => {
+			opcode = WebSocketOpcode::Pong;
+			payload.clone()
+		}
+	};
 	
 	if mask {
 		data = mask_data(masking_key.unwrap(), data.as_slice());

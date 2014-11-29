@@ -1,9 +1,11 @@
 #[phase(plugin)]
 extern crate regex_macros;
 extern crate regex;
+extern crate url;
 
 use super::util::{ReadUntilStr, HeaderCollection, ReadHttpHeaders, WriteHttpHeaders};
 use super::check::CheckWebSocketHeader;
+use url::{Url, ParseResult, ParseError};
 use std::rand;
 use std::io::{Reader, Writer, IoResult, IoError, IoErrorKind};
 use serialize::base64::{ToBase64, STANDARD};
@@ -20,19 +22,35 @@ pub struct WebSocketRequest {
 
 impl WebSocketRequest {
 	/// Creates a new WebSocket handshake request for use with WebSocketClient::connect().
-	pub fn new(uri: &str, protocol: &str) -> WebSocketRequest {
-		// TODO: Deal with secure WebSocket connections
-		let re = regex!(r"ws://([^:^/]+(?::\d+))?(.*)");
-		let captures = re.captures(uri).unwrap();
+	pub fn new(uri: &str, protocol: &str) -> ParseResult<WebSocketRequest> {
+		let ws_uri = match Url::parse(uri) {
+			Ok(uri) => { uri }
+			Err(e) => { return Err(e); }
+		};
 		
-		let host = captures.at(1);
-		let resource_name =
-			if captures.at(2) == "" {
-				"/".to_string()
+		match ws_uri.scheme.as_slice() {
+			"ws" => {
+				
 			}
-			else {
-				captures.at(2).to_string()
-			};
+			"wss" => {
+				
+			}
+			_ => { return Err(ParseError::InvalidScheme); }
+		}
+		
+		let host = match ws_uri.serialize_host() {
+			Some(host) => {
+				host
+			}
+			None => { return Err(ParseError::InvalidCharacter); }
+		};
+
+		let resource_name = match ws_uri.serialize_path() {
+			Some(resource_name) => {
+				resource_name
+			}
+			None => { return Err(ParseError::InvalidCharacter); }
+		};
 		
 		//Generate random key
 		let mut raw_key = [0u8, ..16];
@@ -52,10 +70,10 @@ impl WebSocketRequest {
 		headers.insert("Sec-WebSocket-Version", "13");
 		headers.insert("Sec-WebSocket-Protocol", protocol);
 		
-		WebSocketRequest {
+		Ok(WebSocketRequest {
 			resource_name: resource_name,
 			headers: headers,
-		}
+		})
 	}
 }
 

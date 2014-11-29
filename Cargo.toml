@@ -15,3 +15,6 @@ readme = "README.md"
 keywords = ["websocket", "websockets", "rfc6455"]
 
 license = "MIT"
+
+[dependencies]
+url = "~0.2.1"
