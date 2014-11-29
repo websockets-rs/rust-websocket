@@ -29,8 +29,8 @@ use std::io::{Listener, Acceptor};
 use std::io::stdin;
 
 fn handle_client(mut client: WebSocketClient) {
-	//Get the request (but don't move 'client')
-	let request = client.request().unwrap();
+	//Read the request from the client
+	let request = client.receive_handshake_request().unwrap();
 	let key = request.headers.get("Sec-WebSocket-Key").unwrap();
 	
 	//Form a response from the key
