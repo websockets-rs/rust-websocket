@@ -19,8 +19,8 @@ use std::clone::Clone;
 /// use websocket::handshake::WebSocketRequest;
 /// 
 /// let request = WebSocketRequest::new("ws://127.0.0.1:1234", "myProtocol");
-/// let client = WebSocketClient::connect(request);
-/// let response = receive_handshake_response().unwrap();
+/// let mut client = WebSocketClient::connect(request).unwrap();
+/// let response = client.receive_handshake_response().unwrap();
 /// 
 /// if !response.is_successful {
 /// 	// Handshake failed!
