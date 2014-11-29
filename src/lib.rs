@@ -5,7 +5,6 @@
 extern crate serialize;
 extern crate regex;
 
-pub use self::ws::server::{WebSocketServer, WebSocketAcceptor};
 pub use self::ws::client::WebSocketClient;
 
 /// Structs for manipulation of HTTP headers

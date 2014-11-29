@@ -1,6 +1,5 @@
 pub use super::util;
 pub use super::handshake;
-pub use super::server;
 pub use super::client;
 
 pub use self::send::{WebSocketSender, WebSocketFragmentSerializer};
