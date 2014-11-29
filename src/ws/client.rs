@@ -41,32 +41,40 @@ impl WebSocketClient {
 		})
 	}
 	
-	/// Gets the request associated with this client (if any)
-	pub fn request(&self) -> Option<WebSocketRequest> {
-		self.request.clone()
+	/// Creates a new WebSocketClient from a given TcpStream.
+	/// The mask parameter determines whether or not messages send to the remote endpoint will be masked.
+	/// If the client is connecting to a remote endpoint, set mask to true. If the client is the remote
+	/// endpoint (and therefore, the server is the local endpoint), set mask to false.
+	/// Typically, WebSocketClient::create() will be used instead of this function.
+	pub fn from_stream(stream: TcpStream, mask: bool) -> WebSocketClient {
+		WebSocketClient {
+			stream: stream,
+			request: None,
+			response: None,
+			mask: mask,
+		}
 	}
 	
-	/// Gets the response associated with this client (if any)
-	pub fn response(&self) -> Option<WebSocketResponse> {
-		self.response.clone()
+	/// Reads a request from this client. Only to be used if the server is the local endpoint and
+	/// the client is the remote endpoint.
+	pub fn receive_handshake_request(&mut self) -> IoResult<WebSocketRequest> {
+		self.stream.read_websocket_request()
 	}
 	
-	/// Sends the specified WebSocketResponse to this client - only to be used from a server.
-	/// Do not use if you've connected to a server using the WebSocketClient::connect() function.
+	/// Sends the specified WebSocketResponse to this client. Only to be used if the server is
+	/// the local endpoint and the client is the remote endpoint.
 	pub fn send_handshake_response(&mut self, response: WebSocketResponse) -> IoResult<()> {
-		try!(self.stream.write_websocket_response(&response));
-		self.response = Some(response);
-		Ok(())
+		self.stream.write_websocket_response(&response)
 	}
 	
-	/// Returns a WebSocketSender from this client. Use to transmit data to this client (for a server)
-	/// or to the server (if this is a client using the WebSocketClient::connect() function).
+	/// Returns a WebSocketSender from this client. Used to transmit data to the remote endpoint,
+	/// that is, to the server if WebSocketClient::connect() has been used, or to this client otherwise.
 	pub fn sender(&self) -> WebSocketSender {
 		new_sender(self.stream.clone(), self.mask)
 	}
 	
-	/// Returns a WebSocketReceiver from this client. Use to receive messages from this client (for a server)
-	/// or to receive messages from the server (if this is a client using the WebSocketClient::connect() function).
+	/// Returns a WebSocketReceiver from this client. Used to receive data from the remote endpoint,
+	/// that is, from the server if WebSocketClient::connect() has been used, or from this client otherwise.
 	pub fn receiver(&self) -> WebSocketReceiver {
 		new_receiver(self.stream.clone())
 	}
@@ -81,14 +89,4 @@ impl Clone for WebSocketClient {
 			mask: self.mask,
 		}
 	}
-}
-
-pub fn serverside_client(mut stream: TcpStream) -> IoResult<WebSocketClient> {
-	let request = try!(stream.read_websocket_request());
-	Ok(WebSocketClient {
-		stream: stream,
-		request: Some(request),
-		response: None,
-		mask: false,
-	})
 }

@@ -1,4 +1,4 @@
-use super::client::{WebSocketClient, serverside_client};
+use super::client::WebSocketClient;
 use std::io::net::tcp::{TcpListener, TcpAcceptor};
 use std::io::net::ip::ToSocketAddr;
 use std::io::{Listener, Acceptor};
@@ -38,6 +38,6 @@ pub struct WebSocketAcceptor {
 impl Acceptor<WebSocketClient> for WebSocketAcceptor {
 	fn accept(&mut self) -> IoResult<WebSocketClient> {
 		let stream = try!(self.acceptor.accept());
-		serverside_client(stream)
+		Ok(WebSocketClient::from_stream(stream, false))
 	}
 } 
