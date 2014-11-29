@@ -39,9 +39,10 @@ impl WebSocketRequest {
 		}
 		
 		let host = match ws_uri.serialize_host() {
-			Some(host) => {
-				host
-			}
+			Some(host) => { host }
+			None => { return Err(ParseError::InvalidCharacter); }
+		} + match ws_uri.port_or_default() {
+			Some(port) => { ":".to_string() + port.to_string() }
 			None => { return Err(ParseError::InvalidCharacter); }
 		};
 
