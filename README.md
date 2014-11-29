@@ -7,7 +7,14 @@ Rust-WebSocket attempts to provide a framework for WebSocket connections (both c
 
 ## Installation
 
-To add the library to a Cargo project, add this to your Cargo.toml:
+To add a library release version from [crates.io](https://crates.io/crates/websocket) to a Cargo project, add this to your Cargo.toml:
+
+```INI
+websocket = "~0.1.0"
+```
+
+To add the library's Git repository to a Cargo project, add this to your Cargo.toml:
+
 ```INI
 [dependencies.websocket]
 

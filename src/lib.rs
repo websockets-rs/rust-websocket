@@ -47,8 +47,8 @@
 //! 				let mut sender = client.sender();
 //! 				
 //! 				// ...
-//! 				});
-//! 				}
+//! 			});
+//! 		}
 //! 		_ => { /* A connection error occurred */ }
 //! 	}
 //! }

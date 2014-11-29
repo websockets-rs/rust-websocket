@@ -27,7 +27,7 @@ impl HeaderCollection {
 	}
 	
 	/// Add the given field-value pair to the collection. If the field is already present, 
-	/// the value is appended to the header using comma-separation.
+	/// the value is appended to the header using comma-separation. Field names are case-insensitive.
 	pub fn insert<A: ToString, B: ToString>(&mut self, field: A, value: B) {
 		let string = field.to_string();
 		let lowercase = string.as_slice().to_ascii_lower();
@@ -47,7 +47,7 @@ impl HeaderCollection {
 		self.map.contains_key(&(lowercase.to_string()))
 	}
 	
-	/// Gets the value of the header with the specified field name.
+	/// Gets the value of the header with the specified case-insensitive field name.
 	pub fn get<A: ToString>(&self, field: A) -> Option<String> {
 		let string = field.to_string();
 		let lowercase = string.as_slice().to_ascii_lower();
