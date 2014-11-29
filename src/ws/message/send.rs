@@ -6,6 +6,16 @@ use std::io::{IoResult, IoError, IoErrorKind};
 use std::rand;
 
 /// Represents a WebSocket sender, capable of transmitting data to the remote endpoint.
+/// 
+/// ```no_run
+/// use websocket::WebSocketMessage;
+/// 
+/// let mut sender = client.sender(); // Get a sender
+/// let data = "My fancy message".to_string();
+/// let message = WebSocketMessage::Text(data.to_string());
+/// 
+/// let _ = sender.send_message(&message); // Send the message
+/// ```
 pub struct WebSocketSender {
 	stream: TcpStream,
 	mask: bool,
@@ -63,6 +73,30 @@ impl WebSocketSender {
 }
 
 /// Allows for the serialization of message fragments, to be sent to the remote endpoint.
+///```no_run
+/// use websocket::WebSocketMessage;
+/// 
+/// // Get a WebSocketFragmentSerializer
+/// let mut fragment = sender.fragment();
+/// 
+/// let message1 = WebSocketMessage::Text("This ".to_string());
+/// let message2 = WebSocketMessage::Text("is ".to_string());
+/// let message3 = WebSocketMessage::Text("a ".to_string());
+/// let message4 = WebSocketMessage::Text("fragmented ".to_string());
+/// let message5 = WebSocketMessage::Text("message.".to_string());
+/// 
+/// // Send our fragments
+/// fragment.send_fragment(&message1);
+/// fragment.send_fragment(&message2);
+/// fragment.send_fragment(&message3);
+/// fragment.send_fragment(&message4);
+/// 
+/// // Have to tell everyone we're done
+/// fragment.finish(&message1);
+/// 
+/// // Drop this WebSocketFragmentSerializer
+/// drop(fragment);
+///```
 pub struct WebSocketFragmentSerializer<'a> {
 	inc: &'a mut WebSocketSender,
 	started: bool,

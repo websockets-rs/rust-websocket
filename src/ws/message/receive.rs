@@ -8,6 +8,37 @@ use std::option::Option;
 use std::str::from_utf8;
 
 /// Represents a WebSocket receiver which can receive data from the remote endpoint.
+/// All methods are task blocking (but not stream blocking, so you can send and receive concurrently).
+/// A WebSocketReceiver can be captured into another task for concurrency
+///
+/// ```no_run
+/// use websocket::WebSocketMessage;
+/// 
+/// let receiver = client.receiver();
+/// 
+/// spawn(proc() {
+/// 	// Will continuously try to receive messages
+/// 	for message in receiver.incoming() {
+/// 		match message {
+/// 			//Match the result
+/// 			Ok(message) => {
+/// 				// Match the type of message
+/// 				match message {
+/// 					WebSocketMessage::Text(data) => {
+/// 						println!("{}", data);
+/// 					}
+/// 					WebSocketMessage::Binary(data) => {
+/// 						// ...
+/// 					}
+/// 					// ...
+/// 					_ => { }
+/// 				}
+/// 			}
+/// 			Err(e) => { /* Could not receive the message */ }
+/// 		}
+/// 	}
+/// });
+/// ```
 pub struct WebSocketReceiver {
 	stream: TcpStream,
 	opcode: Option<WebSocketOpcode>,
@@ -140,7 +171,7 @@ pub fn new_receiver(stream: TcpStream) -> WebSocketReceiver {
 	}
 }
 
-/// An iterator over incoming messages
+/// An iterator over incoming messages. Blocks the task and always returns Some.
 pub struct IncomingMessages {
 	inc: WebSocketReceiver,
 }

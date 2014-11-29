@@ -5,14 +5,35 @@ use super::message::receive::new_receiver;
 use super::message::{WebSocketSender, WebSocketReceiver};
 use std::io::net::tcp::TcpStream;
 use std::io::{IoResult, IoError, IoErrorKind};
-use std::option::Option;
 use std::clone::Clone;
 
 /// Represents a WebSocket client.
+/// To use WebSocketClient, you must create one using either WebSocketClient::connect(),
+/// which is used for writing clients, or WebSocketClient::from_stream(), which creates
+/// a WebSocketClient from a TcpStream (typically used in a server).
+///
+/// An example client application:
+/// 
+/// ```no_run
+/// use websocket::WebSocketClient;
+/// use websocket::handshake::WebSocketRequest;
+/// 
+/// let request = WebSocketRequest::new("ws://127.0.0.1:1234", "myProtocol");
+/// let client = WebSocketClient::connect(request);
+/// let response = receive_handshake_response().unwrap();
+/// 
+/// if !response.is_successful {
+/// 	// Handshake failed!
+/// }
+/// 
+/// //Now we can send and receive messages
+/// let receiver = client.receiver();
+/// let mut sender = client.sender();
+/// 
+/// // ...
+/// ```
 pub struct WebSocketClient {
 	stream: TcpStream,
-	request: Option<WebSocketRequest>,
-	response: Option<WebSocketResponse>,
 	mask: bool,
 }
 
@@ -31,12 +52,9 @@ impl WebSocketClient {
 		let mut stream = try!(TcpStream::connect(host.as_slice()));
 		//Send the opening handshake
 		try!(stream.write_websocket_request(&request));
-		//Get a response
-		let response = try!(stream.read_websocket_response());
+		
 		Ok(WebSocketClient{
 			stream: stream,
-			request: Some(request),
-			response: Some(response),
 			mask: true,
 		})
 	}
@@ -45,12 +63,9 @@ impl WebSocketClient {
 	/// The mask parameter determines whether or not messages send to the remote endpoint will be masked.
 	/// If the client is connecting to a remote endpoint, set mask to true. If the client is the remote
 	/// endpoint (and therefore, the server is the local endpoint), set mask to false.
-	/// Typically, WebSocketClient::create() will be used instead of this function.
 	pub fn from_stream(stream: TcpStream, mask: bool) -> WebSocketClient {
 		WebSocketClient {
 			stream: stream,
-			request: None,
-			response: None,
 			mask: mask,
 		}
 	}
@@ -59,6 +74,12 @@ impl WebSocketClient {
 	/// the client is the remote endpoint.
 	pub fn receive_handshake_request(&mut self) -> IoResult<WebSocketRequest> {
 		self.stream.read_websocket_request()
+	}
+	
+	/// Reads a response that was sent to this client. Only to be used if the server is the remote
+	/// endpoint and the client is the local endpoint.
+	pub fn receive_handshake_response(&mut self) -> IoResult<WebSocketResponse> {
+		self.stream.read_websocket_response()
 	}
 	
 	/// Sends the specified WebSocketResponse to this client. Only to be used if the server is
@@ -84,8 +105,6 @@ impl Clone for WebSocketClient {
 	fn clone(&self) -> WebSocketClient {
 		WebSocketClient {
 			stream: self.stream.clone(),
-			request: self.request.clone(),
-			response: self.response.clone(),
 			mask: self.mask,
 		}
 	}

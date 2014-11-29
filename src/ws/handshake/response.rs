@@ -48,7 +48,7 @@ impl WebSocketResponse {
 	}
 	
 	/// Returns true if this response indicates a successful handshake
-	pub fn is_okay(&self) -> bool {
+	pub fn is_successful(&self) -> bool {
 		self.status_code == 101 && self.headers.check_response()
 	}
 }
