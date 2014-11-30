@@ -6,15 +6,26 @@ use std::io::{IoResult, IoError, IoErrorKind};
 use std::rand;
 
 /// Represents a WebSocket sender, capable of transmitting data to the remote endpoint.
+/// Use the send_message() method to send a single, whole message. If you need to send
+/// a series of message fragments (e.g. if you need to send a message of unknown length),
+/// use the fragment() method to obtain a WebSocketFragmentSerializer, which can be
+/// used to do so.
 /// 
 /// ```no_run
-/// use websocket::WebSocketMessage;
+/// use websocket::message::WebSocketMessage;
+/// # use websocket::WebSocketClient;
+/// # use websocket::handshake::WebSocketRequest;
+/// # #[allow(unused_must_use)]
+/// # fn foo() {
+/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", "None").unwrap();
+/// # let mut client = WebSocketClient::connect(&request).unwrap();
 /// 
 /// let mut sender = client.sender(); // Get a sender
 /// let data = "My fancy message".to_string();
 /// let message = WebSocketMessage::Text(data.to_string());
 /// 
 /// let _ = sender.send_message(&message); // Send the message
+/// # }
 /// ```
 pub struct WebSocketSender {
 	stream: TcpStream,
@@ -81,10 +92,21 @@ impl WebSocketSender {
 }
 
 /// Allows for the serialization of message fragments, to be sent to the remote endpoint.
+/// Any number of messages can be sent (but only text or binary messages, as control
+/// messages can never be fragmented) using the send_fragment() method, and when the final
+/// fragment is to be sent, use the finish() method. After calling the finish method, the
+/// remote endpoint will assemble all of the received message fragments into a single
+/// message containing all of the fragment data concatenated together.
 /// 
 /// ```no_run
-/// use websocket::WebSocketMessage;
-/// 
+/// use websocket::message::WebSocketMessage;
+/// # use websocket::WebSocketClient;
+/// # use websocket::handshake::WebSocketRequest;
+/// # #[allow(unused_must_use)]
+/// # fn foo() {
+/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", "None").unwrap();
+/// # let mut client = WebSocketClient::connect(&request).unwrap();
+/// # let mut sender = client.sender();
 /// // Get a WebSocketFragmentSerializer
 /// let mut fragment = sender.fragment();
 /// 
@@ -95,16 +117,17 @@ impl WebSocketSender {
 /// let message5 = WebSocketMessage::Text("message.".to_string());
 /// 
 /// // Send our fragments
-/// fragment.send_fragment(&message1);
+/// fragment.send_fragment(&message1); // Each one is sent immediately
 /// fragment.send_fragment(&message2);
 /// fragment.send_fragment(&message3);
 /// fragment.send_fragment(&message4);
 /// 
-/// // Have to tell everyone we're done
-/// fragment.finish(&message1);
+/// // Now tell them we're done
+/// fragment.finish(&message1); // Now they'll assemble the fragments into a single message
 /// 
-/// // Drop this WebSocketFragmentSerializer
+/// // Drop this WebSocketFragmentSerializer, or let it go out of scope
 /// drop(fragment);
+/// # }
 /// ```
 pub struct WebSocketFragmentSerializer<'a> {
 	inc: &'a mut WebSocketSender,
@@ -141,6 +164,8 @@ impl<'a> WebSocketFragmentSerializer<'a> {
 	
 	/// Send the final message and tell the remote endpoint the message is complete. Can be used with an empty message if necessary.
 	/// Can only be used with a Text or Binary message.
+	/// 
+	/// Once this has been called, you can send a new fragmented message using the send_fragment() method.
 	pub fn finish(&mut self, message: &WebSocketMessage) -> IoResult<()> {
 		let mut dataframe = message_to_dataframe(message, self.inc.mask, true);
 		

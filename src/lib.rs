@@ -14,7 +14,6 @@
 //! use std::io::TcpListener;
 //! use std::io::{Listener, Acceptor};
 //! use websocket::WebSocketClient;
-//! use websocket::message::{WebSocketSender, WebSocketMessage};
 //! use websocket::handshake::WebSocketResponse;
 //! 
 //! let listener = TcpListener::bind("127.0.0.1:1234");
@@ -27,22 +26,22 @@
 //! 			spawn(proc() {
 //! 				// Get a WebSocketClient from this stream
 //! 				// The mask argument is false as messages sent by the server are always unmasked
-//! 				let client = WebSocketClient::from_stream(stream, false); 
+//! 				let mut client = WebSocketClient::from_stream(stream, false); 
 //! 				
 //! 				// Read the handshake from the client
 //! 				let request = client.receive_handshake_request().unwrap();
 //! 				
-//! 				//Get the headers we need to respond
-//! 				let key = request.headers.get("Sec-WebSocket-Key").unwrap();
-//! 				let protocol = request.headers.get("Sec-WebSocket-Protocol");
+//! 				// Get the headers we need to respond
+//! 				let key = request.key().unwrap();
 //! 				
-//! 				//Form a response from the key
-//! 				let response = WebSocketResponse::new(key.as_slice(), protocol);
+//! 				// Form a response from the key
+//!					// In this example, we don't deal with the requested protocol
+//! 				let response = WebSocketResponse::new(key.as_slice(), None);
 //! 				
-//! 				//Send the response to the client
+//! 				// Send the response to the client
 //! 				let _ = client.send_handshake_response(response);
 //! 				
-//! 				//Now we can send and receive messages
+//! 				// Now we can send and receive messages
 //! 				let receiver = client.receiver();
 //! 				let mut sender = client.sender();
 //! 				
@@ -54,9 +53,10 @@
 //! }
 //! ```
 #![feature(phase)]
-extern crate serialize;
 extern crate regex;
 extern crate url;
+extern crate sha1;
+extern crate serialize;
 
 pub use self::ws::client::WebSocketClient;
 
@@ -75,9 +75,9 @@ pub mod handshake {
 
 /// Structs for WebSocket messages and the transmission of messages
 pub mod message {
-	pub use ws::message::{WebSocketMessage};
-	pub use ws::message::{WebSocketSender, WebSocketFragmentSerializer};
-	pub use ws::message::{WebSocketReceiver, IncomingMessages};
+	pub use ws::message::WebSocketMessage;
+	pub use ws::message::send::{WebSocketSender, WebSocketFragmentSerializer};
+	pub use ws::message::receive::{WebSocketReceiver, IncomingMessages};
 }
 
 mod ws;

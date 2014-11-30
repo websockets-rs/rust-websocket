@@ -12,7 +12,13 @@ use std::str::from_utf8;
 /// A WebSocketReceiver can be captured into another task for concurrency
 ///
 /// ```no_run
-/// use websocket::WebSocketMessage;
+/// use websocket::message::WebSocketMessage;
+/// # use websocket::WebSocketClient;
+/// # use websocket::handshake::WebSocketRequest;
+/// # #[allow(unused_must_use)]
+/// # fn foo() {
+/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", "None").unwrap();
+/// # let mut client = WebSocketClient::connect(&request).unwrap();
 /// 
 /// let receiver = client.receiver();
 /// 
@@ -20,7 +26,7 @@ use std::str::from_utf8;
 /// 	// Will continuously try to receive messages
 /// 	for message in receiver.incoming() {
 /// 		match message {
-/// 			//Match the result
+/// 			// Match the result
 /// 			Ok(message) => {
 /// 				// Match the type of message
 /// 				match message {
@@ -38,6 +44,7 @@ use std::str::from_utf8;
 /// 		}
 /// 	}
 /// });
+/// # }
 /// ```
 pub struct WebSocketReceiver {
 	stream: TcpStream,

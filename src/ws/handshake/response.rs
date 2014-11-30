@@ -2,10 +2,10 @@
 extern crate regex_macros;
 extern crate regex;
 
-use super::util::{sha1, ReadUntilStr, HeaderCollection, ReadHttpHeaders, WriteHttpHeaders};
-use super::check::CheckWebSocketHeader;
-use serialize::base64::{ToBase64, STANDARD};
-use std::io::{Reader, Writer, IoResult};
+use super::util::{str_eq_ignore_case, ReadUntilStr, HeaderCollection, ReadHttpHeaders, WriteHttpHeaders};
+use super::version::HttpVersion;
+use sha1::Sha1;
+use std::io::{Reader, Writer, IoResult, IoError, IoErrorKind};
 use std::string::ToString;
 use std::clone::Clone;
 
@@ -13,6 +13,8 @@ static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 /// Represents a WebSocket response from a server
 pub struct WebSocketResponse {
+	// The HTTP version of this request
+	pub http_version: HttpVersion,
 	/// The status code of the response (for a successful handshake, this should be 101)
 	pub status_code: uint,
 	/// The human readable reason phrase for the status code (E.g. Switching Protocols)
@@ -40,9 +42,50 @@ impl WebSocketResponse {
 		}
 		
 		WebSocketResponse {
+			http_version: HttpVersion::new(1u8, Some(1u8)),
 			status_code: status_code,
 			reason_phrase: reason_phrase,
 			headers: headers,
+		}
+	}
+	
+	//Short-cut to get the Upgrade field value of this request
+	pub fn upgrade(&self) -> Option<String> {
+		self.headers.get("Upgrade")
+	}
+	
+	//Short-cut to get the Connection field value of this request
+	pub fn connection(&self) -> Option<String> {
+		self.headers.get("Connection")
+	}
+	
+	//Short-cut to get the Sec-WebSocket-Accept field value of this request
+	pub fn accept(&self) -> Option<String> {
+		self.headers.get("Sec-WebSocket-Accept")
+	}
+	
+	//Short-cut to get the Sec-WebSocket-Protocol field value of this request
+	pub fn protocol(&self) -> Option<String> {
+		self.headers.get("Sec-WebSocket-Protocol")
+	}
+	
+	//Short-cut to get the Sec-WebSocket-Version field value of this request
+	pub fn version(&self) -> Option<String> {
+		self.headers.get("Sec-WebSocket-Version")
+	}
+	
+	//Short-cut to get the Sec-WebSocket-Extensions field value of this request
+	pub fn extensions(&self) -> Option<Vec<String>> {
+		match self.headers.get("Sec-WebSocket-Extensions") {
+			Some(extensions) => {
+				let mut result: Vec<String> = Vec::new();
+				let mut values = extensions.as_slice().split_str(",");
+				for value in values {
+					result.push(value.trim().to_string());
+				}
+				Some(result)
+			}
+			None => { None }
 		}
 	}
 	
@@ -50,21 +93,42 @@ impl WebSocketResponse {
 	/// the given Sec-WebSocket-Key.
 	pub fn gen_accept<A: ToString>(key: A) -> String {
 		let concat_key = key.to_string() + MAGIC_GUID.to_string();
-		let digested = sha1(concat_key.into_bytes().as_slice());
-		digested.to_base64(STANDARD)
+		let mut sha1 = Sha1::new();
+		sha1.update(concat_key.into_bytes().as_slice());
+		sha1.hexdigest()
 	}
 	
 	/// Returns true if this response indicates a successful handshake
-	/// This function will check that the Sec-WebSocket-Accept header of
-	/// the response matches up with the expected value from the given key.
-	pub fn is_successful(&self, key: String) -> bool {
-		self.status_code == 101 && self.headers.check_response() && self.headers.get("Sec-WebSocket-Accept").unwrap() == WebSocketResponse::gen_accept(key.to_string())
+	/// 
+	/// The status code must be 101, the WebSocket-Version must be 13,
+	/// the Upgrade must be 'websocket', the Connection must be 'Upgrade',
+	/// the Sec-WebSocket-Accept header must match the expected value from
+	/// the given key.
+	pub fn is_successful<A: ToString>(&self, key: A) -> bool {
+		self.status_code == 101 && 
+		match self.version() {
+			Some(version) => { version.as_slice() == "13" }
+			None => { false }
+		} && 
+		match self.upgrade() {
+			Some(upgrade) => { str_eq_ignore_case(upgrade.as_slice(), "websocket") }
+			None => { false }
+		} && 
+		match self.connection() {
+			Some(connection) => { str_eq_ignore_case(connection.as_slice(), "Upgrade") }
+			None => { false }
+		} && 
+		match self.accept() {
+			Some(accept) => { accept == WebSocketResponse::gen_accept(key) }
+			None => { false }
+		}
 	}
 }
 
 impl Clone for WebSocketResponse {
 	fn clone(&self) -> WebSocketResponse {
 		WebSocketResponse {
+			http_version: self.http_version,
 			status_code: self.status_code,
 			reason_phrase: self.reason_phrase.clone(),
 			headers: self.headers.clone(),
@@ -80,18 +144,28 @@ impl<R: Reader> ReadWebSocketResponse for R {
 	fn read_websocket_response(&mut self) -> IoResult<WebSocketResponse> {
 		let status_line = try!(self.read_until_str("\r\n", false));
 		
-		let re = regex!(r"HTTP/\d+\.?\d (\d\d\d) (.*)");
+		let re = regex!(r"HTTP/(?P<vmaj>\d+)(?:\.(?P<vmin>\d+))? (?P<sc>\d\d\d) (?P<rp>.*)");
 		let captures = re.captures(status_line.as_slice()).unwrap();
 		
-		let status_code: Option<uint> = from_str(captures.at(1));
-		let reason_phrase = captures.at(2).to_string();
+		let version_major: Option<u8> = from_str(captures.name("vmaj"));
+		let version_minor: Option<u8> = from_str(captures.name("vmin"));
+		
+		let status_code: Option<uint> = from_str(captures.name("sc"));
+		let reason_phrase = captures.name("rp").to_string();
 		let headers = try!(self.read_http_headers());
 		
-		Ok(WebSocketResponse {
+		Ok(WebSocketResponse { 
+			http_version: HttpVersion::new(try!(version_major.ok_or(
+				IoError {
+					kind: IoErrorKind::InvalidInput,
+					desc: "No HTTP version",
+					detail: None,
+				})
+			), version_minor),
 			status_code: status_code.unwrap(),
 			reason_phrase: reason_phrase,
 			headers: headers,
-		})
+		}) 
 	}
 }
 
@@ -101,7 +175,7 @@ pub trait WriteWebSocketResponse {
 
 impl<W: Writer> WriteWebSocketResponse for W {
 	fn write_websocket_response(&mut self, response: &WebSocketResponse) -> IoResult<()> {
-		let status_line = "HTTP/1.1 ".to_string() + response.status_code.to_string() + " " + response.reason_phrase;
+		let status_line = "HTTP/".to_string() + response.http_version.to_string() + " ".to_string() + response.status_code.to_string() + " ".to_string() + response.reason_phrase;
 		
 		try!(self.write_str(status_line.as_slice()));
 		try!(self.write_str("\r\n"));

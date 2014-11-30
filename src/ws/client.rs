@@ -1,9 +1,9 @@
 use super::handshake::request::{WebSocketRequest, ReadWebSocketRequest, WriteWebSocketRequest};
 use super::handshake::response::{WebSocketResponse, ReadWebSocketResponse, WriteWebSocketResponse};
-use super::message::send::new_sender;
-use super::message::receive::new_receiver;
-use super::message::{WebSocketSender, WebSocketReceiver};
+use super::message::send::{WebSocketSender, new_sender};
+use super::message::receive::{WebSocketReceiver, new_receiver};
 use std::io::net::tcp::TcpStream;
+use std::io::net::ip::SocketAddr;
 use std::io::{IoResult, IoError, IoErrorKind};
 use std::clone::Clone;
 
@@ -18,8 +18,8 @@ use std::clone::Clone;
 /// use websocket::WebSocketClient;
 /// use websocket::handshake::WebSocketRequest;
 /// 
-/// let request = WebSocketRequest::new("ws://127.0.0.1:1234", "myProtocol");
-/// let key = request.headers.get("Sec-WebSocket-Key").unwrap();
+/// let request = WebSocketRequest::new("ws://127.0.0.1:1234", "myProtocol").unwrap();
+/// let key = request.key().unwrap();
 /// let mut client = WebSocketClient::connect(&request).unwrap();
 /// let response = client.receive_handshake_response().unwrap();
 /// 
@@ -71,6 +71,21 @@ impl WebSocketClient {
 		}
 	}
 	
+	/// Returns a copy of the underlying TcpStream for this WebSocketClient.
+	pub fn stream(&self) -> TcpStream {
+		self.stream.clone()
+	}
+	
+	/// Returns the socket address of the remote peer of this TCP connection.
+	pub fn peer_name(&mut self) -> IoResult<SocketAddr> {
+		self.stream.peer_name()
+	}
+
+	/// Returns the socket address of the local half of this TCP connection.
+	pub fn socket_name(&mut self) -> IoResult<SocketAddr> {
+		self.stream.socket_name()
+	}
+	
 	/// Reads a request from this client. Only to be used if the server is the local endpoint and
 	/// the client is the remote endpoint.
 	pub fn receive_handshake_request(&mut self) -> IoResult<WebSocketRequest> {
@@ -95,10 +110,28 @@ impl WebSocketClient {
 		new_sender(self.stream.clone(), self.mask)
 	}
 	
+	/// Closes the sender for this WebSocketClient.
+	/// This method will close the message sending portion of this client, causing all pending and future sends to immediately return with an error.
+	/// This affects all WebSocketSenders for the client, and any copies of the underlying stream will be unable to write.
+	///
+	/// Note that you should send a WebSocketMessage:Close message to the remote endpoint before calling this method.
+	pub fn close_send(&mut self) -> IoResult<()> {
+		self.stream.close_write()
+	}
+	
 	/// Returns a WebSocketReceiver from this client. Used to receive data from the remote endpoint,
 	/// that is, from the server if WebSocketClient::connect() has been used, or from this client otherwise.
 	pub fn receiver(&self) -> WebSocketReceiver {
 		new_receiver(self.stream.clone())
+	}
+	
+	/// Closes the receiver for this WebSocketClient.
+	/// This method will close the message receiving portion of this client, causing all pending and future receives to immediately return with an error.
+	/// This affects all WebSocketReceivers for the client, and any copies of the underlying stream will be unable to read.
+	///
+	/// Note that you should send a WebSocketMessage:Close message to the remote endpoint before calling this method.
+	pub fn close_receive(&mut self) -> IoResult<()> {
+		self.stream.close_read()
 	}
 }
 
