@@ -5,6 +5,7 @@ extern crate regex;
 use super::util::{str_eq_ignore_case, ReadUntilStr, HeaderCollection, ReadHttpHeaders, WriteHttpHeaders};
 use super::version::HttpVersion;
 use sha1::Sha1;
+use serialize::base64::{ToBase64, STANDARD};
 use std::io::{Reader, Writer, IoResult, IoError, IoErrorKind};
 use std::string::ToString;
 use std::clone::Clone;
@@ -95,7 +96,7 @@ impl WebSocketResponse {
 		let concat_key = key.to_string() + MAGIC_GUID.to_string();
 		let mut sha1 = Sha1::new();
 		sha1.update(concat_key.into_bytes().as_slice());
-		sha1.hexdigest()
+		sha1.digest().as_slice().to_base64(STANDARD)
 	}
 	
 	/// Returns true if this response indicates a successful handshake
