@@ -81,7 +81,8 @@ impl WebSocketSender {
 }
 
 /// Allows for the serialization of message fragments, to be sent to the remote endpoint.
-///```no_run
+/// 
+/// ```no_run
 /// use websocket::WebSocketMessage;
 /// 
 /// // Get a WebSocketFragmentSerializer
@@ -104,7 +105,7 @@ impl WebSocketSender {
 /// 
 /// // Drop this WebSocketFragmentSerializer
 /// drop(fragment);
-///```
+/// ```
 pub struct WebSocketFragmentSerializer<'a> {
 	inc: &'a mut WebSocketSender,
 	started: bool,
