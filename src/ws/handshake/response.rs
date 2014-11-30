@@ -4,8 +4,9 @@ extern crate regex;
 
 use super::util::{sha1, ReadUntilStr, HeaderCollection, ReadHttpHeaders, WriteHttpHeaders};
 use super::check::CheckWebSocketHeader;
-use std::io::{Reader, Writer, IoResult};
 use serialize::base64::{ToBase64, STANDARD};
+use std::io::{Reader, Writer, IoResult};
+use std::string::ToString;
 use std::clone::Clone;
 
 static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -23,9 +24,7 @@ pub struct WebSocketResponse {
 impl WebSocketResponse {
 	/// Create a new WebSocket response based on the base-64 encoded key from a client.
 	pub fn new(key: &str, protocol: Option<String>) -> WebSocketResponse {
-		let concat_key = key.to_string() + MAGIC_GUID.to_string();
-		let digested = sha1(concat_key.into_bytes().as_slice());
-		let accept = digested.to_base64(STANDARD);
+		let accept = WebSocketResponse::gen_accept(key.to_string());
 		
 		let status_code = 101;
 		let reason_phrase = "Switching Protocols".to_string();
@@ -47,9 +46,19 @@ impl WebSocketResponse {
 		}
 	}
 	
+	/// Generates the handshake Sec-WebSocket-Accept value from
+	/// the given Sec-WebSocket-Key.
+	pub fn gen_accept<A: ToString>(key: A) -> String {
+		let concat_key = key.to_string() + MAGIC_GUID.to_string();
+		let digested = sha1(concat_key.into_bytes().as_slice());
+		digested.to_base64(STANDARD)
+	}
+	
 	/// Returns true if this response indicates a successful handshake
-	pub fn is_successful(&self) -> bool {
-		self.status_code == 101 && self.headers.check_response()
+	/// This function will check that the Sec-WebSocket-Accept header of
+	/// the response matches up with the expected value from the given key.
+	pub fn is_successful(&self, key: String) -> bool {
+		self.status_code == 101 && self.headers.check_response() && self.headers.get("Sec-WebSocket-Accept").unwrap() == WebSocketResponse::gen_accept(key.to_string())
 	}
 }
 

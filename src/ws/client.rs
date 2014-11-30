@@ -19,14 +19,15 @@ use std::clone::Clone;
 /// use websocket::handshake::WebSocketRequest;
 /// 
 /// let request = WebSocketRequest::new("ws://127.0.0.1:1234", "myProtocol");
-/// let mut client = WebSocketClient::connect(request).unwrap();
+/// let key = request.headers.get("Sec-WebSocket-Key").unwrap();
+/// let mut client = WebSocketClient::connect(&request).unwrap();
 /// let response = client.receive_handshake_response().unwrap();
 /// 
-/// if !response.is_successful {
+/// if !response.is_successful(key) {
 /// 	// Handshake failed!
 /// }
 /// 
-/// //Now we can send and receive messages
+/// // Now we can send and receive messages
 /// let receiver = client.receiver();
 /// let mut sender = client.sender();
 /// 
@@ -40,7 +41,7 @@ pub struct WebSocketClient {
 impl WebSocketClient {
 	/// Connect to the WebSocket server using the given request. Use WebSocketRequest::new() to create a request for use
 	/// with this function.
-	pub fn connect(request: WebSocketRequest) -> IoResult<WebSocketClient> {
+	pub fn connect(request: &WebSocketRequest) -> IoResult<WebSocketClient> {
 		let host = try!(request.headers.get("Host").ok_or(
 			IoError {
 				kind: IoErrorKind::InvalidInput,
@@ -51,7 +52,7 @@ impl WebSocketClient {
 		//Connect to the server
 		let mut stream = try!(TcpStream::connect(host.as_slice()));
 		//Send the opening handshake
-		try!(stream.write_websocket_request(&request));
+		try!(stream.write_websocket_request(request));
 		
 		Ok(WebSocketClient{
 			stream: stream,
