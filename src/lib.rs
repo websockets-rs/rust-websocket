@@ -35,8 +35,10 @@
 //! 				let key = request.key().unwrap();
 //! 				
 //! 				// Form a response from the key
-//!					// In this example, we don't deal with the requested protocol
-//! 				let response = WebSocketResponse::new(key.as_slice(), None);
+//!					/* In this example, we don't deal with the requested protocol
+//!					   Because of this, however, we need to a type annotation,
+//!					   which would usually not be required. */
+//! 				let response = WebSocketResponse::new::<String>(key.as_slice(), None);
 //! 				
 //! 				// Send the response to the client
 //! 				let _ = client.send_handshake_response(response);
@@ -60,7 +62,8 @@ extern crate serialize;
 
 pub use self::ws::client::WebSocketClient;
 
-/// Structs for manipulation of HTTP headers
+/// Structs for manipulation of HTTP headers. Used in conjunction with 
+/// WebSocketRequest and WebSocketResponse.
 pub mod headers {
 	pub use util::header::{HeaderCollection, Headers};
 	pub use url::ParseResult;

@@ -11,14 +11,12 @@ use std::clone::Clone;
 /// To use WebSocketClient, you must create one using either WebSocketClient::connect(),
 /// which is used for writing clients, or WebSocketClient::from_stream(), which creates
 /// a WebSocketClient from a TcpStream (typically used in a server).
-///
-/// An example client application:
 /// 
 /// ```no_run
 /// use websocket::WebSocketClient;
 /// use websocket::handshake::WebSocketRequest;
 /// 
-/// let request = WebSocketRequest::new("ws://127.0.0.1:1234", "myProtocol").unwrap();
+/// let request = WebSocketRequest::new("ws://127.0.0.1:1234", ["myProtocol"].as_slice()).unwrap();
 /// let key = request.key().unwrap();
 /// let mut client = WebSocketClient::connect(&request).unwrap();
 /// let response = client.receive_handshake_response().unwrap();
@@ -39,8 +37,8 @@ pub struct WebSocketClient {
 }
 
 impl WebSocketClient {
-	/// Connect to the WebSocket server using the given request. Use WebSocketRequest::new() to create a request for use
-	/// with this function.
+	/// Connect to the WebSocket server using the given request.
+	/// Use WebSocketRequest::new() to create a request for use with this function.
 	pub fn connect(request: &WebSocketRequest) -> IoResult<WebSocketClient> {
 		let host = try!(request.headers.get("Host").ok_or(
 			IoError {
@@ -64,6 +62,8 @@ impl WebSocketClient {
 	/// The mask parameter determines whether or not messages send to the remote endpoint will be masked.
 	/// If the client is connecting to a remote endpoint, set mask to true. If the client is the remote
 	/// endpoint (and therefore, the server is the local endpoint), set mask to false.
+	/// 
+	/// Nothing is sent to or read from the stream during the conversion.
 	pub fn from_stream(stream: TcpStream, mask: bool) -> WebSocketClient {
 		WebSocketClient {
 			stream: stream,
@@ -72,6 +72,7 @@ impl WebSocketClient {
 	}
 	
 	/// Returns a copy of the underlying TcpStream for this WebSocketClient.
+	/// Note that writing to this stream will likely invalidate the WebSocket data stream.
 	pub fn stream(&self) -> TcpStream {
 		self.stream.clone()
 	}

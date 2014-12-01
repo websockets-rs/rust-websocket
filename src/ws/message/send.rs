@@ -17,7 +17,7 @@ use std::rand;
 /// # use websocket::handshake::WebSocketRequest;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
-/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", "None").unwrap();
+/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", ["None"].as_slice()).unwrap();
 /// # let mut client = WebSocketClient::connect(&request).unwrap();
 /// 
 /// let mut sender = client.sender(); // Get a sender
@@ -104,7 +104,7 @@ impl WebSocketSender {
 /// # use websocket::handshake::WebSocketRequest;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
-/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", "None").unwrap();
+/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", ["None"].as_slice()).unwrap();
 /// # let mut client = WebSocketClient::connect(&request).unwrap();
 /// # let mut sender = client.sender();
 /// // Get a WebSocketFragmentSerializer

@@ -6,13 +6,25 @@ use super::util::{str_eq_ignore_case, ReadUntilStr, HeaderCollection, ReadHttpHe
 use super::version::HttpVersion;
 use sha1::Sha1;
 use serialize::base64::{ToBase64, STANDARD};
+use std::fmt::Show;
 use std::io::{Reader, Writer, IoResult, IoError, IoErrorKind};
 use std::string::ToString;
 use std::clone::Clone;
 
 static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
-/// Represents a WebSocket response from a server
+/// Represents a WebSocket response which is sent from the server to the client.
+/// Use the new() function to create a new response, and send it with the WebSocketClient::send_handshake_response() function.
+/// 
+/// ```
+/// use websocket::handshake::WebSocketResponse;
+///
+/// let response = WebSocketResponse::new("dGhlIHNhbXBsZSBub25jZQ==", Some("myProtocol"));
+/// 
+/// assert_eq!(response.accept().unwrap().as_slice(), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=");
+/// assert_eq!(response.upgrade().unwrap().as_slice(), "websocket");
+/// //...
+/// ```
 pub struct WebSocketResponse {
 	/// The HTTP version of this request
 	pub http_version: HttpVersion,
@@ -26,7 +38,7 @@ pub struct WebSocketResponse {
 
 impl WebSocketResponse {
 	/// Create a new WebSocket response based on the base-64 encoded key from a client.
-	pub fn new(key: &str, protocol: Option<String>) -> WebSocketResponse {
+	pub fn new<A: Show>(key: &str, protocol: Option<A>) -> WebSocketResponse {
 		let accept = WebSocketResponse::gen_accept(key.to_string());
 		
 		let status_code = 101;
@@ -71,8 +83,20 @@ impl WebSocketResponse {
 	}
 	
 	/// Short-cut to get the Sec-WebSocket-Version field value of this request
-	pub fn version(&self) -> Option<String> {
-		self.headers.get("Sec-WebSocket-Version")
+	/// This may be present when the handshake fails (it should not appear on a successful
+	/// handshake response.
+	pub fn version(&self) -> Option<Vec<String>> {
+		match self.headers.get("Sec-WebSocket-Version") {
+			Some(version) => {
+				let mut result: Vec<String> = Vec::new();
+				let mut values = version.as_slice().split_str(",");
+				for value in values {
+					result.push(value.trim().to_string());
+				}
+				Some(result)
+			}
+			None => { None }
+		}
 	}
 	
 	/// Short-cut to get the Sec-WebSocket-Extensions field value of this request
@@ -107,10 +131,6 @@ impl WebSocketResponse {
 	/// the given key.
 	pub fn is_successful<A: ToString>(&self, key: A) -> bool {
 		self.status_code == 101 && 
-		match self.version() {
-			Some(version) => { version.as_slice() == "13" }
-			None => { false }
-		} && 
 		match self.upgrade() {
 			Some(upgrade) => { str_eq_ignore_case(upgrade.as_slice(), "websocket") }
 			None => { false }
