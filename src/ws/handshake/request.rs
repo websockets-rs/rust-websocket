@@ -17,7 +17,7 @@ pub struct WebSocketRequest {
 	/// The resource name of the request. E.g. /path/to/resource for the URI ws://www.example.com/path/to/resource
 	pub resource_name: String,
 	
-	// The HTTP version of this request
+	/// The HTTP version of this request
 	pub http_version: HttpVersion,
 	
 	/// The collection of headers contained in this request
@@ -80,12 +80,12 @@ impl WebSocketRequest {
 		})
 	}
 	
-	// Short-cutto get the Host field value of this request
+	/// Short-cut to get the Host field value of this request
 	pub fn host(&self) -> Option<String> {
 		self.headers.get("Host")
 	}
 	
-	// Short-cutto get the Connection field value of this request
+	/// Short-cut to get the Connection field value of this request
 	pub fn connection(&self) -> Option<Vec<String>> {
 		match self.headers.get("Connection") {
 			Some(connection) => {
@@ -100,7 +100,7 @@ impl WebSocketRequest {
 		}
 	}
 	
-	// Short-cutto get the Upgrade field value of this request
+	/// Short-cut to get the Upgrade field value of this request
 	pub fn upgrade(&self) -> Option<Vec<String>> {
 		match self.headers.get("Upgrade") {
 			Some(upgrade) => {
@@ -115,17 +115,17 @@ impl WebSocketRequest {
 		}
 	}
 	
-	// Short-cutto get the Sec-WebSocket-Version field value of this request
+	/// Short-cut to get the Sec-WebSocket-Version field value of this request
 	pub fn version(&self) -> Option<String> {
 		self.headers.get("Sec-WebSocket-Version")
 	}
 	
-	// Short-cutto get the Sec-WebSocket-Key field value of this request
+	/// Short-cut to get the Sec-WebSocket-Key field value of this request
 	pub fn key(&self) -> Option<String> {
 		self.headers.get("Sec-WebSocket-Key")
 	}
 	
-	// Short-cutto get the Sec-WebSocket-Protocol field value of this request
+	/// Short-cut to get the Sec-WebSocket-Protocol field value of this request
 	pub fn protocol(&self) -> Option<Vec<String>> {
 		match self.headers.get("Sec-WebSocket-Protocol") {
 			Some(protocol) => {
@@ -140,7 +140,7 @@ impl WebSocketRequest {
 		}
 	}
 	
-	// Short-cutto get the Sec-WebSocket-Extensions field value of this request
+	/// Short-cut to get the Sec-WebSocket-Extensions field value of this request
 	pub fn extensions(&self) -> Option<Vec<String>> {
 		match self.headers.get("Sec-WebSocket-Extensions") {
 			Some(extensions) => {
@@ -155,7 +155,7 @@ impl WebSocketRequest {
 		}
 	}
 	
-	// Short-cutto get the Origin field value of this request
+	/// Short-cut to get the Origin field value of this request
 	pub fn origin(&self) -> Option<String> {
 		self.headers.get("Origin")
 	}

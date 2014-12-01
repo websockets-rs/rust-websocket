@@ -14,7 +14,7 @@ static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 /// Represents a WebSocket response from a server
 pub struct WebSocketResponse {
-	// The HTTP version of this request
+	/// The HTTP version of this request
 	pub http_version: HttpVersion,
 	/// The status code of the response (for a successful handshake, this should be 101)
 	pub status_code: uint,
@@ -50,32 +50,32 @@ impl WebSocketResponse {
 		}
 	}
 	
-	// Short-cutto get the Upgrade field value of this request
+	/// Short-cut to get the Upgrade field value of this request
 	pub fn upgrade(&self) -> Option<String> {
 		self.headers.get("Upgrade")
 	}
 	
-	// Short-cutto get the Connection field value of this request
+	/// Short-cut to get the Connection field value of this request
 	pub fn connection(&self) -> Option<String> {
 		self.headers.get("Connection")
 	}
 	
-	// Short-cutto get the Sec-WebSocket-Accept field value of this request
+	/// Short-cut to get the Sec-WebSocket-Accept field value of this request
 	pub fn accept(&self) -> Option<String> {
 		self.headers.get("Sec-WebSocket-Accept")
 	}
 	
-	// Short-cutto get the Sec-WebSocket-Protocol field value of this request
+	/// Short-cut to get the Sec-WebSocket-Protocol field value of this request
 	pub fn protocol(&self) -> Option<String> {
 		self.headers.get("Sec-WebSocket-Protocol")
 	}
 	
-	// Short-cutto get the Sec-WebSocket-Version field value of this request
+	/// Short-cut to get the Sec-WebSocket-Version field value of this request
 	pub fn version(&self) -> Option<String> {
 		self.headers.get("Sec-WebSocket-Version")
 	}
 	
-	// Short-cutto get the Sec-WebSocket-Extensions field value of this request
+	/// Short-cut to get the Sec-WebSocket-Extensions field value of this request
 	pub fn extensions(&self) -> Option<Vec<String>> {
 		match self.headers.get("Sec-WebSocket-Extensions") {
 			Some(extensions) => {
