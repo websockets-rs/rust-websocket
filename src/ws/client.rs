@@ -6,7 +6,7 @@ use std::io::{Stream, IoResult};
 use std::clone::Clone;
 
 /// Represents a WebSocket client.
-/// To use WebSocketClient, you must create one using either WebSocketClient::new().
+/// To use WebSocketClient, you must create one using WebSocketClient::new().
 /// For a client, you can use TcpStream::connect() to connect to the server, then call
 /// WebSocketClient::new() passing the resultant stream.
 /// 
