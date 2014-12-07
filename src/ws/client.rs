@@ -22,6 +22,7 @@ use std::clone::Clone;
 /// let stream = TcpStream::connect(request.host().unwrap().as_slice()).unwrap();
 ///
 /// let mut client = WebSocketClient::new(stream, true);
+/// let _ = client.send_handshake_request(&request);
 /// let response = client.receive_handshake_response().unwrap();
 /// 
 /// if !response.is_successful(key) {
@@ -73,14 +74,14 @@ impl<S: Stream + Clone> WebSocketClient<S> {
 	
 	/// Sends the specified WebSocketRequest to the remote endpoint. Only to be used if the server is
 	/// the remote endpoint and the client is the local endpoint.
-	pub fn send_handshake_request(&mut self, request: WebSocketRequest) -> IoResult<()> {
-		self.stream.write_websocket_request(&request)
+	pub fn send_handshake_request(&mut self, request: &WebSocketRequest) -> IoResult<()> {
+		self.stream.write_websocket_request(request)
 	}
 	
 	/// Sends the specified WebSocketResponse to this client. Only to be used if the server is
 	/// the local endpoint and the client is the remote endpoint.
-	pub fn send_handshake_response(&mut self, response: WebSocketResponse) -> IoResult<()> {
-		self.stream.write_websocket_response(&response)
+	pub fn send_handshake_response(&mut self, response: &WebSocketResponse) -> IoResult<()> {
+		self.stream.write_websocket_response(response)
 	}
 	
 	/// Returns a WebSocketSender from this client. Used to transmit data to the remote endpoint,

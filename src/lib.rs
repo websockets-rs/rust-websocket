@@ -41,7 +41,7 @@
 //! 				let response = WebSocketResponse::new::<String>(key.as_slice(), None);
 //! 				
 //! 				// Send the response to the client
-//! 				let _ = client.send_handshake_response(response);
+//! 				let _ = client.send_handshake_response(&response);
 //! 				
 //! 				// Now we can send and receive messages
 //! 				let receiver = client.receiver();
