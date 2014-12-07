@@ -23,7 +23,18 @@ static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 /// 
 /// assert_eq!(response.accept().unwrap().as_slice(), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=");
 /// assert_eq!(response.upgrade().unwrap().as_slice(), "websocket");
-/// //...
+/// // ...
+/// ```
+/// Note that we can also send WebSocket failure responses.
+/// 
+/// ```
+/// use websocket::handshake::WebSocketResponse;
+/// 
+/// let response = WebSocketResponse::failure(403, "Forbidden");
+/// assert_eq!(response.status_code, 403);
+/// assert_eq!(response.reason_phrase.as_slice(), "Forbidden");
+/// 
+/// // ...
 /// ```
 pub struct WebSocketResponse {
 	/// The HTTP version of this request
@@ -59,6 +70,17 @@ impl WebSocketResponse {
 			status_code: status_code,
 			reason_phrase: reason_phrase,
 			headers: headers,
+		}
+	}
+	
+	/// Create a WebSocket response with a particular status code and reason phrase - generally
+	/// used to indicate a handshake failure.
+	pub fn failure<A: ToString>(status_code: uint, reason_phrase: A) -> WebSocketResponse {
+		WebSocketResponse {
+			http_version: HttpVersion::new(1u8, Some(1u8)),
+			status_code: status_code,
+			reason_phrase: reason_phrase.to_string(),
+			headers: HeaderCollection::new(),
 		}
 	}
 	

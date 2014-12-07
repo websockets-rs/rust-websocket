@@ -1,9 +1,9 @@
 use super::dataframe::{WebSocketOpcode, WebSocketDataFrame, WebSocketDataFrameLength, WriteWebSocketDataFrame};
 use super::mask::mask_data;
 use super::WebSocketMessage;
-use std::io::net::tcp::TcpStream;
-use std::io::{IoResult, IoError, IoErrorKind};
+use std::io::{Stream, IoResult, IoError, IoErrorKind};
 use std::rand;
+use std::clone::Clone;
 
 /// Represents a WebSocket sender, capable of transmitting data to the remote endpoint.
 /// Use the send_message() method to send a single, whole message. If you need to send
@@ -14,11 +14,11 @@ use std::rand;
 /// ```no_run
 /// use websocket::message::WebSocketMessage;
 /// # use websocket::WebSocketClient;
-/// # use websocket::handshake::WebSocketRequest;
+/// # use std::io::TcpStream;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
-/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", ["None"].as_slice()).unwrap();
-/// # let mut client = WebSocketClient::connect(&request).unwrap();
+/// # let stream = TcpStream::connect("127.0.0.1:1234").unwrap();
+/// # let mut client = WebSocketClient::new(stream, true);
 /// 
 /// let mut sender = client.sender(); // Get a sender
 /// let data = "My fancy message".to_string();
@@ -27,8 +27,8 @@ use std::rand;
 /// let _ = sender.send_message(&message); // Send the message
 /// # }
 /// ```
-pub struct WebSocketSender {
-	stream: TcpStream,
+pub struct WebSocketSender<S: Stream + Clone> {
+	stream: S,
 	mask: bool,
 }
 
@@ -74,7 +74,7 @@ fn message_to_dataframe(message: &WebSocketMessage, mask: bool, finished: bool) 
 	}
 }
 
-impl WebSocketSender {
+impl<S: Stream + Clone> WebSocketSender<S> {
 	/// Sends a message to the remote endpoint.
 	pub fn send_message(&mut self, message: &WebSocketMessage) -> IoResult<()> {
 		let dataframe = message_to_dataframe(message, self.mask, true);
@@ -83,7 +83,7 @@ impl WebSocketSender {
 	}
 	
 	/// Returns a fragment serializer, able to send fragments of a message to the remote endpoint.
-	pub fn fragment(&mut self) -> WebSocketFragmentSerializer {
+	pub fn fragment(&mut self) -> WebSocketFragmentSerializer<S> {
 		WebSocketFragmentSerializer {
 			inc: self,
 			started: false,
@@ -101,11 +101,11 @@ impl WebSocketSender {
 /// ```no_run
 /// use websocket::message::WebSocketMessage;
 /// # use websocket::WebSocketClient;
-/// # use websocket::handshake::WebSocketRequest;
+/// # use std::io::TcpStream;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
-/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", ["None"].as_slice()).unwrap();
-/// # let mut client = WebSocketClient::connect(&request).unwrap();
+/// # let stream = TcpStream::connect("127.0.0.1:1234").unwrap();
+/// # let mut client = WebSocketClient::new(stream, true);
 /// # let mut sender = client.sender();
 /// // Get a WebSocketFragmentSerializer
 /// let mut fragment = sender.fragment();
@@ -129,12 +129,12 @@ impl WebSocketSender {
 /// drop(fragment);
 /// # }
 /// ```
-pub struct WebSocketFragmentSerializer<'a> {
-	inc: &'a mut WebSocketSender,
+pub struct WebSocketFragmentSerializer<'a, S: 'a + Stream + Clone> {
+	inc: &'a mut WebSocketSender<S>,
 	started: bool,
 }
 
-impl<'a> WebSocketFragmentSerializer<'a> {
+impl<'a, S: Stream + Clone> WebSocketFragmentSerializer<'a, S> {
 	/// Send a fragment of a message - if the message is finished, use the WebSocketFragmentSerializer::finish() function.
 	/// Can only be used with a Text or Binary message.
 	pub fn send_fragment(&mut self, message: &WebSocketMessage) -> IoResult<()> {
@@ -190,7 +190,7 @@ impl<'a> WebSocketFragmentSerializer<'a> {
 	}
 }
 
-pub fn new_sender(stream: TcpStream, mask: bool) -> WebSocketSender {
+pub fn new_sender<S: Stream + Clone>(stream: S, mask: bool) -> WebSocketSender<S> {
 	WebSocketSender {
 		stream: stream,
 		mask: mask,

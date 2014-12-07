@@ -7,7 +7,7 @@
 //! with the capability to send and receive fragmented messages.
 //! 
 //! Rust-WebSocket does not provide a 'listener' object, since the WebSocket protocol utilises a TcpStream.
-//! To implement a WebSocket server, use a normal TcpListener, and the WebSocketClient::from_stream() function
+//! To implement a WebSocket server, use a normal TcpListener, and the WebSocketClient::new() function
 //! on an accepted stream. You will then need to read the handshake from the client and send a response.
 //! 
 //! ```no_run
@@ -26,18 +26,18 @@
 //! 			spawn(proc() {
 //! 				// Get a WebSocketClient from this stream
 //! 				// The mask argument is false as messages sent by the server are always unmasked
-//! 				let mut client = WebSocketClient::from_stream(stream, false); 
+//! 				let mut client = WebSocketClient::new(stream, false); 
 //! 				
 //! 				// Read the handshake from the client
 //! 				let request = client.receive_handshake_request().unwrap();
 //! 				
-//! 				// Get the headers we need to respond
+//! 				// Get the Sec-WebSocket-Key from the request
 //! 				let key = request.key().unwrap();
 //! 				
 //! 				// Form a response from the key
-//!					/* In this example, we don't deal with the requested protocol
-//!					   Because of this, however, we need to a type annotation,
-//!					   which would usually not be required. */
+//!					/* In this example, we don't deal with the requested Sec-WebSocket-Protocol.
+//!					   Because of this, however, we need a type annotation, which would 
+//!					   not usually be required. */
 //! 				let response = WebSocketResponse::new::<String>(key.as_slice(), None);
 //! 				
 //! 				// Send the response to the client

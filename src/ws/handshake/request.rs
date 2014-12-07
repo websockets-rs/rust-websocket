@@ -47,10 +47,7 @@ impl WebSocketRequest {
 		};
 		
 		match ws_uri.scheme.as_slice() {
-			"ws" => { }
-			/* "wss" => {
-				// Don't know how to handle secure WebSocket
-			} */
+			"ws" | "wss" => { }
 			_ => { return Err(ParseError::InvalidScheme); }
 		}
 		

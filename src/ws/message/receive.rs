@@ -2,10 +2,10 @@ use super::dataframe::{WebSocketOpcode, ReadWebSocketDataFrame};
 use super::WebSocketMessage;
 use super::mask::mask_data;
 use std::iter::Iterator;
-use std::io::net::tcp::TcpStream;
-use std::io::{IoResult, IoError, IoErrorKind};
+use std::io::{Stream, IoResult, IoError, IoErrorKind};
 use std::option::Option;
 use std::str::from_utf8;
+use std::clone::Clone;
 
 /// Represents a WebSocket receiver which can receive data from the remote endpoint.
 /// All methods are task blocking (but not stream blocking, so you can send and receive concurrently).
@@ -14,11 +14,11 @@ use std::str::from_utf8;
 /// ```no_run
 /// use websocket::message::WebSocketMessage;
 /// # use websocket::WebSocketClient;
-/// # use websocket::handshake::WebSocketRequest;
+/// # use std::io::TcpStream;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
-/// # let request = WebSocketRequest::new("ws://127.0.0.1:1234", ["None"].as_slice()).unwrap();
-/// # let mut client = WebSocketClient::connect(&request).unwrap();
+/// # let stream = TcpStream::connect("127.0.0.1:1234").unwrap();
+/// # let mut client = WebSocketClient::new(stream, true);
 /// 
 /// let receiver = client.receiver();
 /// 
@@ -46,13 +46,13 @@ use std::str::from_utf8;
 /// });
 /// # }
 /// ```
-pub struct WebSocketReceiver {
-	stream: TcpStream,
+pub struct WebSocketReceiver<S: Stream + Clone> {
+	stream: S,
 	opcode: Option<WebSocketOpcode>,
 	data: Vec<u8>,
 }
 
-impl WebSocketReceiver {
+impl<S: Stream + Clone> WebSocketReceiver<S> {
 	/// Wait for and accept a message (subjected to the underlying stream timeout).
 	/// If the received message is fragmented, this function will not return
 	/// until the final fragment has been received.
@@ -163,14 +163,14 @@ impl WebSocketReceiver {
 	}
 	
 	/// Returns an iterator over the incoming messages for/from this client
-	pub fn incoming(self) -> IncomingMessages {
+	pub fn incoming(self) -> IncomingMessages<S> {
 		IncomingMessages {
 			inc: self,
 		}
 	}
 }
 
-pub fn new_receiver(stream: TcpStream) -> WebSocketReceiver {
+pub fn new_receiver<S: Stream + Clone>(stream: S) -> WebSocketReceiver<S> {
 	WebSocketReceiver {
 		stream: stream,
 		opcode: None,
@@ -179,11 +179,11 @@ pub fn new_receiver(stream: TcpStream) -> WebSocketReceiver {
 }
 
 /// An iterator over incoming messages. Blocks the task and always returns Some.
-pub struct IncomingMessages {
-	inc: WebSocketReceiver,
+pub struct IncomingMessages<S: Stream + Clone> {
+	inc: WebSocketReceiver<S>,
 }
 
-impl Iterator<IoResult<WebSocketMessage>> for IncomingMessages {
+impl<S: Stream + Clone> Iterator<IoResult<WebSocketMessage>> for IncomingMessages<S> {
 	fn next(&mut self) -> Option<IoResult<WebSocketMessage>> {
 		Some(self.inc.receive_message())
 	}
