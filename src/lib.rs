@@ -13,7 +13,7 @@
 //! ```no_run
 //! use std::io::TcpListener;
 //! use std::io::{Listener, Acceptor};
-//! use websocket::WebSocketClient;
+//! use websocket::{WebSocketClient, WebSocketClientMode};
 //! use websocket::handshake::WebSocketResponse;
 //! 
 //! let listener = TcpListener::bind("127.0.0.1:1234");
@@ -25,8 +25,7 @@
 //! 			// Spawn a new task for each connection to run in parallel
 //! 			spawn(proc() {
 //! 				// Get a WebSocketClient from this stream
-//! 				// The mask argument is false as messages sent by the server are always unmasked
-//! 				let mut client = WebSocketClient::new(stream, false); 
+//! 				let mut client = WebSocketClient::new(stream, WebSocketClientMode::RemoteClient); 
 //! 				
 //! 				// Read the handshake from the client
 //! 				let request = client.receive_handshake_request().unwrap();
@@ -60,7 +59,7 @@ extern crate url;
 extern crate sha1;
 extern crate serialize;
 
-pub use self::ws::client::WebSocketClient;
+pub use self::ws::client::{WebSocketClient, WebSocketClientMode};
 
 /// Structs for manipulation of HTTP headers. Used in conjunction with 
 /// WebSocketRequest and WebSocketResponse.
@@ -74,6 +73,7 @@ pub mod headers {
 pub mod handshake {
 	pub use ws::handshake::request::WebSocketRequest;
 	pub use ws::handshake::response::WebSocketResponse;
+	pub use ws::handshake::version::HttpVersion;
 }
 
 /// Structs for WebSocket messages and the transmission of messages

@@ -12,7 +12,7 @@ use std::clone::Clone;
 /// 
 /// ```no_run
 /// use std::io::TcpStream;
-/// use websocket::WebSocketClient;
+/// use websocket::{WebSocketClient, WebSocketClientMode};
 /// use websocket::handshake::WebSocketRequest;
 /// 
 /// let request = WebSocketRequest::new("ws://127.0.0.1:1234", ["myProtocol"].as_slice()).unwrap();
@@ -21,7 +21,7 @@ use std::clone::Clone;
 /// // We can get the hostname from the request
 /// let stream = TcpStream::connect(request.host().unwrap().as_slice()).unwrap();
 ///
-/// let mut client = WebSocketClient::new(stream, true);
+/// let mut client = WebSocketClient::new(stream, WebSocketClientMode::RemoteServer);
 /// let _ = client.send_handshake_request(&request);
 /// let response = client.receive_handshake_response().unwrap();
 /// 
@@ -47,10 +47,13 @@ impl<S: Stream + Clone> WebSocketClient<S> {
 	/// endpoint (and therefore, the server is the local endpoint), set mask to false.
 	/// 
 	/// Nothing is sent to or read from the stream during the conversion.
-	pub fn new(stream: S, mask: bool) -> WebSocketClient<S> {
+	pub fn new(stream: S, mode: WebSocketClientMode) -> WebSocketClient<S> {
 		WebSocketClient {
 			stream: stream,
-			mask: mask,
+			mask: match mode {
+				WebSocketClientMode::RemoteClient => { false }
+				WebSocketClientMode::RemoteServer => { true }
+			},
 		}
 	}
 	
@@ -104,4 +107,9 @@ impl<S: Stream + Clone> Clone for WebSocketClient<S> {
 			mask: self.mask,
 		}
 	}
+}
+
+pub enum WebSocketClientMode {
+	RemoteClient,
+	RemoteServer,
 }

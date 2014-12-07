@@ -13,12 +13,12 @@ use std::clone::Clone;
 /// 
 /// ```no_run
 /// use websocket::message::WebSocketMessage;
-/// # use websocket::WebSocketClient;
+/// # use websocket::{WebSocketClient, WebSocketClientMode};
 /// # use std::io::TcpStream;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
 /// # let stream = TcpStream::connect("127.0.0.1:1234").unwrap();
-/// # let mut client = WebSocketClient::new(stream, true);
+/// # let mut client = WebSocketClient::new(stream, WebSocketClientMode::RemoteServer);
 /// 
 /// let mut sender = client.sender(); // Get a sender
 /// let data = "My fancy message".to_string();
@@ -100,12 +100,12 @@ impl<S: Stream + Clone> WebSocketSender<S> {
 /// 
 /// ```no_run
 /// use websocket::message::WebSocketMessage;
-/// # use websocket::WebSocketClient;
+/// # use websocket::{WebSocketClient, WebSocketClientMode};
 /// # use std::io::TcpStream;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
 /// # let stream = TcpStream::connect("127.0.0.1:1234").unwrap();
-/// # let mut client = WebSocketClient::new(stream, true);
+/// # let mut client = WebSocketClient::new(stream, WebSocketClientMode::RemoteServer);
 /// # let mut sender = client.sender();
 /// // Get a WebSocketFragmentSerializer
 /// let mut fragment = sender.fragment();

@@ -13,12 +13,12 @@ use std::clone::Clone;
 ///
 /// ```no_run
 /// use websocket::message::WebSocketMessage;
-/// # use websocket::WebSocketClient;
+/// # use websocket::{WebSocketClient, WebSocketClientMode};
 /// # use std::io::TcpStream;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
 /// # let stream = TcpStream::connect("127.0.0.1:1234").unwrap();
-/// # let mut client = WebSocketClient::new(stream, true);
+/// # let mut client = WebSocketClient::new(stream, WebSocketClientMode::RemoteServer);
 /// 
 /// let receiver = client.receiver();
 /// 
