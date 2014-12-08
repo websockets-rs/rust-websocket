@@ -25,7 +25,7 @@ And add ```extern crate websocket;``` to your project.
 
 ## Usage
 
-See the example code in the [documentation](http://cyderize.github.io/rust-websocket/doc/websocket).
+See the example code in the [documentation](http://cyderize.github.io/rust-websocket/doc/websocket), and also the example project [ws-test](https://github.com/cyderize/ws-test)[![Build Status](https://travis-ci.org/cyderize/ws-test.svg)](https://travis-ci.org/cyderize/ws-test).
 
 ## License
 
