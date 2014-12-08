@@ -5,12 +5,12 @@ extern crate url;
 
 use super::util::{ReadUntilStr, HeaderCollection, ReadHttpHeaders, WriteHttpHeaders};
 use super::version::HttpVersion;
+use serialize::base64::{ToBase64, STANDARD};
 use url::{Url, ParseResult, ParseError};
+use std::io::{Reader, Writer, IoResult, IoError, IoErrorKind};
+use std::clone::Clone;
 use std::fmt::Show;
 use std::rand;
-use std::io::{Reader, Writer, IoResult, IoError, IoErrorKind};
-use serialize::base64::{ToBase64, STANDARD};
-use std::clone::Clone;
 
 /// Represents a WebSocket handshake request, which is sent from the client to the server.
 /// Use the new() function to create a new request, and send it with the WebSocketClient::connect() function.
@@ -39,7 +39,7 @@ pub struct WebSocketRequest {
 
 impl WebSocketRequest {
 	/// Creates a new WebSocket handshake request for use with WebSocketClient::connect().
-	/// The URI should use the ws:// scheme (wss:// not supported at this time).
+	/// The URI should use the ws:// or wss:// scheme.
 	pub fn new<A: Show>(uri: &str, protocols: &[A]) -> ParseResult<WebSocketRequest> {
 		let ws_uri = match Url::parse(uri) {
 			Ok(uri) => { uri }
