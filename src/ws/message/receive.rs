@@ -22,7 +22,7 @@ use std::clone::Clone;
 /// 
 /// let receiver = client.receiver();
 /// 
-/// spawn(proc() {
+/// spawn(move || {
 /// 	// Will continuously try to receive messages
 /// 	for message in receiver.incoming() {
 /// 		match message {
@@ -122,7 +122,7 @@ impl<S: Stream + Clone> WebSocketReceiver<S> {
 
 	fn create_message(&mut self) -> IoResult<WebSocketMessage> {
 		let data = self.data.clone();
-		let opcode = self.opcode;
+		let opcode = self.opcode.clone();
 		
 		self.data = Vec::new();
 		self.opcode = None;

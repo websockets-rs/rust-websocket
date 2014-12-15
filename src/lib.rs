@@ -23,7 +23,7 @@
 //! 	match stream {
 //! 		Ok(stream) => {
 //! 			// Spawn a new task for each connection to run in parallel
-//! 			spawn(proc() {
+//! 			spawn(move || {
 //! 				// Get a WebSocketClient from this stream
 //! 				let mut client = WebSocketClient::new(stream, WebSocketClientMode::RemoteClient); 
 //! 				

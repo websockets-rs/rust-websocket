@@ -179,7 +179,7 @@ impl Clone for WebSocketRequest {
 	fn clone(&self) -> WebSocketRequest {
 		WebSocketRequest {
 			resource_name: self.resource_name.clone(),
-			http_version: self.http_version,
+			http_version: self.http_version.clone(),
 			headers: self.headers.clone(),
 		}
 	}

@@ -6,6 +6,7 @@ use std::fmt::{Show, Formatter, Result};
 use std::option::Option;
 
 /// Represents an HTTP version.
+#[deriving(Clone)]
 pub struct HttpVersion {
 	/// The major HTTP version.
 	pub version_major: u8,
