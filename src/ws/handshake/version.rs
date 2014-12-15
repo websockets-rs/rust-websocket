@@ -14,6 +14,8 @@ pub struct HttpVersion {
 	pub version_minor: Option<u8>,
 }
 
+impl Copy for HttpVersion { }
+
 impl HttpVersion {
 	/// Create a new HttpVersion from major and minor version numbers.
 	pub fn new(version_major: u8, version_minor: Option<u8>) -> HttpVersion {

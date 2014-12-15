@@ -113,3 +113,5 @@ pub enum WebSocketClientMode {
 	RemoteClient,
 	RemoteServer,
 }
+
+impl Copy for WebSocketClientMode { }
