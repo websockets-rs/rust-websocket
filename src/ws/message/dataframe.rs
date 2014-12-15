@@ -10,6 +10,7 @@ pub struct WebSocketDataFrame {
 	pub data: Vec<u8>,
 }
 
+#[deriving(Clone)]
 pub enum WebSocketOpcode {
 	Continuation,
 	Text,
@@ -29,6 +30,7 @@ pub enum WebSocketOpcode {
 	Control5,
 }
 
+#[deriving(Clone)]
 pub enum WebSocketDataFrameLength {
 	Tiny(u8),
 	Short(u16),
@@ -121,7 +123,7 @@ impl<R: Reader> ReadWebSocketDataFrame for R {
 			]);
 		}
 		
-		let data = try!(self.read_exact(length.unwrap()));
+		let data = try!(self.read_exact(length.clone().unwrap()));
 		
 		Ok(WebSocketDataFrame {
 			finished: finished,

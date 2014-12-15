@@ -171,7 +171,7 @@ impl WebSocketResponse {
 impl Clone for WebSocketResponse {
 	fn clone(&self) -> WebSocketResponse {
 		WebSocketResponse {
-			http_version: self.http_version,
+			http_version: self.http_version.clone(),
 			status_code: self.status_code,
 			reason_phrase: self.reason_phrase.clone(),
 			headers: self.headers.clone(),
