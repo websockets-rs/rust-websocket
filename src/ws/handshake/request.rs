@@ -55,7 +55,7 @@ impl WebSocketRequest {
 			Some(host) => { host.to_string() }
 			None => { return Err(ParseError::InvalidCharacter); }
 		} + match ws_uri.port_or_default() {
-			Some(port) => { ":" + port.to_string() }
+			Some(port) => { ":".to_string() + port.to_string().as_slice() }
 			None => { return Err(ParseError::InvalidCharacter); }
 		}.as_slice();
 
