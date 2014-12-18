@@ -34,7 +34,7 @@ impl HeaderCollection {
 		match self.map.insert(lowercase.to_string(), value.to_string()) {
 			Some(old_value) => {
 				//Append if there's already a value
-				self.map.insert(lowercase.to_string(), old_value + ", ".to_string() + value.to_string());
+				self.map.insert(lowercase.to_string(), old_value.to_string() + ", " + value.to_string().as_slice());
 			}
 			None => { }
 		}
