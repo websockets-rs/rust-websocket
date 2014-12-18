@@ -139,7 +139,7 @@ impl WebSocketResponse {
 	/// Generates the handshake Sec-WebSocket-Accept value from
 	/// the given Sec-WebSocket-Key.
 	pub fn gen_accept<A: ToString>(key: A) -> String {
-		let concat_key = key.to_string() + MAGIC_GUID.to_string();
+		let concat_key = key.to_string() + MAGIC_GUID;
 		let mut sha1 = Sha1::new();
 		sha1.update(concat_key.into_bytes().as_slice());
 		sha1.digest().as_slice().to_base64(STANDARD)
@@ -218,7 +218,9 @@ pub trait WriteWebSocketResponse {
 
 impl<W: Writer> WriteWebSocketResponse for W {
 	fn write_websocket_response(&mut self, response: &WebSocketResponse) -> IoResult<()> {
-		let status_line = "HTTP/".to_string() + response.http_version.to_string() + " ".to_string() + response.status_code.to_string() + " ".to_string() + response.reason_phrase;
+		let mut status_line = "HTTP/".to_string() + response.http_version.to_string().as_slice();
+		status_line = status_line + " " + response.status_code.to_string().as_slice();
+		status_line = status_line + " " + response.reason_phrase.to_string().as_slice();
 		
 		try!(self.write_str(status_line.as_slice()));
 		try!(self.write_str("\r\n"));

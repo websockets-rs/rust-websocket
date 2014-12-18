@@ -51,13 +51,13 @@ impl WebSocketRequest {
 			_ => { return Err(ParseError::InvalidScheme); }
 		}
 		
-		let host = match ws_uri.serialize_host() {
-			Some(host) => { host }
+		let host : String = match ws_uri.serialize_host() {
+			Some(host) => { host.to_string() }
 			None => { return Err(ParseError::InvalidCharacter); }
 		} + match ws_uri.port_or_default() {
-			Some(port) => { ":".to_string() + port.to_string() }
+			Some(port) => { ":" + port.to_string() }
 			None => { return Err(ParseError::InvalidCharacter); }
-		};
+		}.as_slice();
 
 		let resource_name = match ws_uri.serialize_path() {
 			Some(resource_name) => {
@@ -223,7 +223,7 @@ pub trait WriteWebSocketRequest {
 
 impl<W: Writer> WriteWebSocketRequest for W {
 	fn write_websocket_request(&mut self, request: &WebSocketRequest) -> IoResult<()> {
-		let request_line = "GET ".to_string() + request.resource_name + " HTTP/".to_string() + request.http_version.to_string();
+		let request_line = "GET ".to_string() + request.resource_name.as_slice() + " HTTP/" + request.http_version.to_string().as_slice();
 		
 		try!(self.write_str(request_line.as_slice()));
 		try!(self.write_str("\r\n"));
