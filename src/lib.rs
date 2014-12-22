@@ -11,6 +11,7 @@
 //! on an accepted stream. You will then need to read the handshake from the client and send a response.
 //! 
 //! ```no_run
+//! # use std::thread::Thread;
 //! use std::io::TcpListener;
 //! use std::io::{Listener, Acceptor};
 //! use websocket::{WebSocketClient, WebSocketClientMode};
@@ -23,7 +24,7 @@
 //! 	match stream {
 //! 		Ok(stream) => {
 //! 			// Spawn a new task for each connection to run in parallel
-//! 			spawn(move || {
+//! 			Thread::spawn(move || {
 //! 				// Get a WebSocketClient from this stream
 //! 				let mut client = WebSocketClient::new(stream, WebSocketClientMode::RemoteClient); 
 //! 				
@@ -47,7 +48,7 @@
 //! 				let mut sender = client.sender();
 //! 				
 //! 				// ...
-//! 			});
+//! 			}).detach();
 //! 		}
 //! 		_ => { /* A connection error occurred */ }
 //! 	}

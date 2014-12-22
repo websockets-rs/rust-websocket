@@ -15,6 +15,7 @@ use std::clone::Clone;
 /// use websocket::message::WebSocketMessage;
 /// # use websocket::{WebSocketClient, WebSocketClientMode};
 /// # use std::io::TcpStream;
+/// # use std::thread::Thread;
 /// # #[allow(unused_must_use)]
 /// # fn foo() {
 /// # let stream = TcpStream::connect("127.0.0.1:1234").unwrap();
@@ -22,7 +23,7 @@ use std::clone::Clone;
 /// 
 /// let receiver = client.receiver();
 /// 
-/// spawn(move || {
+/// Thread::spawn(move || {
 /// 	// Will continuously try to receive messages
 /// 	for message in receiver.incoming() {
 /// 		match message {
@@ -43,7 +44,7 @@ use std::clone::Clone;
 /// 			Err(e) => { /* Could not receive the message */ }
 /// 		}
 /// 	}
-/// });
+/// }).detach();
 /// # }
 /// ```
 pub struct WebSocketReceiver<S: Stream + Clone> {
