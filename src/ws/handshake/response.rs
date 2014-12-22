@@ -190,10 +190,19 @@ impl<R: Reader> ReadWebSocketResponse for R {
 		let re = regex!(r"HTTP/(?P<vmaj>\d+)(?:\.(?P<vmin>\d+))? (?P<sc>\d\d\d) (?P<rp>.*)");
 		let captures = re.captures(status_line.as_slice()).unwrap();
 		
-		let version_major: Option<u8> = from_str(captures.name("vmaj"));
-		let version_minor: Option<u8> = from_str(captures.name("vmin"));
+		let version_major: Option<u8> = match captures.name("vmaj") {
+			Some(c) => { from_str(c) },
+			None => { None }
+		};
+		let version_minor: Option<u8> = match captures.name("vmin") {
+			Some(c) => { from_str(c) },
+			None => { None }
+		};
 		
-		let status_code: Option<uint> = from_str(captures.name("sc"));
+		let status_code: Option<uint> = match captures.name("sc") {
+			Some(c) => { from_str(c) },
+			None => { None }
+		};
 		let reason_phrase = captures.name("rp").to_string();
 		let headers = try!(self.read_http_headers());
 		
