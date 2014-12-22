@@ -198,9 +198,14 @@ impl<R: Reader> ReadWebSocketRequest for R {
 		
 		let resource_name = captures.at(1);
 		
-		let version_major: Option<u8> = from_str(captures.at(2));
-		let version_minor: Option<u8> = from_str(captures.at(3));
-		
+		let version_major: Option<u8> = match captures.at(2) {
+			Some(c) => { from_str(c) },
+			None => { None }
+		};
+		let version_minor: Option<u8> = match captures.at(3) {
+			Some(c) => { from_str(c) },
+			None => { None }
+		};
 		let headers = try!(self.read_http_headers());
 		
 		Ok(WebSocketRequest {

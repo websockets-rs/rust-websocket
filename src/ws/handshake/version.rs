@@ -30,8 +30,14 @@ impl HttpVersion {
 		let re = regex!(r"(\d+)(?:\.(\d+))?");
 		let captures = re.captures(version).unwrap();
 		
-		let version_major: Option<u8> = from_str(captures.at(1));
-		let version_minor: Option<u8> = from_str(captures.at(2));
+		let version_major: Option<u8> = match captures.at(1) {
+			Some(c) => { from_str(c) },
+			None => { None }
+		};
+		let version_minor: Option<u8> = match captures.at(2) {
+			Some(c) => { from_str(c) },
+			None => { None }
+		};
 		
 		HttpVersion {
 			version_major: version_major.unwrap(),
