@@ -11,7 +11,7 @@
 //! on an accepted stream. You will then need to read the handshake from the client and send a response.
 //! 
 //! ```no_run
-//! # use std::thread::Thread;
+//! use std::thread::Thread;
 //! use std::io::TcpListener;
 //! use std::io::{Listener, Acceptor};
 //! use websocket::{WebSocketClient, WebSocketClientMode};
