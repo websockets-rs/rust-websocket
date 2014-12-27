@@ -1,7 +1,7 @@
 [package]
 
 name = "websocket"
-version = "0.8.2"
+version = "0.9.0"
 authors = ["cyderize <admin@cyderize.org>"]
 
 description = "A WebSocket (RFC6455) library for Rust."
@@ -17,5 +17,8 @@ keywords = ["websocket", "websockets", "rfc6455"]
 license = "MIT"
 
 [dependencies]
-url = "~0.2.5"
 sha1 = "~0.0.3"
+hyper = "~0.0.17"
+openssl = "~0.2.8"
+url = "~0.2.7"
+rustc-serialize = "~0.1.5"
