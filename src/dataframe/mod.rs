@@ -1,6 +1,6 @@
 //! Structs for dealing with WebSocket data frames
 #[unstable]
-use dataframe::opcode::WebSocketOpcode;
+pub use self::opcode::WebSocketOpcode;
 
 pub use self::sender::{WebSocketDataFrameSender, WebSocketSender};
 pub use self::receiver::{WebSocketDataFrameReceiver, WebSocketReceiver};

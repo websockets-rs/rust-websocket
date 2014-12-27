@@ -2,7 +2,7 @@
 //! Structs for WebSocket requests
 use std::io::TcpStream;
 use std::io::net::ip::Port;
-use url::Url;
+pub use url::Url;
 pub use hyper::uri::RequestUri;
 use hyper::version::HttpVersion;
 use hyper::status::StatusCode;

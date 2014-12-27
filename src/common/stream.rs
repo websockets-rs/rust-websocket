@@ -2,7 +2,7 @@
 //! Provides a default implementation of a stream which can be used with Rust-WebSocket.
 //! 
 //! A single type is provided, capable of carrying either a TcpStream or an SslStream<TcpStream>.
-//! This is used with convenience methods such as ```WebSocketRequest::connect()```, ```WebSocketServer::bind())```
+//! This is used with convenience methods such as ```WebSocketRequest::connect()```, ```WebSocketServer::bind()```
 //! and ```WebSocketServer::bind_secure()```.
 
 use std::io::net::tcp::TcpStream;

@@ -28,12 +28,3 @@ pub struct Inbound;
 #[deriving(Clone, Show, Copy)]
 #[unstable]
 pub struct Outbound;
-
-/// Represents text data
-#[deriving(Clone, Show, Copy)]
-#[unstable]
-pub struct Text;
-/// Represents binary data
-#[deriving(Clone, Show, Copy)]
-#[unstable]
-pub struct Binary;
