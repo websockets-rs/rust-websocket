@@ -15,9 +15,7 @@ use hyper::method::Method;
 use header::{WebSocketKey, WebSocketAccept, WebSocketVersion, WebSocketProtocol, WebSocketExtensions, Origin};
 use handshake::response::WebSocketResponse;
 use common::{Inbound, Outbound, WebSocketStream, WebSocketResult, WebSocketError};
-use openssl::ssl::SslMethod;
-use openssl::ssl::SslContext;
-use openssl::ssl::SslStream;
+use openssl::ssl::{SslMethod, SslContext, SslStream};
 
 /// Represents a WebSocket request
 /// 
@@ -69,7 +67,11 @@ impl<R: Reader + Send, W: Writer + Send, B> WebSocketRequest<R, W, B> {
 }
 
 impl WebSocketRequest<WebSocketStream, WebSocketStream, Outbound> {
-	/// Connects to the specified ws:// or wss:// URL
+	/// Connects to the specified ws:// or wss:// URL.
+	///
+	/// If a wss:// URL is supplied, a default SslContext is used.
+	/// ```connect_ssl_context()``` can be used to supply an SslContext
+	/// for use.
 	pub fn connect(url: Url) -> WebSocketResult<WebSocketRequest<WebSocketStream, WebSocketStream, Outbound>> {
 		let (host, port) = match get_host_and_port(&url) {
 			Some((host, port)) => (host, port),
@@ -85,6 +87,26 @@ impl WebSocketRequest<WebSocketStream, WebSocketStream, Outbound> {
 			"wss" => {
 				let context = SslContext::new(SslMethod::Tlsv1).unwrap();
 				let sslstream = SslStream::new(&context, stream).unwrap();
+				WebSocketStream::Secure(sslstream)
+			}
+			_ => { return Err(WebSocketError::RequestError("URI scheme not supported".to_string())); }
+		};
+		
+		WebSocketRequest::new_with(host, port, url, httpstream.clone(), httpstream.clone())
+	}
+	
+	/// Connects to the specified wss:// URL using the given SSL context
+	pub fn connect_ssl_context(url: Url, context: &SslContext) -> WebSocketResult<WebSocketRequest<WebSocketStream, WebSocketStream, Outbound>> {
+		let (host, port) = match get_host_and_port(&url) {
+			Some((host, port)) => (host, port),
+			None => { return Err(WebSocketError::RequestError("Could not get host and port for connection".to_string())); }
+		};
+		
+		let stream = try!(TcpStream::connect((host.clone() + ":" +  port.to_string().as_slice()).as_slice()));
+		
+		let httpstream = match url.scheme.as_slice() {
+			"wss" => {
+				let sslstream = SslStream::new(context, stream).unwrap();
 				WebSocketStream::Secure(sslstream)
 			}
 			_ => { return Err(WebSocketError::RequestError("URI scheme not supported".to_string())); }
