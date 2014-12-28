@@ -8,23 +8,23 @@ pub mod stream;
 pub mod error;
 
 /// The type used for WebSocket results
-#[unstable]
+#[stable]
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
 
 /// Represents a local endpoint
 #[deriving(Clone, Show, Copy)]
-#[unstable]
+#[stable]
 pub struct Local;
 /// Represents a remote endpoint
 #[deriving(Clone, Show, Copy)]
-#[unstable]
+#[stable]
 pub struct Remote;
 
 /// Represents an inbound object
 #[deriving(Clone, Show, Copy)]
-#[unstable]
+#[stable]
 pub struct Inbound;
 /// Represents an outbound object
 #[deriving(Clone, Show, Copy)]
-#[unstable]
+#[stable]
 pub struct Outbound;

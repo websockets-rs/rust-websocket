@@ -1,5 +1,5 @@
 //! Structs for dealing with WebSocket data frames
-#[unstable]
+#[stable]
 pub use self::opcode::WebSocketOpcode;
 
 pub use self::sender::{DataFrameSender, WebSocketSender};

@@ -4,9 +4,12 @@ use std::fmt::{mod, Show};
 
 /// Represents an Origin header
 #[deriving(PartialEq, Clone, Show)]
+#[stable]
 pub struct Origin(pub String);
 
+#[stable]
 impl Deref<String> for Origin {
+	#[stable]
     fn deref<'a>(&'a self) -> &'a String {
         &self.0
     }

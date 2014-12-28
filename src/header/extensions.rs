@@ -4,9 +4,12 @@ use std::fmt::{mod};
 
 /// Represents a Sec-WebSocket-Extensions header
 #[deriving(PartialEq, Clone, Show)]
+#[stable]
 pub struct WebSocketExtensions(pub Vec<String>);
 
+#[stable]
 impl Deref<Vec<String>> for WebSocketExtensions {
+	#[stable]
     fn deref<'a>(&'a self) -> &'a Vec<String> {
         &self.0
     }

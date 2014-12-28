@@ -15,6 +15,7 @@ use openssl::ssl::SslStream;
 /// This is the default stream used within Rust-WebSocket, however any Reader or Writer can be used
 /// if desired, using the un-typed functions.
 #[deriving(Clone)]
+#[stable]
 pub enum WebSocketStream {
 	/// A normal (non-secure) stream
 	Normal(TcpStream),

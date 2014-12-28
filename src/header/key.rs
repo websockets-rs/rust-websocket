@@ -8,15 +8,20 @@ use serialize::base64::{ToBase64, FromBase64, STANDARD};
 
 /// Represents a Sec-WebSocket-Key header.
 #[deriving(PartialEq, Clone, Copy)]
+#[stable]
 pub struct WebSocketKey(pub [u8, ..16]);
 
+#[stable]
 impl Show for WebSocketKey {
+	#[stable]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "WebSocketKey({})", self.serialize())
 	}
 }
 
+#[stable]
 impl FromStr for WebSocketKey {
+	#[stable]
 	fn from_str(key: &str) -> Option<WebSocketKey> {
 		match key.from_base64() {
 			Ok(vec) => {
@@ -30,8 +35,10 @@ impl FromStr for WebSocketKey {
 	}
 }
 
+#[stable]
 impl WebSocketKey {
 	/// Generate a new, random WebSocketKey
+	#[stable]
 	pub fn new() -> WebSocketKey {
 		let mut key = [0u8, ..16];
 		for item in key.iter_mut() {
@@ -40,6 +47,7 @@ impl WebSocketKey {
 		WebSocketKey(key)
 	}
 	/// Return the Base64 encoding of this WebSocketKey
+	#[stable]
 	pub fn serialize(&self) -> String {
 		let WebSocketKey(key) = *self;
 		key.to_base64(STANDARD)

@@ -1,4 +1,4 @@
-#![unstable]
+#![stable]
 //! Structs for dealing with WebSocket requests and responses.
 
 pub use self::request::WebSocketRequest;
