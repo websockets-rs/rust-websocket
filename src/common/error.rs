@@ -10,7 +10,6 @@ use std::str::Utf8Error;
 
 /// Represents a WebSocket error
 #[deriving(Show, PartialEq, Clone)]
-#[unstable]
 pub enum WebSocketError {
 	/// A WebSocket protocol error
 	ProtocolError(String),

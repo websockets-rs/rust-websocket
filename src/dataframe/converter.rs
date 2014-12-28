@@ -8,8 +8,7 @@ use dataframe::WebSocketDataFrame;
 /// A trait which allows the conversion of a series of data frames into a series of messages.
 /// 
 /// Three functions are required for functionality, and WebSocketConverter is the default implementation.
-#[unstable]
-pub trait WebSocketDataFrameConverter<M: WebSocketMessaging> : Send {
+pub trait DataFrameConverter<M: WebSocketMessaging> : Send {
 	/// Creates a new data frame converter.
 	fn new() -> Self;
 	/// Pushes a data frame on to this converter for processing.
@@ -27,15 +26,14 @@ pub trait WebSocketDataFrameConverter<M: WebSocketMessaging> : Send {
 
 /// Default implementation of a converter that takes WebSocketDataFrames and produces WebSocketMessages
 #[deriving(Send)]
-#[unstable]
 pub struct WebSocketConverter<M: WebSocketMessaging> {
 	opcode: Option<WebSocketOpcode>,
 	data: Vec<u8>,
 	messages: Vec<M>,
 }
 
-impl<M: WebSocketMessaging> WebSocketDataFrameConverter<M> for WebSocketConverter<M> {
-	/// Creates a new WebSocketDataFrameConverter
+impl<M: WebSocketMessaging> DataFrameConverter<M> for WebSocketConverter<M> {
+	/// Creates a new DataFrameConverter
 	fn new() -> WebSocketConverter<M> {
 		WebSocketConverter {
 			opcode: None,

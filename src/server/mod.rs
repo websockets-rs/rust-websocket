@@ -81,7 +81,6 @@ use openssl::ssl::SslStream;
 /// This will give you an inbound WebSocketRequest which can be used with ```WebSocketResponse::new()```.
 /// Finally, call ```begin()``` or ```begin_with()``` on the response to obtain a WebSocketClient and begin
 /// sending/receiving messages.
-#[unstable]
 pub struct WebSocketServer<'a> {
 	inner: TcpListener,
 	context: Option<&'a SslContext>,

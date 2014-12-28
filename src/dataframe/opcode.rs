@@ -2,7 +2,6 @@
 #![stable]
 /// Represents a WebSocket data frame opcode
 #[deriving(Send, Clone, Show, Copy, PartialEq)]
-#[stable]
 pub enum WebSocketOpcode {
 	/// A continuation data frame
 	Continuation,

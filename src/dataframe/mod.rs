@@ -2,9 +2,9 @@
 #[unstable]
 pub use self::opcode::WebSocketOpcode;
 
-pub use self::sender::{WebSocketDataFrameSender, WebSocketSender};
-pub use self::receiver::{WebSocketDataFrameReceiver, WebSocketReceiver};
-pub use self::converter::{WebSocketDataFrameConverter, WebSocketConverter};
+pub use self::sender::{DataFrameSender, WebSocketSender};
+pub use self::receiver::{DataFrameReceiver, WebSocketReceiver};
+pub use self::converter::{DataFrameConverter, WebSocketConverter};
 
 pub mod mask;
 pub mod opcode;
@@ -29,7 +29,6 @@ pub struct WebSocketDataFrame {
 
 impl WebSocketDataFrame {
 	/// Creates a new WebSocketDataFrame.
-	#[stable]
 	pub fn new(finished: bool, opcode: WebSocketOpcode, data: Vec<u8>) -> WebSocketDataFrame {
 		WebSocketDataFrame {
 			finished: finished,

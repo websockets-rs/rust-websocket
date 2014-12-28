@@ -10,7 +10,6 @@ use std::io::IoResult;
 /// A trait for WebSocket messages
 /// 
 /// Allows for conversion between WebSocketDataFrames and messages.
-#[unstable]
 pub trait WebSocketMessaging: Send {
 	/// Create a new WebSocket message from an opcode and data
 	fn from_data(opcode: WebSocketOpcode, data: Vec<u8>) -> WebSocketResult<Self>;
@@ -20,7 +19,6 @@ pub trait WebSocketMessaging: Send {
 
 /// Represents a WebSocket message.
 #[deriving(PartialEq, Clone, Show, Send)]
-#[unstable]
 pub enum WebSocketMessage {
 	/// A message containing UTF-8 text data
 	Text(String),
@@ -81,7 +79,6 @@ impl WebSocketMessaging for WebSocketMessage {
 
 /// Represents data contained in a Close message
 #[deriving(PartialEq, Clone, Show)]
-#[stable]
 pub struct CloseData {
 	/// The status-code of the CloseData
 	pub status_code: u16,

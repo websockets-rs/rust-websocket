@@ -12,9 +12,9 @@ use header::{WebSocketKey, WebSocketAccept, WebSocketProtocol, WebSocketExtensio
 use client::WebSocketClient;
 use common::{Inbound, Outbound, Local, Remote, WebSocketResult, WebSocketError};
 use message::{WebSocketMessaging, WebSocketMessage};
-use dataframe::sender::{WebSocketDataFrameSender, WebSocketSender};
-use dataframe::receiver::{WebSocketDataFrameReceiver, WebSocketReceiver};
-use dataframe::converter::{WebSocketDataFrameConverter, WebSocketConverter};
+use dataframe::sender::{DataFrameSender, WebSocketSender};
+use dataframe::receiver::{DataFrameReceiver, WebSocketReceiver};
+use dataframe::converter::{DataFrameConverter, WebSocketConverter};
 
 /// Represents a WebSocket response
 /// 
@@ -28,7 +28,6 @@ use dataframe::converter::{WebSocketDataFrameConverter, WebSocketConverter};
 /// The headers field allows access to the HTTP headers in the response, but short-cut methods are
 /// available for accessing common headers.
 #[deriving(Send)]
-#[unstable]
 pub struct WebSocketResponse<R: Reader, W: Writer, B> {
 	/// The status of the response
 	pub status: StatusCode,
@@ -90,12 +89,12 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketResponse<R, W, Outbound> {
 		self.headers.get_mut()
 	}
 	
-	/// Send this response with the given WebSocketDataFrameSender, WebSocketDataFrameReceiver and WebSocketDataFrameConverter
-	pub fn send_with<A: WebSocketDataFrameSender<W>, B: WebSocketDataFrameReceiver<R>, C: WebSocketDataFrameConverter<M>, M: WebSocketMessaging>(mut self) -> WebSocketResult<WebSocketClient<A, B, C, R, W, M>> {
+	/// Send this response with the given DataFrameSender, DataFrameReceiver and DataFrameConverter
+	pub fn send_with<A: DataFrameSender<W>, B: DataFrameReceiver<R>, C: DataFrameConverter<M>, M: WebSocketMessaging>(mut self) -> WebSocketResult<WebSocketClient<A, B, C, R, W, M>> {
 		try!(self.write());
-		let sender: A = WebSocketDataFrameSender::new(self.writer);
-		let receiver: B = WebSocketDataFrameReceiver::new(self.reader);
-		let converter: C = WebSocketDataFrameConverter::new();
+		let sender: A = DataFrameSender::new(self.writer);
+		let receiver: B = DataFrameReceiver::new(self.reader);
+		let converter: C = DataFrameConverter::new();
 		Ok(WebSocketClient::new(sender, receiver, converter))
 	}
 	
@@ -153,13 +152,13 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketResponse<R, W, Inbound> {
 	}
 	
 	/// Consume this response and return a WebSocketClient ready to transmit/receive data frames
-	/// using the specified WebSocketDataFrameSender, WebSocketDataFrameReceiver and WebSocketDataFrameConverter.
+	/// using the specified DataFrameSender, DataFrameReceiver and DataFrameConverter.
 	///
 	/// Does not check if the response was valid. Use ```validate()``` to ensure that the response constitutes a successful handshake.
-	pub fn begin_with<A: WebSocketDataFrameSender<W>, B: WebSocketDataFrameReceiver<R>, C: WebSocketDataFrameConverter<M>, M: WebSocketMessaging>(self) -> WebSocketClient<A, B, C, R, W, M> {
-		let sender: A = WebSocketDataFrameSender::new(self.writer);
-		let receiver: B = WebSocketDataFrameReceiver::new(self.reader);
-		let converter: C = WebSocketDataFrameConverter::<M>::new();
+	pub fn begin_with<A: DataFrameSender<W>, B: DataFrameReceiver<R>, C: DataFrameConverter<M>, M: WebSocketMessaging>(self) -> WebSocketClient<A, B, C, R, W, M> {
+		let sender: A = DataFrameSender::new(self.writer);
+		let receiver: B = DataFrameReceiver::new(self.reader);
+		let converter: C = DataFrameConverter::<M>::new();
 		WebSocketClient::new(sender, receiver, converter)
 	}
 	/// Consume this response and return a WebSocketClient ready to transmit/receive data frames

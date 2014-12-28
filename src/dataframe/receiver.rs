@@ -13,8 +13,7 @@ use std::sync::{Arc, Mutex};
 /// Data frame receivers read data frames off a Reader, and return WebSocketDataFrames.
 /// The function RawDataFrame::read() can be used to read a RawDataFrame from a Reader,
 /// enabling the receiver to simply convert that RawDataFrame to a WebSocketDataFrame.
-#[unstable]
-pub trait WebSocketDataFrameReceiver<R: Reader + Send>: Send {
+pub trait DataFrameReceiver<R: Reader + Send>: Send {
 /// WebSocketDataFrame.
 	/// Create a new receiver from a Reader
 	fn new(inner: R) -> Self;
@@ -23,13 +22,12 @@ pub trait WebSocketDataFrameReceiver<R: Reader + Send>: Send {
 }
 
 /// The default WebSocket data frame receiver
-#[unstable]
 #[deriving(Send)]
 pub struct WebSocketReceiver<R: Reader, L> {
 	inner: Arc<Mutex<R>>,
 }
 
-impl<R: Reader + Send> WebSocketDataFrameReceiver<R> for WebSocketReceiver<R, Local> {
+impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Local> {
 	/// Create a new receiver from a Reader
 	fn new(inner: R) -> WebSocketReceiver<R, Local> {
 		WebSocketReceiver {
@@ -52,7 +50,7 @@ impl<R: Reader + Send> WebSocketDataFrameReceiver<R> for WebSocketReceiver<R, Lo
 	}
 }
 
-impl<R: Reader + Send> WebSocketDataFrameReceiver<R> for WebSocketReceiver<R, Remote> {
+impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Remote> {
 	fn new(inner: R) -> WebSocketReceiver<R, Remote> {
 		WebSocketReceiver {
 			inner: Arc::new(Mutex::new(inner))

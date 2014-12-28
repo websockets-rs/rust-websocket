@@ -104,8 +104,8 @@
 //! Rust-WebSocket provides a number of mechanisms to extend the WebSocket implementation.
 //! 
 //! The function ```WebSocketRequest::connect_with()``` gives the ability to use a different Reader and Writer,
-//! The method ```WebSocketResponse::begin_with()``` allows the use of any WebSocketDataFrameSender, WebSocketDataFrameReceiver,
-//! WebSocketDataFrameConverter and WebSocketMessaging trait implementers. These traits provide interfaces required for use
+//! The method ```WebSocketResponse::begin_with()``` allows the use of any DataFrameSender, DataFrameReceiver,
+//! DataFrameConverter and WebSocketMessaging trait implementers. These traits provide interfaces required for use
 //! within Rust-WebSocket.
 //! 
 //! See each trait for more detailed information.

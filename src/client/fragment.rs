@@ -62,12 +62,10 @@ pub struct StringFragmentIterator {
 
 impl StringFragmentWriter {
 	/// Push a string on to this writer
-	#[unstable]
 	pub fn push<S: ToString>(&mut self, string: S) {
 		self.inner.send(Some(string.to_string()));
 	}
 	/// Signal the end of a message
-	#[unstable]
 	pub fn finish(&mut self) {
 		self.inner.send(None);
 	}
@@ -132,12 +130,10 @@ pub struct BinaryFragmentIterator {
 
 impl BinaryFragmentWriter {
 	/// Push binary data on to this writer
-	#[unstable]
 	pub fn push(&mut self, data: &[u8]) {
 		self.inner.send(Some(Vec::new() + data));
 	}
 	/// Signal the end of a message
-	#[unstable]
 	pub fn finish(&mut self) {
 		self.inner.send(None);
 	}

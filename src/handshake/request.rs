@@ -27,7 +27,6 @@ use openssl::ssl::{SslMethod, SslContext, SslStream};
 /// 
 /// The headers field allows access to the HTTP headers in the request, but short-cut methods are
 /// available for accessing common headers.
-#[unstable]
 #[deriving(Send)]
 pub struct WebSocketRequest<R: Reader, W: Writer, B> {
 	/// The target URI for this request.

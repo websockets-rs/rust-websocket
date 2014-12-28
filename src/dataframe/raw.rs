@@ -1,5 +1,5 @@
 //! Provides a way to deal with data frames at a lower level
-#![stable]
+#![unstable]
 use dataframe::opcode::WebSocketOpcode;
 use common::{WebSocketResult, WebSocketError};
 
@@ -8,7 +8,6 @@ use common::{WebSocketResult, WebSocketError};
 /// Unlike a WebSocketDataFrame, the data in a RawDataFrame is exactly as it was
 /// constructed, i.e. it may or may not be masked.
 #[deriving(Clone, Show, PartialEq)]
-#[stable]
 pub struct RawDataFrame {
 	/// The FIN bit
 	pub finished: bool,
@@ -26,7 +25,6 @@ pub struct RawDataFrame {
 
 impl RawDataFrame {
 	/// Helper function that reads a RawDataFrame from the Reader.
-	#[stable]
 	pub fn read<R: Reader>(reader: &mut R) -> WebSocketResult<RawDataFrame> {
 		let byte0 = try!(reader.read_byte());
 		let finished = (byte0 >> 7) & 0x01 == 0x01;
@@ -97,7 +95,6 @@ impl RawDataFrame {
 	}
 
 	/// Helper function that writes a RawDataFrame to the Writer.
-	#[stable]
 	pub fn write<W: Writer>(&self, writer: &mut W) -> WebSocketResult<()> {
 		let mut byte0: u8 = 0x00;
 		if self.finished { byte0 |= 0x80; }
@@ -159,7 +156,6 @@ impl RawDataFrame {
 
 /// Represents a payload length, which can be either 8, 16 or 64 bits long
 #[deriving(Clone, Show, Copy, PartialEq)]
-#[stable]
 pub enum DataFrameLength {
 	/// Data frame lengths less than 126
 	Tiny(u8),
@@ -171,7 +167,6 @@ pub enum DataFrameLength {
 
 impl DataFrameLength {
 	/// Retrieve the underlying length as a uint
-	#[stable]
 	pub fn unwrap(self) -> uint {
 		match self {
 			DataFrameLength::Tiny(length) => { length as uint }
@@ -180,7 +175,7 @@ impl DataFrameLength {
 		}
 	}
 	/// Create a new DataFrameLength
-	#[stable]
+	#[unstable]
 	pub fn new(length: uint) -> DataFrameLength {
 		if length <= 125 {
 			DataFrameLength::Tiny(length as u8)

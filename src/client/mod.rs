@@ -1,9 +1,9 @@
 //! Structs for dealing with WebSocket clients
-#![stable]
+#![unstable]
 
-use dataframe::sender::WebSocketDataFrameSender;
-use dataframe::receiver::WebSocketDataFrameReceiver;
-use dataframe::converter::WebSocketDataFrameConverter;
+use dataframe::sender::DataFrameSender;
+use dataframe::receiver::DataFrameReceiver;
+use dataframe::converter::DataFrameConverter;
 use dataframe::opcode::WebSocketOpcode;
 use dataframe::WebSocketDataFrame;
 use message::WebSocketMessaging;
@@ -17,14 +17,13 @@ pub mod fragment;
 
 /// Represents a WebSocketClient which connects to a WebSocketServer. See the main library documentation for how to obtain a ```WebSocketClient```.
 #[deriving(Send)]
-#[unstable]
-pub struct WebSocketClient<S: WebSocketDataFrameSender<W>, R: WebSocketDataFrameReceiver<E>, C: WebSocketDataFrameConverter<M>, E: Reader, W: Writer, M: WebSocketMessaging> {
+pub struct WebSocketClient<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader, W: Writer, M: WebSocketMessaging> {
 	sender: Arc<Mutex<S>>,
 	receiver: Arc<Mutex<(R, C)>>,
 }
 
-impl<S: WebSocketDataFrameSender<W>, R: WebSocketDataFrameReceiver<E>, C: WebSocketDataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> WebSocketClient<S, R, C, E, W, M> {
-	/// Create a WebSocketClient from the specified WebSocketDataFrameSender and WebSocketDataFrameReceiver.
+impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> WebSocketClient<S, R, C, E, W, M> {
+	/// Create a WebSocketClient from the specified DataFrameSender and DataFrameReceiver.
 	/// Not required for normal usage (used internally by ```WebSocketResponse```).
 	pub fn new(sender: S, receiver: R, converter: C) -> WebSocketClient<S, R, C, E, W, M> {
 		WebSocketClient {
@@ -114,7 +113,8 @@ impl<S: WebSocketDataFrameSender<W>, R: WebSocketDataFrameReceiver<E>, C: WebSoc
 		let mut iterator = iterator;
 		let mut sender = self.sender.lock();
 		for string in iterator {
-			let dataframe = WebSocketDataFrame::new(false, if !started { WebSocketOpcode::Text } else { WebSocketOpcode::Continuation }, string.to_string().into_bytes());
+			let opcode = if !started { WebSocketOpcode::Text } else { WebSocketOpcode::Continuation };
+			let dataframe = WebSocketDataFrame::new(false, opcode, string.to_string().into_bytes());
 			try!(sender.send_dataframe(&dataframe));
 			started = true;
 		}
@@ -131,7 +131,8 @@ impl<S: WebSocketDataFrameSender<W>, R: WebSocketDataFrameReceiver<E>, C: WebSoc
 		let mut iterator = iterator;
 		let mut sender = self.sender.lock();
 		for data in iterator {
-			let dataframe = WebSocketDataFrame::new(false, if !started { WebSocketOpcode::Text } else { WebSocketOpcode::Continuation }, data);
+			let opcode = if !started { WebSocketOpcode::Text } else { WebSocketOpcode::Continuation };
+			let dataframe = WebSocketDataFrame::new(false, opcode, data);
 			try!(sender.send_dataframe(&dataframe));
 			started = true;
 		}
@@ -196,7 +197,7 @@ impl<S: WebSocketDataFrameSender<W>, R: WebSocketDataFrameReceiver<E>, C: WebSoc
 	}
 }
 
-impl<S: WebSocketDataFrameSender<W>, R: WebSocketDataFrameReceiver<E>, C: WebSocketDataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Clone for WebSocketClient<S, R, C, E, W, M> {
+impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Clone for WebSocketClient<S, R, C, E, W, M> {
 	/// Clone this WebSocketClient, allowing for concurrent operations on a single stream.
 	/// 
 	/// All cloned clients refer to the same underlying stream. Simultaneous reads will not

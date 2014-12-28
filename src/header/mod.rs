@@ -1,4 +1,5 @@
 //! Structs representing headers relevant in a WebSocket context
+#![stable]
 
 pub use self::key::WebSocketKey;
 pub use self::accept::WebSocketAccept;
