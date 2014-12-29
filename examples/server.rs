@@ -59,7 +59,7 @@ fn main() {
 						
 						match message {
 							// Handle Ping messages by sending Pong messages
-							WebSocketMessage::Pong(data) => {
+							WebSocketMessage::Ping(data) => {
 								let message = WebSocketMessage::Pong(data);
 								let _ = client_captured.send_message(message);
 								println!("Closed connection {}", id);
