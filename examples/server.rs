@@ -4,7 +4,6 @@ extern crate websocket;
 use std::thread::Thread;
 use std::io::{Listener, Acceptor};
 use websocket::{WebSocketServer, WebSocketMessage};
-use websocket::client::fragment::string_fragmenter;
 //use openssl::ssl::{SslContext, SslMethod};
 //use openssl::x509::X509FileType;
 
@@ -38,23 +37,55 @@ fn main() {
 			let response = request.accept(); // Generate a response
 			let mut client = response.send().unwrap(); // Send the response
 			
+			// Send a message
 			let message = WebSocketMessage::Text("Hello from the server".to_string());
 			let _ = client.send_message(message);
 			
-			let (mut writer, iterator) = string_fragmenter();
-			Thread::spawn(move || {			
-				writer.push("This ");
-				writer.push("is ");
-				writer.push("a ");
-				writer.push("fragmented ");
-				writer.push("message.");
-				writer.finish();			
-			}).detach();
+			// Send a fragmented message
+			{
+				let mut fragment_sender = client.frag_send_text("This ").unwrap();
+				let _ = fragment_sender.send("is ");
+				let _ = fragment_sender.send("a ");
+				let _ = fragment_sender.send("fragmented ");
+				let _ = fragment_sender.finish("message.");
+			}
 			
-			let _ = client.frag_send_text(iterator);
+			let mut client_captured = client.clone();
 			
 			for message in client.incoming_messages() {
-				println!("Recv [{}]: {}", id, message.unwrap());
+				match message {
+					Ok(message) => {
+						println!("Recv [{}]: {}", id, message);
+						
+						match message {
+							// Handle Ping messages by sending Pong messages
+							WebSocketMessage::Pong(data) => {
+								let message = WebSocketMessage::Pong(data);
+								let _ = client_captured.send_message(message);
+								println!("Closed connection {}", id);
+								// Close the connection
+								break;
+							}
+							// Handle when the client wants to disconnect
+							WebSocketMessage::Close(_) => {
+								// Send a close message
+								let message = WebSocketMessage::Close(None);
+								let _ = client_captured.send_message(message);
+								println!("Closed connection {}", id);
+								// Close the connection
+								break;
+							}
+							_ => { }
+						}
+						
+						let message = WebSocketMessage::Text("Response from the server".to_string());
+						let _ = client_captured.send_message(message);
+					}
+					Err(err) => {
+						println!("Error [{}]: {}",id, err);
+						break;
+					}
+				}
 			}
 		}).detach();
 	}

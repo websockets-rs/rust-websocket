@@ -1,16 +1,15 @@
 //! Structs for dealing with WebSocket clients
 #![unstable]
 
-use dataframe::sender::DataFrameSender;
-use dataframe::receiver::DataFrameReceiver;
-use dataframe::converter::DataFrameConverter;
-use dataframe::opcode::WebSocketOpcode;
+use dataframe::{DataFrameSender, DataFrameReceiver, DataFrameConverter};
 use dataframe::WebSocketDataFrame;
 use message::WebSocketMessaging;
 use common::WebSocketResult;
+use std::path::BytesContainer;
 use std::sync::{Arc, Mutex};
 
 pub use self::incoming::{IncomingDataFrames, IncomingMessages};
+pub use self::fragment::{TextFragmentSender, BinaryFragmentSender};
 
 pub mod incoming;
 pub mod fragment;
@@ -80,67 +79,48 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 		IncomingMessages::new(self)
 	}
 	
-	/// Sends strings from an iterator immediately to the remote endpoint as a single (fragmented) message
-	/// 
+	/// Sends a fragmented text message by returning a TextFragmentSender
+	///
 	/// ```no_run
 	///# extern crate url;
 	///# extern crate websocket;
 	///# fn main() {
 	///# use websocket::WebSocketRequest;
 	///# use url::Url;
-	///use websocket::client::fragment::string_fragmenter;
-	///use std::thread::Thread;
 	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap();
 	///# let request = WebSocketRequest::connect(url).unwrap();
 	///# let response = request.send().unwrap();
 	///# let mut client = response.begin();
-	///let (mut writer, iterator) = string_fragmenter(); //Returns a writer and and iterator
-	///// We write our data to the writer in another thread:
-	///Thread::spawn(move || {
-	///    writer.push("This ");
-	///    writer.push("is ");
-	///    writer.push("a ");
-	///    writer.push("fragmented ");
-	///    writer.push("message.");
-	///    writer.finish();			
-	///}).detach();
-	///// Immediately starts sending the data
-	///let _ = client.frag_send_text(iterator);
+	///let mut fragment_sender = client.frag_send_text("This").unwrap();
+	///let _ = fragment_sender.send("is ");
+	///let _ = fragment_sender.send("a ");
+	///let _ = fragment_sender.send("fragmented ");
+	///let _ = fragment_sender.finish("message.");
 	///# }
 	/// ```
-	pub fn frag_send_text<T: ToString, I: Iterator<T>>(&mut self, iterator: I) -> WebSocketResult<()> {
-		let mut started = false;
-		let mut iterator = iterator;
-		let mut sender = self.sender.lock();
-		for string in iterator {
-			let opcode = if !started { WebSocketOpcode::Text } else { WebSocketOpcode::Continuation };
-			let dataframe = WebSocketDataFrame::new(false, opcode, string.to_string().into_bytes());
-			try!(sender.send_dataframe(&dataframe));
-			started = true;
-		}
-		if started {
-			let dataframe = WebSocketDataFrame::new(true, WebSocketOpcode::Continuation, Vec::new());
-			try!(sender.send_dataframe(&dataframe));
-		}
-		Ok(())
+	pub fn frag_send_text<'a, T: ToString>(&'a mut self, text: T) -> WebSocketResult<TextFragmentSender<'a, S, W>> {
+		TextFragmentSender::new(self.sender.lock(), text)
 	}
 	
-	/// Sends binary data from an iterator immediately to the remote endpoint as a single (fragmented) message
-	pub fn frag_send_bytes<I: Iterator<Vec<u8>>>(&mut self, iterator: I) -> WebSocketResult<()> {
-		let mut started = false;
-		let mut iterator = iterator;
-		let mut sender = self.sender.lock();
-		for data in iterator {
-			let opcode = if !started { WebSocketOpcode::Text } else { WebSocketOpcode::Continuation };
-			let dataframe = WebSocketDataFrame::new(false, opcode, data);
-			try!(sender.send_dataframe(&dataframe));
-			started = true;
-		}
-		if started {
-			let dataframe = WebSocketDataFrame::new(true, WebSocketOpcode::Continuation, Vec::new());
-			try!(sender.send_dataframe(&dataframe));
-		}
-		Ok(())
+	/// Sends a fragmented binary message by returning a BinaryFragmentSender
+	///
+	/// ```no_run
+	///# extern crate url;
+	///# extern crate websocket;
+	///# fn main() {
+	///# use websocket::WebSocketRequest;
+	///# use url::Url;
+	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap();
+	///# let request = WebSocketRequest::connect(url).unwrap();
+	///# let response = request.send().unwrap();
+	///# let mut client = response.begin();
+	///let mut fragment_sender = client.frag_send_bytes("ascii_bytes").unwrap();
+	///let _ = fragment_sender.send([100u8, ..4].as_slice());
+	///let _ = fragment_sender.finish(vec![4u8, 2, 68, 24]);
+	///# }
+	/// ```
+	pub fn frag_send_bytes<'a, T: BytesContainer>(&'a mut self, data: T) -> WebSocketResult<BinaryFragmentSender<'a, S, W>> {
+		BinaryFragmentSender::new(self.sender.lock(), data)
 	}
 	
 	/// Sends a WebSocketMessage. Blocks the task until the message has been sent.

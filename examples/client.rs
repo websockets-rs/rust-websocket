@@ -2,10 +2,8 @@ extern crate websocket;
 extern crate url;
 
 use url::Url;
-use std::thread::Thread;
 use websocket::handshake::WebSocketRequest;
 use websocket::message::WebSocketMessage;
-use websocket::client::fragment::string_fragmenter;
 use websocket::header::WebSocketProtocol;
 
 fn main() {
@@ -23,20 +21,17 @@ fn main() {
 	
 	let mut client = response.begin();
 	
+	// Send a fragmented message
+	{
+		let mut fragment_sender = client.frag_send_text("This ").unwrap();
+		let _ = fragment_sender.send("is ");
+		let _ = fragment_sender.send("a ");
+		let _ = fragment_sender.send("fragmented ");
+		let _ = fragment_sender.finish("message.");
+	}
+	
 	let message = WebSocketMessage::Text("Hello from the client".to_string());
 	let _ = client.send_message(message);
-	
-	let (mut writer, iterator) = string_fragmenter();
-	Thread::spawn(move || {			
-		writer.push("This ");
-		writer.push("is ");
-		writer.push("a ");
-		writer.push("fragmented ");
-		writer.push("message.");
-		writer.finish();			
-	}).detach();
-	
-	let _ = client.frag_send_text(iterator);
 	
 	for message in client.incoming_messages() {
 		println!("Recv: {}", message.unwrap());
