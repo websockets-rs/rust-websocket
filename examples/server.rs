@@ -4,6 +4,7 @@ extern crate websocket;
 use std::thread::Thread;
 use std::io::{Listener, Acceptor};
 use websocket::{WebSocketServer, WebSocketMessage};
+use websocket::header::WebSocketProtocol;
 //use openssl::ssl::{SslContext, SslMethod};
 //use openssl::x509::X509FileType;
 
@@ -34,7 +35,8 @@ fn main() {
 				return;
 			}
 			
-			let response = request.accept(); // Generate a response
+			let mut response = request.accept(); // Generate a response
+			response.headers.set(WebSocketProtocol(vec!["rust-websocket".to_string()])); // Send a Sec-WebSocket-Protocol header
 			let mut client = response.send().unwrap(); // Send the response
 			
 			// Send a message
