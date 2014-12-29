@@ -11,8 +11,17 @@ use std::sync::{Arc, Mutex};
 pub use self::incoming::{IncomingDataFrames, IncomingMessages};
 pub use self::fragment::{TextFragmentSender, BinaryFragmentSender};
 
+use dataframe::{WebSocketSender, WebSocketReceiver, WebSocketConverter};
+use common::{WebSocketStream, Local, Remote};
+use WebSocketMessage;
+
 pub mod incoming;
 pub mod fragment;
+
+/// The most common local WebSocketClient type, provided for convenience.
+pub type WebSocketLocalClient = WebSocketClient<WebSocketSender<WebSocketStream, Local>, WebSocketReceiver<WebSocketStream, Local>, WebSocketConverter<WebSocketMessage>, WebSocketStream, WebSocketStream, WebSocketMessage>;
+/// The most common remote WebSocketClient type, provided for convenience.
+pub type WebSocketRemoteClient = WebSocketClient<WebSocketSender<WebSocketStream, Remote>, WebSocketReceiver<WebSocketStream, Remote>, WebSocketConverter<WebSocketMessage>, WebSocketStream, WebSocketStream, WebSocketMessage>;
 
 /// Represents a WebSocketClient which connects to a WebSocketServer. See the main library documentation for how to obtain a ```WebSocketClient```.
 #[deriving(Send)]

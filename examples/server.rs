@@ -64,9 +64,6 @@ fn main() {
 							WebSocketMessage::Ping(data) => {
 								let message = WebSocketMessage::Pong(data);
 								let _ = client_captured.send_message(message);
-								println!("Closed connection {}", id);
-								// Close the connection
-								break;
 							}
 							// Handle when the client wants to disconnect
 							WebSocketMessage::Close(_) => {
