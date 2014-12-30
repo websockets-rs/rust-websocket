@@ -18,7 +18,7 @@ pub trait WebSocketMessaging: Send {
 }
 
 /// Represents a WebSocket message.
-#[deriving(PartialEq, Clone, Show, Send)]
+#[deriving(PartialEq, Clone, Show)]
 pub enum WebSocketMessage {
 	/// A message containing UTF-8 text data
 	Text(String),
@@ -35,6 +35,8 @@ pub enum WebSocketMessage {
 	/// containing the same data as the received ping message.
 	Pong(Vec<u8>),
 }
+
+unsafe impl Send for WebSocketMessage {}
 
 impl WebSocketMessaging for WebSocketMessage {
 	/// Create a new WebSocketMessage from the given opcode and data

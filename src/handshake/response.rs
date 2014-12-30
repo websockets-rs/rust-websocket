@@ -27,7 +27,6 @@ use dataframe::converter::{DataFrameConverter, WebSocketConverter};
 /// 
 /// The headers field allows access to the HTTP headers in the response, but short-cut methods are
 /// available for accessing common headers.
-#[deriving(Send)]
 pub struct WebSocketResponse<R: Reader, W: Writer, B> {
 	/// The status of the response
 	pub status: StatusCode,

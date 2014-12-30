@@ -22,10 +22,11 @@ pub trait DataFrameReceiver<R: Reader + Send>: Send {
 }
 
 /// The default WebSocket data frame receiver
-#[deriving(Send)]
-pub struct WebSocketReceiver<R: Reader, L> {
+pub struct WebSocketReceiver<R: Reader + Send, L: Send> {
 	inner: Arc<Mutex<R>>,
 }
+
+unsafe impl<R: Reader + Send, L: Send>  Send for WebSocketReceiver<R, L> {}
 
 impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Local> {
 	/// Create a new receiver from a Reader
@@ -71,7 +72,7 @@ impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Remote> {
 	}
 }
 
-impl<R: Reader, L> Clone for WebSocketReceiver<R, L> {
+impl<R: Reader + Send, L: Send> Clone for WebSocketReceiver<R, L> {
 	fn clone(&self) -> WebSocketReceiver<R, L> {
 		WebSocketReceiver {
 			inner: self.inner.clone()

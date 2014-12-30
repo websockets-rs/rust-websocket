@@ -22,10 +22,11 @@ pub trait DataFrameSender<W: Writer + Send>: Send {
 }
 
 /// The default WebSocket data frame sender
-#[deriving(Send)]
 pub struct WebSocketSender<W: Writer, L> {
 	inner: Arc<Mutex<W>>,
 }
+
+unsafe impl<W: Writer + Send, L: Send>  Send for WebSocketSender<W, L> {}
 
 impl<W: Writer + Send> DataFrameSender<W> for WebSocketSender<W, Local> {
 	/// Create a new local WebSocketSender using the specified Writer
@@ -70,7 +71,7 @@ impl<W: Writer + Send> DataFrameSender<W> for WebSocketSender<W, Remote> {
 	}
 }
 
-impl<W: Writer, L> Clone for WebSocketSender<W, L> {
+impl<W: Writer + Send, L: Send> Clone for WebSocketSender<W, L> {
 	fn clone(&self) -> WebSocketSender<W, L> {
 		WebSocketSender {
 			inner: self.inner.clone()

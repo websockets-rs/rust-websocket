@@ -14,7 +14,7 @@ pub mod sender;
 pub mod receiver;
 
 /// Represents a WebSocket data frame. The data held in a WebSocketDataFrame is never masked.
-#[deriving(Clone, Send, PartialEq)]
+#[deriving(Clone, PartialEq)]
 #[stable]
 pub struct WebSocketDataFrame {
 	/// Whether or no this constitutes the end of a message

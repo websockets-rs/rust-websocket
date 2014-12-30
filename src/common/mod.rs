@@ -15,6 +15,7 @@ pub type WebSocketResult<T> = Result<T, WebSocketError>;
 #[deriving(Clone, Show, Copy)]
 #[stable]
 pub struct Local;
+
 /// Represents a remote endpoint
 #[deriving(Clone, Show, Copy)]
 #[stable]
@@ -24,6 +25,7 @@ pub struct Remote;
 #[deriving(Clone, Show, Copy)]
 #[stable]
 pub struct Inbound;
+
 /// Represents an outbound object
 #[deriving(Clone, Show, Copy)]
 #[stable]

@@ -24,11 +24,12 @@ pub type WebSocketLocalClient = WebSocketClient<WebSocketSender<WebSocketStream,
 pub type WebSocketRemoteClient = WebSocketClient<WebSocketSender<WebSocketStream, Remote>, WebSocketReceiver<WebSocketStream, Remote>, WebSocketConverter<WebSocketMessage>, WebSocketStream, WebSocketStream, WebSocketMessage>;
 
 /// Represents a WebSocketClient which connects to a WebSocketServer. See the main library documentation for how to obtain a ```WebSocketClient```.
-#[deriving(Send)]
-pub struct WebSocketClient<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader, W: Writer, M: WebSocketMessaging> {
+pub struct WebSocketClient<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> {
 	sender: Arc<Mutex<S>>,
 	receiver: Arc<Mutex<(R, C)>>,
 }
+
+unsafe impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Send for WebSocketClient<S, R, C, E, W, M> {}
 
 impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> WebSocketClient<S, R, C, E, W, M> {
 	/// Create a WebSocketClient from the specified DataFrameSender and DataFrameReceiver.

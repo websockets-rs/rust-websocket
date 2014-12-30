@@ -25,12 +25,12 @@ pub trait DataFrameConverter<M: WebSocketMessaging> : Send {
 }
 
 /// Default implementation of a converter that takes WebSocketDataFrames and produces WebSocketMessages
-#[deriving(Send)]
 pub struct WebSocketConverter<M: WebSocketMessaging> {
 	opcode: Option<WebSocketOpcode>,
 	data: Vec<u8>,
 	messages: Vec<M>,
 }
+unsafe impl<M: WebSocketMessaging> Send for WebSocketConverter<M> {}
 
 impl<M: WebSocketMessaging> DataFrameConverter<M> for WebSocketConverter<M> {
 	/// Creates a new DataFrameConverter
