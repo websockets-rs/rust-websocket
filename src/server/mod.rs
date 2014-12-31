@@ -123,6 +123,31 @@ impl<'a> Listener<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>, W
 	}
 }
 
+impl<'a> WebSocketAcceptor<'a> {
+	/// Prevents blocking on all future accepts after ms milliseconds have elapsed.
+	/// 
+	/// This function is used to set a deadline after which this acceptor will time out accepting any connections.
+	/// The argument is the relative distance, in milliseconds, to a point in the future after which all accepts will fail.
+	/// 
+	/// If the argument specified is None, then any previously registered timeout is cleared.
+	///
+	/// A timeout of 0 can be used to "poll" this acceptor to see if it has any pending connections.
+	/// All pending connections will be accepted, regardless of whether the timeout has expired or not (the accept will not block in this case).
+	pub fn set_timeout(&mut self, ms: Option<u64>) {
+		self.inner.set_timeout(ms)
+	}
+	/// Closes the accepting capabilities of this acceptor.
+	/// 
+	/// Once this function succeeds, all future calls to accept will return immediately with an error,
+	/// preventing all future calls to accept. The underlying socket will not be relinquished back to
+	/// the OS until all acceptors have been deallocated.
+	/// 
+	/// This is useful for waking up a thread in an accept loop to indicate that it should exit.
+	pub fn close_accept(&mut self) -> IoResult<()> {
+		self.inner.close_accept()
+	}
+}
+
 impl<'a> Acceptor<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>> for WebSocketAcceptor<'a> {
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
     fn accept(&mut self) -> IoResult<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>> {
@@ -155,4 +180,13 @@ impl<'a> Acceptor<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>> f
 			}
 		}
     }
+}
+
+impl<'a> Clone for WebSocketAcceptor<'a> {
+	fn clone(&self) -> Self {
+		WebSocketAcceptor {
+			inner: self.inner.clone(),
+			context: self.context
+		}
+	}
 }
