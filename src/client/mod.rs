@@ -4,7 +4,7 @@
 use dataframe::{DataFrameSender, DataFrameReceiver, DataFrameConverter};
 use dataframe::WebSocketDataFrame;
 use message::WebSocketMessaging;
-use common::WebSocketResult;
+use common::{WebSocketResult, WebSocketError, DataAvailable};
 use std::path::BytesContainer;
 use std::sync::{Arc, Mutex};
 
@@ -19,22 +19,22 @@ pub mod incoming;
 pub mod fragment;
 
 /// The most common local WebSocketClient type, provided for convenience.
-pub type WebSocketLocalClient = WebSocketClient<WebSocketSender<WebSocketStream, Local>, WebSocketReceiver<WebSocketStream, Local>, WebSocketConverter<WebSocketMessage>, WebSocketStream, WebSocketStream, WebSocketMessage>;
+pub type WebSocketLocalClient = WebSocketClient<WebSocketSender<WebSocketStream, Local>, WebSocketReceiver<WebSocketStream, Local>, WebSocketConverter<WebSocketMessage>>;
 /// The most common remote WebSocketClient type, provided for convenience.
-pub type WebSocketRemoteClient = WebSocketClient<WebSocketSender<WebSocketStream, Remote>, WebSocketReceiver<WebSocketStream, Remote>, WebSocketConverter<WebSocketMessage>, WebSocketStream, WebSocketStream, WebSocketMessage>;
+pub type WebSocketRemoteClient = WebSocketClient<WebSocketSender<WebSocketStream, Remote>, WebSocketReceiver<WebSocketStream, Remote>, WebSocketConverter<WebSocketMessage>>;
 
 /// Represents a WebSocketClient which connects to a WebSocketServer. See the main library documentation for how to obtain a ```WebSocketClient```.
-pub struct WebSocketClient<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> {
+pub struct WebSocketClient<S, R, C> {
 	sender: Arc<Mutex<S>>,
 	receiver: Arc<Mutex<(R, C)>>,
 }
 
-unsafe impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Send for WebSocketClient<S, R, C, E, W, M> {}
+unsafe impl<S: Send, R: Send, C: Send> Send for WebSocketClient<S, R, C> {}
 
-impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> WebSocketClient<S, R, C, E, W, M> {
+impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> WebSocketClient<S, R, C> {
 	/// Create a WebSocketClient from the specified DataFrameSender and DataFrameReceiver.
 	/// Not required for normal usage (used internally by ```WebSocketResponse```).
-	pub fn new(sender: S, receiver: R, converter: C) -> WebSocketClient<S, R, C, E, W, M> {
+	pub fn new(sender: S, receiver: R, converter: C) -> WebSocketClient<S, R, C> {
 		WebSocketClient {
 			sender: Arc::new(Mutex::new(sender)),
 			receiver: Arc::new(Mutex::new((receiver, converter))),
@@ -58,7 +58,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 
 	/// Gets an iterator over incoming data frames
 	#[stable]
-	pub fn incoming_dataframes(&mut self) -> IncomingDataFrames<S, R, C, E, W, M> {
+	pub fn incoming_dataframes(&mut self) -> IncomingDataFrames<S, R, C> {
 		IncomingDataFrames::new(self)
 	}
 	
@@ -85,7 +85,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	///}
 	///# }
 	/// ```
-	pub fn incoming_messages(&mut self) -> IncomingMessages<S, R, C, E, W, M> {
+	pub fn incoming_messages(&mut self) -> IncomingMessages<S, R, C> {
 		IncomingMessages::new(self)
 	}
 	
@@ -187,14 +187,50 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	}
 }
 
-impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Clone for WebSocketClient<S, R, C, E, W, M> {
+impl<S: DataFrameSender<W>, R: DataFrameReceiver<E> + DataAvailable, C: DataFrameConverter<M>, E: Reader + DataAvailable + Send, W: Writer + Send, M: WebSocketMessaging> WebSocketClient<S, R, C> {
+	/// Try to receive a data frame.
+	///
+	/// If no data is available, the functino returns immediately with the error NoDataAvailable.
+	/// If there is data available, the function will block until the whole data frame is received.
+	pub fn try_recv_dataframe(&mut self) -> WebSocketResult<WebSocketDataFrame> {
+		let mut receiver = self.receiver.lock();
+		if receiver.0.data_available() {
+			receiver.0.recv_dataframe()
+		}
+		else {
+			Err(WebSocketError::NoDataAvailable)
+		}
+	}
+	/// Try to receive a message.
+	///
+	/// If no data is available, the function returns immediately with the error NoDataAvailable.
+	/// If there is data available, the function will block until the whole message is received.
+	pub fn try_recv_message(&mut self) -> WebSocketResult<M> {
+		let mut receiver = self.receiver.lock();
+		if receiver.0.data_available() {
+			loop {
+				let dataframe = try!(receiver.0.recv_dataframe());
+				try!(receiver.1.push(dataframe));
+				match receiver.1.pop() {
+					Some(message) => { return Ok(message); }
+					None => { }
+				}
+			}
+		}
+		else {
+			Err(WebSocketError::NoDataAvailable)
+		}
+	}
+}
+
+impl<S, R, C> Clone for WebSocketClient<S, R, C> {
 	/// Clone this WebSocketClient, allowing for concurrent operations on a single stream.
 	/// 
 	/// All cloned clients refer to the same underlying stream. Simultaneous reads will not
 	/// return the same data; the first read will obtain one WebSocketMessage/WebSocketDataFrame,	
 	/// the second will obtain the next WebSocketMessage/WebSocketDataFrame, etc.
 	#[stable]
-	fn clone(&self) -> WebSocketClient<S, R, C, E, W, M> {
+	fn clone(&self) -> WebSocketClient<S, R, C> {
 		WebSocketClient {
 			sender: self.sender.clone(),
 			receiver: self.receiver.clone(),

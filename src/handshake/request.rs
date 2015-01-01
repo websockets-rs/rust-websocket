@@ -17,6 +17,11 @@ use handshake::response::WebSocketResponse;
 use common::{Inbound, Outbound, WebSocketStream, WebSocketResult, WebSocketError};
 use openssl::ssl::{SslMethod, SslContext, SslStream};
 
+/// The most common inbound request type, provided for convenience.
+pub type WebSocketInboundRequest = WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>;
+/// The most common outbound request type, provided for convenience.
+pub type WebSocketOutboundRequest = WebSocketRequest<WebSocketStream, WebSocketStream, Outbound>;
+
 /// Represents a WebSocket request
 /// 
 /// A WebSocketRequest is used to either make a connection to a WebSocket server using ```connect()```

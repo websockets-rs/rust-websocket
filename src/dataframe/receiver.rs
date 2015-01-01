@@ -1,6 +1,6 @@
 //! Traits and structs related to receiving WebSocket data frames
 #![unstable]
-use common::{Local, Remote, WebSocketResult, WebSocketError}; 
+use common::{Local, Remote, WebSocketResult, WebSocketError, DataAvailable}; 
 use dataframe::WebSocketDataFrame;
 use dataframe::raw::RawDataFrame;
 use dataframe::mask::mask_data;
@@ -13,8 +13,7 @@ use std::sync::{Arc, Mutex};
 /// Data frame receivers read data frames off a Reader, and return WebSocketDataFrames.
 /// The function RawDataFrame::read() can be used to read a RawDataFrame from a Reader,
 /// enabling the receiver to simply convert that RawDataFrame to a WebSocketDataFrame.
-pub trait DataFrameReceiver<R: Reader + Send>: Send {
-/// WebSocketDataFrame.
+pub trait DataFrameReceiver<R: Send>: Send {
 	/// Create a new receiver from a Reader
 	fn new(inner: R) -> Self;
 	/// Reads a data frame from the inner Reader
@@ -22,11 +21,11 @@ pub trait DataFrameReceiver<R: Reader + Send>: Send {
 }
 
 /// The default WebSocket data frame receiver
-pub struct WebSocketReceiver<R: Reader + Send, L: Send> {
+pub struct WebSocketReceiver<R: Send, L: Send> {
 	inner: Arc<Mutex<R>>,
 }
 
-unsafe impl<R: Reader + Send, L: Send>  Send for WebSocketReceiver<R, L> {}
+unsafe impl<R: Send, L: Send>  Send for WebSocketReceiver<R, L> {}
 
 impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Local> {
 	/// Create a new receiver from a Reader
@@ -52,11 +51,13 @@ impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Local> {
 }
 
 impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Remote> {
+	/// Create a new receiver from a Reader
 	fn new(inner: R) -> WebSocketReceiver<R, Remote> {
 		WebSocketReceiver {
 			inner: Arc::new(Mutex::new(inner))
 		}
 	}
+	/// Receive a data frame
 	fn recv_dataframe(&mut self) -> WebSocketResult<WebSocketDataFrame> {
 		let mut reader = self.inner.lock();
 		let rawframe = try!(RawDataFrame::read(&mut *reader));
@@ -72,7 +73,14 @@ impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Remote> {
 	}
 }
 
-impl<R: Reader + Send, L: Send> Clone for WebSocketReceiver<R, L> {
+impl<R: Reader + DataAvailable + Send, L: Send> DataAvailable for WebSocketReceiver<R, L> {
+	fn data_available(&mut self) -> bool {
+		let mut reader = self.inner.lock();
+		reader.data_available()
+	}
+}
+
+impl<R: Send, L: Send> Clone for WebSocketReceiver<R, L> {
 	fn clone(&self) -> WebSocketReceiver<R, L> {
 		WebSocketReceiver {
 			inner: self.inner.clone()

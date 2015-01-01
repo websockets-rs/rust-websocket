@@ -14,7 +14,7 @@ use std::sync::{Arc, Mutex};
 /// The function ```RawDataFrame.write()``` writes RawDataFrames to a Writer, allowing
 /// the data frame sender to simply convert a WebSocketDataFrame into a RawDataFrame
 /// and let the RawDataFrame do the writing.
-pub trait DataFrameSender<W: Writer + Send>: Send {
+pub trait DataFrameSender<W: Send>: Send {
 	/// Create a new sender from a Writer
 	fn new(inner: W) -> Self;
 	/// Write a data frame to the inner Writer
@@ -22,11 +22,11 @@ pub trait DataFrameSender<W: Writer + Send>: Send {
 }
 
 /// The default WebSocket data frame sender
-pub struct WebSocketSender<W: Writer, L> {
+pub struct WebSocketSender<W: Send, L> {
 	inner: Arc<Mutex<W>>,
 }
 
-unsafe impl<W: Writer + Send, L: Send>  Send for WebSocketSender<W, L> {}
+unsafe impl<W: Send, L: Send>  Send for WebSocketSender<W, L> {}
 
 impl<W: Writer + Send> DataFrameSender<W> for WebSocketSender<W, Local> {
 	/// Create a new local WebSocketSender using the specified Writer
@@ -52,11 +52,13 @@ impl<W: Writer + Send> DataFrameSender<W> for WebSocketSender<W, Local> {
 }
 
 impl<W: Writer + Send> DataFrameSender<W> for WebSocketSender<W, Remote> {
+	/// Create a new local WebSocketSender using the specified Writer
 	fn new(inner: W) -> WebSocketSender<W, Remote> {
 		WebSocketSender {
 			inner: Arc::new(Mutex::new(inner))
 		}
 	}
+	/// Send a data frame
 	fn send_dataframe(&mut self, dataframe: &WebSocketDataFrame) -> WebSocketResult<()> {
 		let rawframe = RawDataFrame {
 			finished: dataframe.finished,

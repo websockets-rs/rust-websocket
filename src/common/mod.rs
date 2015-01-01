@@ -3,6 +3,7 @@
 
 pub use self::error::WebSocketError;
 pub use self::stream::WebSocketStream;
+pub use self::stream::DataAvailable;
 
 pub mod stream;
 pub mod error;

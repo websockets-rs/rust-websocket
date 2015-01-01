@@ -19,6 +19,8 @@ pub enum WebSocketError {
 	ResponseError(String),
 	/// Invalid WebSocket data frame error
 	DataFrameError(String),
+	/// No data available
+	NoDataAvailable,
 	/// An input/output error
 	IoError(IoError),
 	/// An HTTP parsing error
@@ -38,6 +40,7 @@ impl Error for WebSocketError {
 			WebSocketError::RequestError(_) => "WebSocket request error",
 			WebSocketError::ResponseError(_) => "WebSocket response error",
 			WebSocketError::DataFrameError(_) => "WebSocket data frame error",
+			WebSocketError::NoDataAvailable => "No data available",
             WebSocketError::IoError(_) => "I/O failure",
             WebSocketError::HttpError(_) => "HTTP failure",
 			WebSocketError::UrlError(_) => "URL failure",
