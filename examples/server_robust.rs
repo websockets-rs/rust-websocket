@@ -34,15 +34,17 @@ fn manage_clients(tx: Sender<WebSocketRemoteClient>, rx: Receiver<WebSocketRemot
 	let pool = TaskPool::new(os::num_cpus());
 	loop {
 		let tx = tx.clone();
+		// Wait for a client to be sent
 		let client = rx.recv();
-		pool.execute(move || process_message(client, tx));
+		// Tell a worker thread to handle it
+		pool.execute(move || process_client(client, tx));
 	}
 }
 
-fn process_message(mut client: WebSocketRemoteClient, tx: Sender<WebSocketRemoteClient>) {
+fn process_client(mut client: WebSocketRemoteClient, tx: Sender<WebSocketRemoteClient>) {
 	let received = client.try_recv_message();
 	match received {
-		Ok(message) => {
+		Ok(message) => { // We have a message
 			match message {
 				// Handle Ping messages by sending Pong messages
 				WebSocketMessage::Ping(data) => {
@@ -59,17 +61,17 @@ fn process_message(mut client: WebSocketRemoteClient, tx: Sender<WebSocketRemote
 					// Send a close message
 					let message = WebSocketMessage::Close(None);
 					client.send_message(message).ok().expect("Failed to send message");
-					return;
+					return; // Return immediately, and don't sent the client back to the manager
 				}
 				_ => { }
 			}
 		}
-		Err(err) => match err {
-			WebSocketError::NoDataAvailable => { }
-			_ => return,
+		Err(err) => match err { // There was an error
+			WebSocketError::NoDataAvailable => { } // There was no message, so just hand back to the manager
+			_ => return, // Return immediately, and don't sent the client back to the manager
 		},
 	}
-	tx.send(client);
+	tx.send(client); // Send the client back to the manager
 }
 
 fn process_request(request: IoResult<WebSocketInboundRequest>, tx: Sender<WebSocketRemoteClient>) {
@@ -78,9 +80,9 @@ fn process_request(request: IoResult<WebSocketInboundRequest>, tx: Sender<WebSoc
 	
 	// Let's also check the protocol - if it's not what we want, then fail the connection
 	if request.protocol().is_none() || !request.protocol().unwrap().as_slice().contains(&"rust-websocket".to_string()) {
-		//let response = request.fail();
-		//let _ = response.send_into_inner();
-		//return;
+		let response = request.fail();
+		let _ = response.send_into_inner();
+		panic!("Invalid Sec-WebSocket-Protocol");
 	}
 
 	let mut response = request.accept(); // Generate a response
