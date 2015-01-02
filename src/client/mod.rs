@@ -44,7 +44,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	/// Sends a WebSocketDataFrame. Blocks the task until the message has been sent.
 	#[stable]
 	pub fn send_dataframe(&mut self, dataframe: &WebSocketDataFrame) -> WebSocketResult<()> {
-		let mut sender = self.sender.lock();
+		let mut sender = self.sender.lock().unwrap();
 		sender.send_dataframe(dataframe)
 	}
 	
@@ -52,7 +52,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	/// so do not use both at the same time (ie. either use only recv_dataframe() or use only recv_message())
 	#[stable]
 	pub fn recv_dataframe(&mut self) -> WebSocketResult<WebSocketDataFrame> {
-		let mut receiver = self.receiver.lock();
+		let mut receiver = self.receiver.lock().unwrap();
 		receiver.0.recv_dataframe()
 	}
 
@@ -109,7 +109,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	///# }
 	/// ```
 	pub fn frag_send_text<'a, T: ToString>(&'a mut self, text: T) -> WebSocketResult<TextFragmentSender<'a, S, W>> {
-		TextFragmentSender::new(self.sender.lock(), text)
+		TextFragmentSender::new(self.sender.lock().unwrap(), text)
 	}
 	
 	/// Sends a fragmented binary message by returning a BinaryFragmentSender
@@ -130,7 +130,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	///# }
 	/// ```
 	pub fn frag_send_bytes<'a, T: BytesContainer>(&'a mut self, data: T) -> WebSocketResult<BinaryFragmentSender<'a, S, W>> {
-		BinaryFragmentSender::new(self.sender.lock(), data)
+		BinaryFragmentSender::new(self.sender.lock().unwrap(), data)
 	}
 	
 	/// Sends a WebSocketMessage. Blocks the task until the message has been sent.
@@ -175,7 +175,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	///# }
 	/// ```
 	pub fn recv_message(&mut self) -> WebSocketResult<M> {
-		let mut receiver = self.receiver.lock();
+		let mut receiver = self.receiver.lock().unwrap();
 		loop {
 			let dataframe = try!(receiver.0.recv_dataframe());
 			try!(receiver.1.push(dataframe));
@@ -193,7 +193,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E> + DataAvailable, C: DataFram
 	/// If no data is available, the functino returns immediately with the error NoDataAvailable.
 	/// If there is data available, the function will block until the whole data frame is received.
 	pub fn try_recv_dataframe(&mut self) -> WebSocketResult<WebSocketDataFrame> {
-		let mut receiver = self.receiver.lock();
+		let mut receiver = self.receiver.lock().unwrap();
 		if receiver.0.data_available() {
 			receiver.0.recv_dataframe()
 		}
@@ -206,7 +206,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E> + DataAvailable, C: DataFram
 	/// If no data is available, the function returns immediately with the error NoDataAvailable.
 	/// If there is data available, the function will block until the whole message is received.
 	pub fn try_recv_message(&mut self) -> WebSocketResult<M> {
-		let mut receiver = self.receiver.lock();
+		let mut receiver = self.receiver.lock().unwrap();
 		if receiver.0.data_available() {
 			loop {
 				let dataframe = try!(receiver.0.recv_dataframe());

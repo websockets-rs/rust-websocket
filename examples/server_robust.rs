@@ -73,16 +73,16 @@ fn process_message(mut client: WebSocketRemoteClient, tx: Sender<WebSocketRemote
 }
 
 fn process_request(request: IoResult<WebSocketInboundRequest>, tx: Sender<WebSocketRemoteClient>) {
-	let request = request.ok().expect("Failed to read request");
+	let request = request.ok().expect("Failed to read WebSocket request");
 	request.validate().ok().expect("Invalid WebSocket request");
 	
 	// Let's also check the protocol - if it's not what we want, then fail the connection
 	if request.protocol().is_none() || !request.protocol().unwrap().as_slice().contains(&"rust-websocket".to_string()) {
-		let response = request.fail();
-		let _ = response.send_into_inner();
-		return;
+		//let response = request.fail();
+		//let _ = response.send_into_inner();
+		//return;
 	}
-	
+
 	let mut response = request.accept(); // Generate a response
 	response.headers.set(WebSocketProtocol(vec!["rust-websocket".to_string()])); // Send a Sec-WebSocket-Protocol header
 	let mut client = response.send().ok().expect("Failed to obtain client"); // Send the response

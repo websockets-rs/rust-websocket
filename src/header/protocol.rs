@@ -24,7 +24,7 @@ impl Header for WebSocketProtocol {
 		let protocols = raw.iter()
 			.filter_map(|line| from_one_comma_delimited(line.as_slice()))
 			.collect::<Vec<Vec<String>>>()
-			.concat_vec();
+			.concat();
 		if protocols.len() > 0 {
 			Some(WebSocketProtocol(protocols))
 		}

@@ -36,7 +36,7 @@ impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Local> {
 	}
 	/// Receive a data frame
 	fn recv_dataframe(&mut self) -> WebSocketResult<WebSocketDataFrame> {
-		let mut reader = self.inner.lock();
+		let mut reader = self.inner.lock().unwrap();
 		let rawframe = try!(RawDataFrame::read(&mut *reader));
 		if rawframe.mask.is_some() {
 			return Err(WebSocketError::DataFrameError("Data frames from the server must not be masked".to_string()));
@@ -59,7 +59,7 @@ impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Remote> {
 	}
 	/// Receive a data frame
 	fn recv_dataframe(&mut self) -> WebSocketResult<WebSocketDataFrame> {
-		let mut reader = self.inner.lock();
+		let mut reader = self.inner.lock().unwrap();
 		let rawframe = try!(RawDataFrame::read(&mut *reader));
 		if rawframe.mask.is_none() {
 			return Err(WebSocketError::DataFrameError("Data frames from the client must be masked".to_string()));
@@ -75,7 +75,7 @@ impl<R: Reader + Send> DataFrameReceiver<R> for WebSocketReceiver<R, Remote> {
 
 impl<R: Reader + DataAvailable + Send, L: Send> DataAvailable for WebSocketReceiver<R, L> {
 	fn data_available(&mut self) -> bool {
-		let mut reader = self.inner.lock();
+		let mut reader = self.inner.lock().unwrap();
 		reader.data_available()
 	}
 }

@@ -46,7 +46,7 @@ impl<W: Writer + Send> DataFrameSender<W> for WebSocketSender<W, Local> {
 			length: DataFrameLength::new(dataframe.data.len()),
 			data: mask_data(masking_key, dataframe.data.as_slice()),
 		};
-		let mut writer = self.inner.lock();
+		let mut writer = self.inner.lock().unwrap();
 		rawframe.write(&mut *writer)
 	}
 }
@@ -68,7 +68,7 @@ impl<W: Writer + Send> DataFrameSender<W> for WebSocketSender<W, Remote> {
 			length: DataFrameLength::new(dataframe.data.len()),
 			data: dataframe.data.clone(),
 		};
-		let mut writer = self.inner.lock();
+		let mut writer = self.inner.lock().unwrap();
 		rawframe.write(&mut *writer)
 	}
 }

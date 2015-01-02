@@ -24,7 +24,7 @@ impl Header for WebSocketExtensions {
 		let extensions = raw.iter()
 			.filter_map(|line| from_one_comma_delimited(line.as_slice()))
 			.collect::<Vec<Vec<String>>>()
-			.concat_vec();
+			.concat();
 		if extensions.len() > 0 {
 			Some(WebSocketExtensions(extensions))
 		}
