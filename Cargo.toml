@@ -19,11 +19,8 @@ license = "MIT"
 [dependencies.sha1]
 git = "https://github.com/cyderize/rust-sha1.git"
 
-[dependencies.hyper]
-git = "https://github.com/reem/hyper.git"
-branch = "rust-and-deps-update"
-
 [dependencies]
+hyper = "~0.0.21"
 openssl = "~0.2.12"
 url = "~0.2.13"
 rustc-serialize = "~0.2.4"
