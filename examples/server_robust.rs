@@ -5,6 +5,7 @@ use std::sync::TaskPool;
 use std::thread::Thread;
 use std::io::{Listener, Acceptor};
 use std::io::IoResult;
+use std::sync::mpsc::{Sender, Receiver, channel};
 use websocket::{WebSocketServer, WebSocketMessage};
 use websocket::header::WebSocketProtocol;
 use websocket::common::WebSocketError;
@@ -35,7 +36,7 @@ fn manage_clients(tx: Sender<WebSocketRemoteClient>, rx: Receiver<WebSocketRemot
 	loop {
 		let tx = tx.clone();
 		// Wait for a client to be sent
-		let client = rx.recv();
+		let client = rx.recv().unwrap();
 		// Tell a worker thread to handle it
 		pool.execute(move || process_client(client, tx));
 	}
@@ -71,7 +72,7 @@ fn process_client(mut client: WebSocketRemoteClient, tx: Sender<WebSocketRemoteC
 			_ => return, // Return immediately, and don't sent the client back to the manager
 		},
 	}
-	tx.send(client); // Send the client back to the manager
+	tx.send(client).ok().expect("Failed to send client to manager"); // Send the client back to the manager
 }
 
 fn process_request(request: IoResult<WebSocketInboundRequest>, tx: Sender<WebSocketRemoteClient>) {
@@ -94,5 +95,5 @@ fn process_request(request: IoResult<WebSocketInboundRequest>, tx: Sender<WebSoc
 	client.send_message(message).ok().expect("Failed to send message");
 	
 	// Consider the connection established, send the client to the manager
-	tx.send(client);
+	tx.send(client).ok().expect("Failed to send client to manager");
 }

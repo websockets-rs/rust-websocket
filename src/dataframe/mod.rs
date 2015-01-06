@@ -14,13 +14,13 @@ pub mod sender;
 pub mod receiver;
 
 /// Represents a WebSocket data frame. The data held in a WebSocketDataFrame is never masked.
-#[deriving(Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 #[stable]
 pub struct WebSocketDataFrame {
 	/// Whether or no this constitutes the end of a message
 	pub finished: bool,
 	/// The reserved portion of the data frame (RFC6455 5.2)
-	pub reserved: [bool, ..3],
+	pub reserved: [bool; 3],
 	/// The opcode associated with this data frame
 	pub opcode: WebSocketOpcode,
 	/// The payload associated with this data frame
@@ -32,7 +32,7 @@ impl WebSocketDataFrame {
 	pub fn new(finished: bool, opcode: WebSocketOpcode, data: Vec<u8>) -> WebSocketDataFrame {
 		WebSocketDataFrame {
 			finished: finished,
-			reserved: [false, ..3],
+			reserved: [false; 3],
 			opcode: opcode,
 			data: data,
 		}

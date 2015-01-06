@@ -1,9 +1,9 @@
 use hyper::header::{Header, HeaderFormat};
-use hyper::header::common::util::from_one_raw_str;
-use std::fmt::{mod, Show};
+use hyper::header::shared::util::from_one_raw_str;
+use std::fmt::{self, Show};
 
 /// Represents a Sec-WebSocket-Version header
-#[deriving(PartialEq, Clone)]
+#[derive(PartialEq, Clone)]
 pub enum WebSocketVersion {
 	/// The version of WebSocket defined in RFC6455
 	WebSocket13,

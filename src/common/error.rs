@@ -9,7 +9,7 @@ use url::ParseError;
 use std::str::Utf8Error;
 
 /// Represents a WebSocket error
-#[deriving(Show, PartialEq, Clone)]
+#[derive(Show, PartialEq, Clone)]
 pub enum WebSocketError {
 	/// A WebSocket protocol error
 	ProtocolError(String),

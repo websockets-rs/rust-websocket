@@ -1,6 +1,7 @@
 #![unstable]
 //! Structs for WebSocket responses
 use std::option::Option;
+use std::num::FromPrimitive;
 use hyper::status::StatusCode;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;

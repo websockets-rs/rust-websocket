@@ -5,7 +5,7 @@ use std::iter::CloneIteratorExt;
 
 /// Masks data to send to a server
 #[stable]
-pub fn mask_data(key: [u8, ..4], buf: &[u8]) -> Vec<u8> {
+pub fn mask_data(key: [u8; 4], buf: &[u8]) -> Vec<u8> {
 	let mut out = Vec::new();
 	let mut zip_iter = buf.iter().zip(key.iter().cycle());
 	for (&buf_item, &key_item) in zip_iter {
@@ -16,7 +16,7 @@ pub fn mask_data(key: [u8, ..4], buf: &[u8]) -> Vec<u8> {
 
 /// Generates a random masking key
 #[stable]
-pub fn gen_mask() -> [u8, ..4] {
+pub fn gen_mask() -> [u8; 4] {
 	[rand::random::<u8>(), rand::random::<u8>(), rand::random::<u8>(), rand::random::<u8>()]
 }
 

@@ -1,14 +1,16 @@
 use hyper::header::{Header, HeaderFormat};
-use hyper::header::common::util::{from_one_comma_delimited, fmt_comma_delimited};
-use std::fmt::{mod};
+use hyper::header::shared::util::{from_one_comma_delimited, fmt_comma_delimited};
+use std::fmt;
+use std::ops::Deref;
 
 /// Represents a Sec-WebSocket-Extensions header
-#[deriving(PartialEq, Clone, Show)]
+#[derive(PartialEq, Clone, Show)]
 #[stable]
 pub struct WebSocketExtensions(pub Vec<String>);
 
 #[stable]
-impl Deref<Vec<String>> for WebSocketExtensions {
+impl Deref for WebSocketExtensions {
+	type Target = Vec<String>;
 	#[stable]
     fn deref<'a>(&'a self) -> &'a Vec<String> {
         &self.0

@@ -125,7 +125,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	///# let response = request.send().unwrap();
 	///# let mut client = response.begin();
 	///let mut fragment_sender = client.frag_send_bytes("ascii_bytes").unwrap();
-	///let _ = fragment_sender.send([100u8, ..4].as_slice());
+	///let _ = fragment_sender.send([100u8; 4].as_slice());
 	///let _ = fragment_sender.finish(vec![4u8, 2, 68, 24]);
 	///# }
 	/// ```

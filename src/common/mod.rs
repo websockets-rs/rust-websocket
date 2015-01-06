@@ -13,21 +13,21 @@ pub mod error;
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
 
 /// Represents a local endpoint
-#[deriving(Clone, Show, Copy)]
+#[derive(Clone, Show, Copy)]
 #[stable]
 pub struct Local;
 
 /// Represents a remote endpoint
-#[deriving(Clone, Show, Copy)]
+#[derive(Clone, Show, Copy)]
 #[stable]
 pub struct Remote;
 
 /// Represents an inbound object
-#[deriving(Clone, Show, Copy)]
+#[derive(Clone, Show, Copy)]
 #[stable]
 pub struct Inbound;
 
 /// Represents an outbound object
-#[deriving(Clone, Show, Copy)]
+#[derive(Clone, Show, Copy)]
 #[stable]
 pub struct Outbound;

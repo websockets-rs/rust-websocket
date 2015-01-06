@@ -7,17 +7,17 @@ use common::{WebSocketResult, WebSocketError};
 /// 
 /// Unlike a WebSocketDataFrame, the data in a RawDataFrame is exactly as it was
 /// constructed, i.e. it may or may not be masked.
-#[deriving(Clone, Show, PartialEq)]
+#[derive(Clone, Show, PartialEq)]
 #[stable]
 pub struct RawDataFrame {
 	/// The FIN bit
 	pub finished: bool,
 	/// The reserved bits
-	pub reserved: [bool, ..3],
+	pub reserved: [bool; 3],
 	/// The opcode
 	pub opcode: WebSocketOpcode,
 	/// The masking key, if any
-	pub mask: Option<[u8, ..4]>,
+	pub mask: Option<[u8; 4]>,
 	/// The payload length
 	pub length: DataFrameLength,
 	/// THe payload
@@ -72,7 +72,7 @@ impl RawDataFrame {
 			length = DataFrameLength::Long(length_long);
 		}
 		
-		let masking_key: Option<[u8, ..4]> =
+		let masking_key: Option<[u8; 4]> =
 			if mask {
 				Some([
 					try!(reader.read_byte()),
@@ -159,7 +159,7 @@ impl RawDataFrame {
 }
 
 /// Represents a payload length, which can be either 8, 16 or 64 bits long
-#[deriving(Clone, Show, Copy, PartialEq)]
+#[derive(Clone, Show, Copy, PartialEq)]
 #[stable]
 pub enum DataFrameLength {
 	/// Data frame lengths less than 126
@@ -202,7 +202,7 @@ fn test_read_dataframe() {
 	let dataframe = RawDataFrame::read(&mut buffer).unwrap();
 	let expected = RawDataFrame {
 		finished: true,
-		reserved: [false, ..3],
+		reserved: [false; 3],
 		opcode: WebSocketOpcode::Text,
 		mask: None,
 		length: DataFrameLength::Tiny(6),
@@ -216,7 +216,7 @@ fn test_read_dataframe() {
 fn test_write_dataframe() {
 	let dataframe = RawDataFrame {
 		finished: true,
-		reserved: [false, ..3],
+		reserved: [false; 3],
 		opcode: WebSocketOpcode::Text,
 		mask: None,
 		length: DataFrameLength::Tiny(6),

@@ -40,13 +40,15 @@ impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M
 	}
 }
 
-impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Iterator<WebSocketResult<WebSocketDataFrame>> for IncomingDataFrames<'a, S, R, C> {
+impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Iterator for IncomingDataFrames<'a, S, R, C> {
+	type Item = WebSocketResult<WebSocketDataFrame>;
 	fn next(&mut self) -> Option<WebSocketResult<WebSocketDataFrame>> {
 		Some(self.inner.recv_dataframe())
 	}
 }
 
-impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Iterator<WebSocketResult<M>> for IncomingMessages<'a, S, R, C> {
+impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Iterator for IncomingMessages<'a, S, R, C> {
+	type Item = WebSocketResult<M>;
 	fn next(&mut self) -> Option<WebSocketResult<M>> {
 		Some(self.inner.recv_message())
 	}

@@ -1,15 +1,15 @@
 use hyper::header::{Header, HeaderFormat};
-use hyper::header::common::util::from_one_raw_str;
-use std::fmt::{mod, Show};
+use hyper::header::shared::util::from_one_raw_str;
+use std::fmt::{self, Show};
 use std::rand;
 use std::str::FromStr;
 use std::slice::bytes::copy_memory;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
 
 /// Represents a Sec-WebSocket-Key header.
-#[deriving(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 #[stable]
-pub struct WebSocketKey(pub [u8, ..16]);
+pub struct WebSocketKey(pub [u8; 16]);
 
 #[stable]
 impl Show for WebSocketKey {
@@ -26,7 +26,7 @@ impl FromStr for WebSocketKey {
 		match key.from_base64() {
 			Ok(vec) => {
 				if vec.len() != 16 { return None; }
-				let mut array = [0u8, ..16];
+				let mut array = [0u8; 16];
 				copy_memory(&mut array, vec.as_slice());
 				Some(WebSocketKey(array))
 			}
@@ -40,7 +40,7 @@ impl WebSocketKey {
 	/// Generate a new, random WebSocketKey
 	#[stable]
 	pub fn new() -> WebSocketKey {
-		let mut key = [0u8, ..16];
+		let mut key = [0u8; 16];
 		for item in key.iter_mut() {
 			*item = rand::random::<u8>();
 		}

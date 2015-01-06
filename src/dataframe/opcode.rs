@@ -1,7 +1,7 @@
 //! Provides an enumeration of WebSocket opcodes
 #![stable]
 /// Represents a WebSocket data frame opcode
-#[deriving(Clone, Show, Copy, PartialEq)]
+#[derive(Clone, Show, Copy, PartialEq)]
 pub enum WebSocketOpcode {
 	/// A continuation data frame
 	Continuation,

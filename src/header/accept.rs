@@ -1,6 +1,6 @@
 use hyper::header::{Header, HeaderFormat};
-use hyper::header::common::util::from_one_raw_str;
-use std::fmt::{mod, Show};
+use hyper::header::shared::util::from_one_raw_str;
+use std::fmt::{self, Show};
 use sha1::Sha1;
 use std::str::FromStr;
 use std::slice::bytes::copy_memory;
@@ -10,9 +10,9 @@ use header::WebSocketKey;
 static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 /// Represents a Sec-WebSocket-Accept header
-#[deriving(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy)]
 #[stable]
-pub struct WebSocketAccept([u8, ..20]);
+pub struct WebSocketAccept([u8; 20]);
 
 #[stable]
 impl Show for WebSocketAccept {
@@ -29,7 +29,7 @@ impl FromStr for WebSocketAccept {
 		match accept.from_base64() {
 			Ok(vec) => {
 				if vec.len() != 20 { return None; }
-				let mut array = [0u8, ..20];
+				let mut array = [0u8; 20];
 				copy_memory(&mut array, vec.as_slice());
 				Some(WebSocketAccept(array))
 			}
@@ -46,7 +46,7 @@ impl WebSocketAccept {
 		let concat_key = key.serialize() + MAGIC_GUID;
 		let mut sha1 = Sha1::new();
 		sha1.update(concat_key.into_bytes().as_slice());
-		let mut bytes = [0u8, ..20];
+		let mut bytes = [0u8; 20];
 		sha1.output(&mut bytes);
 		WebSocketAccept(bytes)
 	}

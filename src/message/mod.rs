@@ -6,6 +6,7 @@ use common::{WebSocketResult, WebSocketError};
 use std::option::Option;
 use std::str::from_utf8;
 use std::io::IoResult;
+use std::slice::SliceExt;
 
 /// A trait for WebSocket messages
 /// 
@@ -18,7 +19,7 @@ pub trait WebSocketMessaging: Send {
 }
 
 /// Represents a WebSocket message.
-#[deriving(PartialEq, Clone, Show)]
+#[derive(PartialEq, Clone, Show)]
 pub enum WebSocketMessage {
 	/// A message containing UTF-8 text data
 	Text(String),
@@ -46,8 +47,8 @@ impl WebSocketMessaging for WebSocketMessage {
 			WebSocketOpcode::Binary => { WebSocketMessage::Binary(data) }
 			WebSocketOpcode::Close => {
 				if data.len() > 0 {				
-					let status_code = (data[0] as u16 << 8) | data[1] as u16;
-					let reason = try!(bytes_to_string(data.slice_from_or_fail(&2u)));
+					let status_code = ((data[0] as u16) << 8) | data[1] as u16;
+					let reason = try!(bytes_to_string(data.slice_from(2)));
 					let close_data = CloseData::new(status_code, reason);
 					WebSocketMessage::Close(Some(close_data))
 				}
@@ -80,7 +81,7 @@ impl WebSocketMessaging for WebSocketMessage {
 }
 
 /// Represents data contained in a Close message
-#[deriving(PartialEq, Clone, Show)]
+#[derive(PartialEq, Clone, Show)]
 pub struct CloseData {
 	/// The status-code of the CloseData
 	pub status_code: u16,
