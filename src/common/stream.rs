@@ -90,6 +90,11 @@ impl Writer for WebSocketStream {
 
 impl DataAvailable for WebSocketStream {
 	/// True if data is available
+	///
+	/// Behind the scenes, this performs a read with a short timeout.
+	/// If the read does timeout, the function returns false. If not,
+	/// the function returns true and also keeps that read data available
+	/// for when the stream is next read from.
 	fn data_available(&mut self) -> bool {
 		let mut to_nbuffer = None;
 		let mut to_sbuffer = None;

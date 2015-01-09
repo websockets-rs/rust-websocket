@@ -31,7 +31,8 @@ pub type WebSocketOutboundRequest = WebSocketRequest<WebSocketStream, WebSocketS
 /// can be called on either kind of request.
 /// 
 /// The headers field allows access to the HTTP headers in the request, but short-cut methods are
-/// available for accessing common headers.
+/// available for accessing common headers. The headers of outbound requests can be altered until
+/// the request is sent with ```send()```.
 pub struct WebSocketRequest<R: Reader, W: Writer, B> {
 	/// The target URI for this request.
     pub url: RequestUri,
@@ -75,6 +76,30 @@ impl WebSocketRequest<WebSocketStream, WebSocketStream, Outbound> {
 	/// If a wss:// URL is supplied, a default SslContext is used.
 	/// ```connect_ssl_context()``` can be used to supply an SslContext
 	/// for use.
+	///
+	/// A connection is established, however the request is not sent to
+	/// the server until a call to ```send()```.
+	///
+	/// ```no_run
+	///extern crate url;
+	///extern crate websocket;
+	///# fn main() {
+	///use websocket::WebSocketRequest;
+	///use websocket::header::WebSocketProtocol;
+	///use url::Url;
+	///let url = Url::parse("ws://127.0.0.1:2794").unwrap();
+	///let mut request = WebSocketRequest::connect(url).unwrap(); 
+	///let key = request.key().unwrap().clone(); // Keep this key so we can validate the response
+	///
+	///let protocol = WebSocketProtocol(vec!["rust-websocket".to_string()]);
+	///request.headers.set(protocol); /// Set the Sec-WebSocket-Protocol header
+	///
+	///let response = request.send().unwrap(); // Send the request and retrieve the response
+	///response.validate(&key).unwrap(); // Ensure the response is valid, and panic if it isn't
+	///
+	///let mut client = response.begin(); // Retrieve a WebSocketClient object
+	///# }
+	/// ```
 	pub fn connect(url: Url) -> WebSocketResult<WebSocketRequest<WebSocketStream, WebSocketStream, Outbound>> {
 		let (host, port) = match get_host_and_port(&url) {
 			Some((host, port)) => (host, port),
@@ -99,6 +124,9 @@ impl WebSocketRequest<WebSocketStream, WebSocketStream, Outbound> {
 	}
 	
 	/// Connects to the specified wss:// URL using the given SSL context
+	///
+	/// A connection is established, however the request is not sent to
+	/// the server until a call to ```send()```.
 	pub fn connect_ssl_context(url: Url, context: &SslContext) -> WebSocketResult<WebSocketRequest<WebSocketStream, WebSocketStream, Outbound>> {
 		let (host, port) = match get_host_and_port(&url) {
 			Some((host, port)) => (host, port),
@@ -121,7 +149,9 @@ impl WebSocketRequest<WebSocketStream, WebSocketStream, Outbound> {
 
 impl<R: Reader + Send, W: Writer + Send> WebSocketRequest<R, W, Outbound> {
 	/// Create a new outbound request using the specified Reader and Writer.
-	pub fn new(url: Url, reader: R, writer: W) -> WebSocketResult<WebSocketRequest<R, W, Outbound>> {
+	///
+	/// The request is not written to the Writer until a call to ```send()```.
+	pub fn connect_with(url: Url, reader: R, writer: W) -> WebSocketResult<WebSocketRequest<R, W, Outbound>> {
 		let (host, port) = match get_host_and_port(&url) {
 			Some((host, port)) => (host, port),
 			None => { return Err(WebSocketError::RequestError("Could not get host and port for connection".to_string())); }

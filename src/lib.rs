@@ -7,6 +7,9 @@
 //! Rust-WebSocket attempts to provide a framework for WebSocket connections (both clients and servers).
 //! The library is currently in an unstable state, but provides all required functionality to implement a WebSocket server or client
 //! with the capability to send and receive data frames, messages, and fragmented messages.
+//!
+//! Find this project on [GitHub](https://github.com/cyderize/rust-websocket) or [crates.io](https://crates.io/crates/websocket).
+//!
 //!#Clients
 //! To create a WebSocket client, use ```WebSocketRequest::connect()``` and supply a WebSocket URI (e.g. ```ws://127.0.0.1:1234```).
 //! Call ```send()``` on that request to retrieve the server's response, and if the response constitutes a success, use
@@ -30,6 +33,8 @@
 //!// ...
 //!# }
 //! ```
+//! See the documentation for WebSocketRequest for more information on how requests are sent.
+//!
 //!#Servers
 //! To implement a server, use ```WebSocketServer::bind()``` and supply a socket address (e.g. ```127.0.0.1:1234```).
 //! Call ```listen()``` on that server to retrieve a WebSocketAcceptor, ready accepts WebSocket connections.
@@ -110,6 +115,29 @@
 //! within Rust-WebSocket.
 //! 
 //! See each trait for more detailed information.
+//!
+//! The most important type is the WebSocketClient, which wraps a DataFrameSender, DataFrameReceiver and DataFrameConverter.
+//! The sender, receiver and converter provide the underlying functionality required for the client.
+//!
+//! A DataFrameSender wraps a Writer, which is generally a WebSocket stream on to which data is written. The DataFrameSender must
+//! provide a means of instantiation with ```new()``` and a way to write a WebSocketDataFrame with ```send_dataframe()```.
+//!
+//! A DataFrameReceiver wraps a Reader, which is generally a WebSocket stream off of which data is read. The DataFrameReceiver
+//! must provid a means of instantiation with ```new()``` and a way to read a WebSocketDataFrame with ```recv_dataframe()```.
+//!
+//! The RawDataFrame provides a convenient middle layer between a stream and a WebSocketDataFrame. A RawDataFrame contains
+//! the complete structure of an RFC6455 data frame. The ```read()``` and ```write()``` methods allow a DataFrameSender or
+//! DataFrameReceiver to simply provide the underlying stream to the RawDataFrame and let it do the job of writing or reading.
+//! Then, the DataFrameSender and DataFrameReceiver only need to provide conversion between WebSocketDataFrames and RawDataFrame.
+//!
+//! A DataFrameConverter takes WebSocketDataFrames and produces messages. A message needs to implement the WebSocketMessaging trait,
+//! which allows for the creation of a message using a WebSocketOpcode and binary data, as well as the conversion of the message
+//! into a dataframe.
+//!
+//! These traits are unstable and subject to change at any time. In the future, the WebSocketDataFrame is likely to be made into a trait
+//! to better allow for custom extensions to the WebSocket protocol. In addition, the WebSocketMessaging trait will likely allow messages
+//! to produce multiple data frames from themselves.
+
 extern crate hyper;
 extern crate url;
 extern crate "rustc-serialize" as serialize;

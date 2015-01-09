@@ -23,7 +23,15 @@ pub type WebSocketLocalClient = WebSocketClient<WebSocketSender<WebSocketStream,
 /// The most common remote WebSocketClient type, provided for convenience.
 pub type WebSocketRemoteClient = WebSocketClient<WebSocketSender<WebSocketStream, Remote>, WebSocketReceiver<WebSocketStream, Remote>, WebSocketConverter<WebSocketMessage>>;
 
-/// Represents a WebSocketClient which connects to a WebSocketServer. See the main library documentation for how to obtain a ```WebSocketClient```.
+/// Represents a WebSocketClient which connects to a WebSocketServer.
+/// 
+/// See the main library documentation for how to obtain a ```WebSocketClient```.
+/// The most commonly used methods are ```send_message()``` and ```recv_message()```.
+///
+/// Note that you can ```clone()``` a WebSocketClient, and that clone will represent
+/// the same connection. The cloned clients may be captured into another thread so
+/// concurrent sending/receiving can occur. A locking mechanism is used to ensure that
+/// whole dataframes/messages are sent or received by the client.
 pub struct WebSocketClient<S, R, C> {
 	sender: Arc<Mutex<S>>,
 	receiver: Arc<Mutex<(R, C)>>,
@@ -41,7 +49,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 		}
 	}
 	
-	/// Sends a WebSocketDataFrame. Blocks the task until the message has been sent.
+	/// Sends a single WebSocketDataFrame. Blocks until the message has been sent.
 	#[stable]
 	pub fn send_dataframe(&mut self, dataframe: &WebSocketDataFrame) -> WebSocketResult<()> {
 		let mut sender = self.sender.lock().unwrap();
@@ -49,20 +57,21 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	}
 	
 	/// Receives a single WebSocketDataFrame - may corrupt messages received from recv_message(),
-	/// so do not use both at the same time (ie. either use only recv_dataframe() or use only recv_message())
+	/// so do not use both at the same time (ie. either use recv_dataframe() exclusively or use
+	/// recv_message() exclusively).
 	#[stable]
 	pub fn recv_dataframe(&mut self) -> WebSocketResult<WebSocketDataFrame> {
 		let mut receiver = self.receiver.lock().unwrap();
 		receiver.0.recv_dataframe()
 	}
 
-	/// Gets an iterator over incoming data frames
+	/// Returns an iterator over incoming data frames.
 	#[stable]
 	pub fn incoming_dataframes(&mut self) -> IncomingDataFrames<S, R, C> {
 		IncomingDataFrames::new(self)
 	}
 	
-	/// Gets an iterator over incoming messages.
+	/// Returns an iterator over incoming messages.
 	/// 
 	/// The iterator always returns Some(), and each iteration will block until a message is received.
 	/// 
@@ -133,7 +142,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 		BinaryFragmentSender::new(self.sender.lock().unwrap(), data)
 	}
 	
-	/// Sends a WebSocketMessage. Blocks the task until the message has been sent.
+	/// Sends a WebSocketMessage. Blocks until the message has been sent.
 	/// 
 	/// ```no_run
 	///# extern crate url;
@@ -154,7 +163,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 		self.send_dataframe(&dataframe)
 	}
 	
-	/// Receives a WebSocketMessage. Blocks the task until a full message is received.
+	/// Receives a WebSocketMessage. Blocks until a full message is received.
 	/// 
 	/// ```no_run
 	///# extern crate url;
