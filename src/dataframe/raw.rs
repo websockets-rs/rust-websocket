@@ -172,18 +172,18 @@ pub enum DataFrameLength {
 
 #[stable]
 impl DataFrameLength {
-	/// Retrieve the underlying length as a uint
+	/// Retrieve the underlying length as a usize
 	#[stable]
-	pub fn unwrap(self) -> uint {
+	pub fn unwrap(self) -> usize {
 		match self {
-			DataFrameLength::Tiny(length) => { length as uint }
-			DataFrameLength::Short(length) => { length as uint }
-			DataFrameLength::Long(length) => { length as uint }
+			DataFrameLength::Tiny(length) => { length as usize }
+			DataFrameLength::Short(length) => { length as usize }
+			DataFrameLength::Long(length) => { length as usize }
 		}
 	}
 	/// Create a new DataFrameLength
 	#[stable]
-	pub fn new(length: uint) -> DataFrameLength {
+	pub fn new(length: usize) -> DataFrameLength {
 		if length <= 125 {
 			DataFrameLength::Tiny(length as u8)
 		}

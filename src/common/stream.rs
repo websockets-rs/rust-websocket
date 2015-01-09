@@ -34,7 +34,7 @@ pub trait DataAvailable: Send {
 }
 
 impl Reader for WebSocketStream {
-    fn read(&mut self, buf: &mut [u8]) -> IoResult<uint> {
+    fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
 		let mut to_normal = None;
 		let mut to_secure = None;
         let output = match *self {
