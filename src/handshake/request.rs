@@ -222,8 +222,8 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketRequest<R, W, Outbound> {
 			_ =>  { return Err(WebSocketError::RequestError("An absolute URI must be used to make a connection".to_string())); }
 		};
 		let mut writer = self.writer;
-		try!(write!(&mut writer, "GET {:?} {:?}\r\n", uri, self.version));
-		try!(write!(&mut writer, "{:?}\r\n", self.headers));
+		try!(write!(&mut writer, "GET {} {}\r\n", uri, self.version));
+		try!(write!(&mut writer, "{}\r\n", self.headers));
 		WebSocketResponse::read(self.reader, writer)
 	}
 }

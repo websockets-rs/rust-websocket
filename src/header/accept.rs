@@ -70,7 +70,7 @@ impl Header for WebSocketAccept {
 
 impl HeaderFormat for WebSocketAccept {
 	fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-		self.serialize().fmt(fmt)
+		write!(fmt, "{}", self.serialize())
 	}
 }
 

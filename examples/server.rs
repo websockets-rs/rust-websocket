@@ -20,7 +20,7 @@ fn main() {
 	
 	let mut acceptor = server.listen().unwrap();
 
-	let mut id = 0u;
+	let mut id = 0us;
 	
 	for request in acceptor.incoming() {
 		id += 1;
