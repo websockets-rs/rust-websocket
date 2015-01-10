@@ -1,7 +1,6 @@
 //! Functions for masking payload data
 #![stable]
 use std::rand;
-use std::iter::CloneIteratorExt;
 
 /// Masks data to send to a server
 #[stable]

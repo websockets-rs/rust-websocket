@@ -22,6 +22,7 @@ pub struct BinaryFragmentSender<'a, S: DataFrameSender<W>, W: Writer + Send> {
 	guard: MutexGuard<'a, S>,
 }
 
+#[old_impl_check]
 impl<'a, S: DataFrameSender<W>, W: Writer + Send> TextFragmentSender<'a, S, W> {
 	/// Create a new TextFragmentSender
 	pub fn new<T: ToString>(mut guard: MutexGuard<'a, S>, text: T) -> WebSocketResult<TextFragmentSender<'a, S, W>> {
@@ -43,6 +44,7 @@ impl<'a, S: DataFrameSender<W>, W: Writer + Send> TextFragmentSender<'a, S, W> {
 	}
 }
 
+#[old_impl_check]
 impl<'a, S: DataFrameSender<W>, W: Writer + Send> BinaryFragmentSender<'a, S, W> {
 	/// Create a new BinaryFragmentSender
 	pub fn new<T: BytesContainer>(mut guard: MutexGuard<'a, S>, data: T) -> WebSocketResult<BinaryFragmentSender<'a, S, W>> {

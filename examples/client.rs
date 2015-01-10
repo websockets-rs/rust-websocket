@@ -34,6 +34,6 @@ fn main() {
 	let _ = client.send_message(message);
 	
 	for message in client.incoming_messages() {
-		println!("Recv: {}", message.unwrap());
+		println!("Recv: {:?}", message.unwrap());
 	}
 }

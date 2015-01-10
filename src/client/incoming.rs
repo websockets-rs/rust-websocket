@@ -22,6 +22,7 @@ pub struct IncomingMessages<'a, S: 'a, R: 'a, C: 'a> {
 	inner: &'a mut WebSocketClient<S, R, C>,
 }
 
+#[old_impl_check]
 impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> IncomingDataFrames<'a, S, R, C> {
 	/// Create a new iterator over incoming data frames
 	pub fn new(inner: &'a mut WebSocketClient<S, R, C>) -> IncomingDataFrames<S, R, C> {
@@ -31,6 +32,7 @@ impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M
 	}
 }
 
+#[old_impl_check]
 impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> IncomingMessages<'a, S, R, C> {
 	/// Create a new iterator over incoming messages
 	pub fn new(inner: &'a mut WebSocketClient<S, R, C>) -> IncomingMessages<S, R, C> {
@@ -40,6 +42,7 @@ impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M
 	}
 }
 
+#[old_impl_check]
 impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Iterator for IncomingDataFrames<'a, S, R, C> {
 	type Item = WebSocketResult<WebSocketDataFrame>;
 	fn next(&mut self) -> Option<WebSocketResult<WebSocketDataFrame>> {
@@ -47,6 +50,7 @@ impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M
 	}
 }
 
+#[old_impl_check]
 impl<'a, S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> Iterator for IncomingMessages<'a, S, R, C> {
 	type Item = WebSocketResult<M>;
 	fn next(&mut self) -> Option<WebSocketResult<M>> {

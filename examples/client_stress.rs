@@ -36,10 +36,10 @@ fn main() {
 					let _ = client_cloned.send_message(message);
 					sleep(Duration::milliseconds(1000));
 				}
-			}).detach();
+			});
 			sleep(Duration::milliseconds(1));
 		}
-		println!("Connection {}000", i);
+		println!("Connection {:?}000", i);
 	}
 	loop {}
 }

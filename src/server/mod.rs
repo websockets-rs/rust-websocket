@@ -36,7 +36,7 @@ use openssl::ssl::SslStream;
 ///        let _ = client.send_message(message);
 ///        
 ///        // ...
-///    }).detach();
+///    });
 ///}
 /// # }
 /// ```
@@ -69,7 +69,7 @@ use openssl::ssl::SslStream;
 ///        let _ = client.send_message(message);
 ///        
 ///        // ...
-///    }).detach();
+///    });
 ///}
 /// # }
 /// ```
@@ -160,7 +160,7 @@ impl<'a> Acceptor<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>> f
 						return Err(IoError {
 							kind: IoErrorKind::OtherIoError,
 							desc: "SSL Error",
-							detail: Some(err.to_string()),
+							detail: Some(format!("{:?}", err)),
 						});
 					}
 				};
@@ -175,7 +175,7 @@ impl<'a> Acceptor<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>> f
 				Err(IoError {
 					kind: IoErrorKind::InvalidInput,
 					desc: "Failed to read request",
-					detail: Some(err.to_string()),
+					detail: Some(format!("{:?}", err)),
 				})
 			}
 		}

@@ -116,8 +116,8 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketResponse<R, W, Outbound> {
 	}
 	
 	fn write(&mut self) -> WebSocketResult<()> {
-		try!(write!(&mut self.writer, "{} {}\r\n", self.version, self.status));
-		try!(write!(&mut self.writer, "{}\r\n", self.headers));
+		try!(write!(&mut self.writer, "{:?} {:?}\r\n", self.version, self.status));
+		try!(write!(&mut self.writer, "{:?}\r\n", self.headers));
 		Ok(())
 	}
 }

@@ -39,6 +39,7 @@ pub struct WebSocketClient<S, R, C> {
 
 unsafe impl<S: Send, R: Send, C: Send> Send for WebSocketClient<S, R, C> {}
 
+#[old_impl_check]
 impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E: Reader + Send, W: Writer + Send, M: WebSocketMessaging> WebSocketClient<S, R, C> {
 	/// Create a WebSocketClient from the specified DataFrameSender and DataFrameReceiver.
 	/// Not required for normal usage (used internally by ```WebSocketResponse```).
@@ -196,6 +197,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E>, C: DataFrameConverter<M>, E
 	}
 }
 
+#[old_impl_check]
 impl<S: DataFrameSender<W>, R: DataFrameReceiver<E> + DataAvailable, C: DataFrameConverter<M>, E: Reader + DataAvailable + Send, W: Writer + Send, M: WebSocketMessaging> WebSocketClient<S, R, C> {
 	/// Try to receive a data frame.
 	///
@@ -232,6 +234,7 @@ impl<S: DataFrameSender<W>, R: DataFrameReceiver<E> + DataAvailable, C: DataFram
 	}
 }
 
+#[old_impl_check]
 impl<S, R, C> Clone for WebSocketClient<S, R, C> {
 	/// Clone this WebSocketClient, allowing for concurrent operations on a single stream.
 	/// 

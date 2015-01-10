@@ -1,6 +1,7 @@
 #![unstable]
 #![warn(missing_docs)]
-#![feature(associated_types)]
+#![allow(unstable)]
+#![feature(associated_types, old_impl_check)]
 
 //! Rust-WebSocket is a WebSocket (RFC6455) library written in Rust.
 //! 
@@ -60,7 +61,7 @@
 //!        let _ = client.send_message(message);
 //!        
 //!        // ...
-//!    }).detach();
+//!    });
 //!}
 //!# }
 //! ```
@@ -95,7 +96,7 @@
 //!Thread::spawn(move || { // Move client_send to a new thread
 //!    let message = WebSocketMessage::Text("Hello, world!".to_string());
 //!    let _ = client_send.send_message(message);
-//!}).detach();
+//!});
 //!
 //!for message in client_receive.incoming_messages() {
 //!    match message.unwrap() {

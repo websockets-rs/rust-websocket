@@ -23,7 +23,7 @@ fn main() {
 	let (tx, rx) = channel();
 	// Start the client manager
 	let manager_tx = tx.clone();
-	Thread::spawn(move || manage_clients(manager_tx, rx)).detach();
+	Thread::spawn(move || manage_clients(manager_tx, rx));
 	// Accept connections
 	for request in acceptor.incoming() {
 		let client_tx = tx.clone();

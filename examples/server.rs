@@ -25,7 +25,7 @@ fn main() {
 	for request in acceptor.incoming() {
 		id += 1;
 		Thread::spawn(move || {
-			println!("Connection [{}]", id);
+			println!("Connection [{:?}]", id);
 			let request = request.unwrap();
 			
 			// Let's also check the protocol - if it's not what we want, then fail the connection
@@ -57,7 +57,7 @@ fn main() {
 			for message in client.incoming_messages() {
 				match message {
 					Ok(message) => {
-						println!("Recv [{}]: {}", id, message);
+						println!("Recv [{:?}]: {:?}", id, message);
 						
 						match message {
 							// Handle Ping messages by sending Pong messages
@@ -81,11 +81,11 @@ fn main() {
 						let _ = client_captured.send_message(message);
 					}
 					Err(err) => {
-						println!("Error [{}]: {}",id, err);
+						println!("Error [{:?}]: {:?}", id, err);
 						break;
 					}
 				}
 			}
-		}).detach();
+		});
 	}
 }
