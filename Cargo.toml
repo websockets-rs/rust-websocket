@@ -16,15 +16,9 @@ keywords = ["websocket", "websockets", "rfc6455"]
 
 license = "MIT"
 
-[dependencies.sha1]
-git = "https://github.com/cyderize/rust-sha1.git"
-branch = "patch-1"
-
-[dependencies.hyper]
-git = "https://github.com/cyderize/hyper.git"
-branch = "rustup"
-
 [dependencies]
-openssl = "~0.2.15"
-url = "~0.2.16"
-rustc-serialize = "~0.2.7"
+sha1 = "*"
+hyper = "*"
+openssl = "*"
+url = "*"
+rustc-serialize = "*"
