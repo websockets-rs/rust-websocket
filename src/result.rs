@@ -1,12 +1,14 @@
-//! The errors used within Rust-WebSocket
-#![unstable]
+//! The result type used within Rust-WebSocket
 
 use std::io::IoError;
+use std::str::Utf8Error;
 use std::error::{Error, FromError};
 use openssl::ssl::error::SslError;
 use hyper::HttpError;
 use url::ParseError;
-use std::str::Utf8Error;
+
+/// The type used for WebSocket results
+pub type WebSocketResult<T> = Result<T, WebSocketError>;
 
 /// Represents a WebSocket error
 #[derive(Show, PartialEq, Clone)]
