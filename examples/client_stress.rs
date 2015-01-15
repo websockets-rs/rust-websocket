@@ -10,8 +10,8 @@ use websocket::message::WebSocketMessage;
 use websocket::header::WebSocketProtocol;
 
 fn main() {
-	for i in range (1u, 11) {
-		for _ in range(0u, 1000) {
+	for i in range (1us, 11) {
+		for _ in range(0us, 1000) {
 			thread::Builder::new().stack_size(128 * 1024).spawn(move || {
 				let url = Url::parse("ws://127.0.0.1:2794").unwrap();
 				let mut request = WebSocketRequest::connect(url).unwrap(); 
