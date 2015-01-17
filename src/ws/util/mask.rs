@@ -1,4 +1,4 @@
-//! Functions for masking payload data
+//! Utility functions for masking data frame payload data
 #![stable]
 use std::rand;
 

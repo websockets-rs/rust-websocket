@@ -1,16 +1,12 @@
+//! Module containing the default implementation for messages.
+
 use std::io::IoResult;
-use result::WebSocketResult;
-//use dataframe::DataFrame;
-
-pub trait Message {
-	type DataFrame;
-
-	fn from_iter<I>(iter: I) -> WebSocketResult<Self>
-		where I: Iterator<Item = WebSocketResult<<Self as Message>::DataFrame>>;
-	
-	fn into_iter<'a>(&'a mut self) -> &'a mut Iterator<Item = <Self as Message>::DataFrame>;
-		
-}
+use std::iter::{Take, Repeat, repeat};
+use std::str::from_utf8;
+use result::{WebSocketResult, WebSocketError};
+use ws::Message;
+use dataframe::WebSocketDataFrame;
+use dataframe::WebSocketOpcode;
 
 /// Represents a WebSocket message.
 #[derive(PartialEq, Clone, Show)]
@@ -29,6 +25,77 @@ pub enum WebSocketMessage {
 	/// A pong message, sent in response to a Ping message, usually
 	/// containing the same data as the received ping message.
 	Pong(Vec<u8>),
+}
+
+impl Message<WebSocketDataFrame> for WebSocketMessage {
+	type DataFrameIterator = Take<Repeat<WebSocketDataFrame>>;
+	/// Attempt to form a message from an iterator over data frames.
+	///
+	/// The iterator must only provide data frames constituting
+	/// single message.
+	fn from_iter<I>(mut iter: I) -> WebSocketResult<Self>
+		where I: Iterator<Item = WebSocketDataFrame> {
+		
+		let first = try!(
+			iter.next().ok_or(
+				WebSocketError::ProtocolError("Cannot form message with no data frame".to_string())
+			)
+		);
+		
+		let mut finished = first.finished;
+		let mut data = first.data.clone();
+		
+		while !finished {
+			let dataframe = try!(
+				iter.next().ok_or(
+					WebSocketError::ProtocolError("Unexpected end of data frames".to_string())
+				)
+			);
+			if dataframe.opcode != WebSocketOpcode::Continuation {
+				return Err(WebSocketError::ProtocolError("Unexpected non-continuation data frame".to_string()));
+			}
+			finished = dataframe.finished;
+			data = data + &dataframe.data[];
+		}
+		
+		Ok(match first.opcode {
+			WebSocketOpcode::Text => WebSocketMessage::Text(try!(bytes_to_string(&data[]))),
+			WebSocketOpcode::Binary => WebSocketMessage::Binary(data),
+			WebSocketOpcode::Close => {
+				if data.len() > 0 {				
+					let status_code = try!((&data[]).read_be_u16());
+					let reason = try!(bytes_to_string(data.slice_from(2)));
+					let close_data = CloseData::new(status_code, reason);
+					WebSocketMessage::Close(Some(close_data))
+				}
+				else {
+					WebSocketMessage::Close(None)
+				}
+			}
+			WebSocketOpcode::Ping => WebSocketMessage::Ping(data),
+			WebSocketOpcode::Pong => WebSocketMessage::Pong(data),
+			_ => return Err(WebSocketError::ProtocolError("Unsupported opcode received".to_string())),
+		})
+	}
+	/// Turns this message into an iterator over data frames
+	fn into_iter(self) -> Take<Repeat<WebSocketDataFrame>> {
+		// Just return a single data frame representing this message.
+		let (opcode, data) = match self {
+			WebSocketMessage::Text(payload) => (WebSocketOpcode::Text, payload.into_bytes()),
+			WebSocketMessage::Binary(payload) => (WebSocketOpcode::Binary, payload),
+			WebSocketMessage::Close(payload) => (
+					WebSocketOpcode::Close,
+					match payload {
+						Some(payload) => { payload.into_bytes().unwrap() }
+						None => { Vec::new() }
+					} 
+			),
+			WebSocketMessage::Ping(payload) => (WebSocketOpcode::Ping, payload),
+			WebSocketMessage::Pong(payload) => (WebSocketOpcode::Pong, payload),
+		};
+		let dataframe = WebSocketDataFrame::new(true, opcode, data);
+		repeat(dataframe).take(1)
+	}
 }
 
 /// Represents data contained in a Close message
@@ -54,4 +121,9 @@ impl CloseData {
 		try!(buf.write_be_u16(self.status_code));
 		Ok(buf + self.reason.into_bytes().as_slice())
 	}
+}
+
+fn bytes_to_string(data: &[u8]) -> WebSocketResult<String> {
+	let utf8 = try!(from_utf8(data));
+	Ok(utf8.to_string())
 }

@@ -44,3 +44,14 @@ impl HeaderFormat for WebSocketVersion {
 		self.fmt(fmt)
 	}
 }
+
+#[test]
+fn test_websocket_version() {
+	use header::Headers;
+	
+	let version = WebSocketVersion::WebSocket13;
+	let mut headers = Headers::new();
+	headers.set(version);
+	
+	assert_eq!(&headers.to_string()[], "Sec-WebSocket-Version: 13\r\n");
+}

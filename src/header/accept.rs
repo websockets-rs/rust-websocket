@@ -76,7 +76,12 @@ impl HeaderFormat for WebSocketAccept {
 
 #[test]
 fn test_websocket_accept() {
+	use header::Headers;
+	
 	let key = FromStr::from_str("dGhlIHNhbXBsZSBub25jZQ==").unwrap();
 	let accept = WebSocketAccept::new(&key);
-	assert_eq!(accept.serialize().as_slice(), "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=");
+	let mut headers = Headers::new();
+	headers.set(accept);
+	
+	assert_eq!(&headers.to_string()[], "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n");
 }

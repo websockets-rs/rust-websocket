@@ -69,3 +69,14 @@ impl HeaderFormat for WebSocketKey {
 		self.serialize().fmt(fmt)
 	}
 }
+
+#[test]
+fn test_websocket_key() {
+	use header::Headers;
+	
+	let extensions = WebSocketKey([65; 16]);
+	let mut headers = Headers::new();
+	headers.set(extensions);
+	
+	assert_eq!(&headers.to_string()[], "Sec-WebSocket-Key: QUFBQUFBQUFBQUFBQUFBQQ==\r\n");
+}
