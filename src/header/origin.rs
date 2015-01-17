@@ -30,7 +30,7 @@ impl Header for Origin {
 impl HeaderFormat for Origin {
 	fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		let Origin(ref value) = *self;
-        value.fmt(fmt)
+        write!(fmt, "{}", value)
 	}
 }
 

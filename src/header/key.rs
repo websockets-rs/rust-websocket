@@ -66,7 +66,7 @@ impl Header for WebSocketKey {
 
 impl HeaderFormat for WebSocketKey {
 	fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-		self.serialize().fmt(fmt)
+		write!(fmt, "{}", self.serialize())
 	}
 }
 
