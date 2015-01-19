@@ -5,8 +5,8 @@ use std::iter::{Take, Repeat, repeat};
 use std::str::from_utf8;
 use result::{WebSocketResult, WebSocketError};
 use ws::Message;
-use dataframe::WebSocketDataFrame;
-use dataframe::WebSocketOpcode;
+use super::WebSocketDataFrame;
+use super::WebSocketOpcode;
 
 /// Represents a WebSocket message.
 #[derive(PartialEq, Clone, Show)]

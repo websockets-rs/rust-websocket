@@ -21,7 +21,7 @@ pub struct DataFrameHeader {
 	/// The opcode of the header - must be <= 16.
 	pub opcode: u8, 
 	/// The masking key, if any.
-	pub mask: Option<u32>, 
+	pub mask: Option<[u8; 4]>, 
 	/// The length of the payload.
 	pub len: u64
 }
@@ -54,7 +54,7 @@ pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> IoResult<()>
 	
 	// Write 'Masking-key'
 	match header.mask {
-		Some(mask) => try!(writer.write_be_u32(mask)),
+		Some(mask) => try!(writer.write(&mask)),
 		None => (),
 	}
 	
@@ -79,7 +79,12 @@ pub fn read_header<R>(reader: &mut R) -> IoResult<DataFrameHeader>
 	};
 	
 	let mask = if byte1 & 0x80 == 0x80 {
-		Some(try!(reader.read_be_u32()))
+		Some([
+			try!(reader.read_u8()),
+			try!(reader.read_u8()),
+			try!(reader.read_u8()),
+			try!(reader.read_u8())
+		])
 	}
 	else {
 		None
