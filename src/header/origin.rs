@@ -1,5 +1,5 @@
 use hyper::header::{Header, HeaderFormat};
-use hyper::header::shared::util::from_one_raw_str;
+use hyper::header::parsing::from_one_raw_str;
 use std::fmt;
 use std::ops::Deref;
 

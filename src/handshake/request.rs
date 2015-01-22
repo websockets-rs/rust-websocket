@@ -9,9 +9,9 @@ pub use hyper::uri::RequestUri;
 use hyper::version::HttpVersion;
 use hyper::status::StatusCode;
 use hyper::header::Headers;
-use hyper::header::common::{Host, Connection, Upgrade};
-use hyper::header::connection::ConnectionOption;
-use hyper::header::common::upgrade::Protocol;
+use hyper::header::Host;
+use hyper::header::{Connection, ConnectionOption};
+use hyper::header::{Upgrade, Protocol};
 use hyper::http::read_request_line;
 use hyper::method::Method;
 

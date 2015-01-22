@@ -6,9 +6,8 @@ use std::num::FromPrimitive;
 use hyper::status::StatusCode;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
-use hyper::header::common::{Connection, Upgrade};
-use hyper::header::connection::ConnectionOption;
-use hyper::header::common::upgrade::Protocol;
+use hyper::header::{Connection, ConnectionOption};
+use hyper::header::{Upgrade, Protocol};
 use hyper::http::read_status_line;
 
 use header::{WebSocketKey, WebSocketAccept, WebSocketProtocol, WebSocketExtensions};
