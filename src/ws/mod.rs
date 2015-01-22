@@ -17,7 +17,7 @@
 //! where each data frame is sent immediately to be reassembled a the remote endpoint.
 //!
 //! The type of data frame can be any type, however, if you choose a data frame type other than
-//! `WebSocketDataFrame`, you will also have to implement the `Sender` and `Receiver` traits to
+//! `DataFrame`, you will also have to implement the `Sender` and `Receiver` traits to
 //! send and receive data frames.
 //!
 //! A `Sender<D>` sends a data frame of type `D`, typically wrapping an underlying Writer,
@@ -33,8 +33,8 @@
 //! `recv_message()` methods. The `recv_message()` method typically makes use of the `Message`
 //! ability to form a message from an iterator over data frames.
 //!
-//! If a receiver wishes to work with the WebSocketMessage type, the receiver must ensure that
-//! it only gives the `WebSocketMessage::from_iter()` function an iterator over data frames
+//! If a receiver wishes to work with the Message type, the receiver must ensure that
+//! it only gives the `Message::from_iter()` function an iterator over data frames
 //! which constitute a single message. If control frames are interleaved within a message,
 //! those frames must not be passed to the iterator (until, for example, the next call to
 //! `recv_message()`.

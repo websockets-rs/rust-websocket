@@ -2,14 +2,14 @@
 
 use std::num::FromPrimitive;
 
-use common::WebSocketDataFrame;
+use dataframe::DataFrame;
 use result::{WebSocketResult, WebSocketError};
 
 use ws::util::header as dfh;
 use ws::util::mask;
 
-/// Writes a WebSocketDataFrame to a Writer.
-pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: WebSocketDataFrame) -> WebSocketResult<()>
+/// Writes a DataFrame to a Writer.
+pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: DataFrame) -> WebSocketResult<()>
 	where W: Writer {
 	
 	let mut flags = dfh::DataFrameFlags::empty();
@@ -37,13 +37,13 @@ pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: WebSocketDataFr
 	Ok(())
 }
 
-/// Reads a WebSocketDataFrame from a Reader.
-pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<WebSocketDataFrame> 
+/// Reads a DataFrame from a Reader.
+pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<DataFrame> 
 	where R: Reader {
 
 	let header = try!(dfh::read_header(reader));
 	
-	Ok(WebSocketDataFrame {
+	Ok(DataFrame {
 		finished: header.flags.contains(dfh::FIN),
 		reserved: [
 			header.flags.contains(dfh::RSV1),

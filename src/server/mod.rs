@@ -4,12 +4,23 @@ use std::io::{Listener, Acceptor};
 use std::io::net::tcp::{TcpListener, TcpAcceptor};
 use std::io::net::ip::{SocketAddr, ToSocketAddr};
 use std::io::{IoResult, IoError, IoErrorKind};
-use handshake::WebSocketRequest;
-use common::{Inbound, WebSocketStream};
+
+pub use self::request::Request;
+pub use self::response::Response;
+pub use self::sender::Sender;
+pub use self::receiver::Receiver;
+
+use stream::WebSocketStream;
+
 use openssl::ssl::SslContext;
 use openssl::ssl::SslStream;
 
-/// Represents a WebSocketServer which can work with either normal (non-secure) connections, or secure WebSocket connections.
+pub mod request;
+pub mod response;
+pub mod sender;
+pub mod receiver;
+
+/// Represents a WebSocket server which can work with either normal (non-secure) connections, or secure WebSocket connections.
 ///
 /// This is a convenient way to implement WebSocket servers, however it is possible to use any sendable Reader and Writer to obtain
 /// a WebSocketClient, so if needed, an alternative server implementation can be used. 
@@ -20,9 +31,9 @@ use openssl::ssl::SslStream;
 ///# fn main() {
 ///use std::thread::Thread;
 ///use std::io::{Listener, Acceptor};
-///use websocket::{WebSocketServer, WebSocketMessage};
+///use websocket::{Server, Message};
 ///
-///let server = WebSocketServer::bind("127.0.0.1:1234").unwrap();
+///let server = Server::bind("127.0.0.1:1234").unwrap();
 ///
 ///let mut acceptor = server.listen().unwrap();
 ///for request in acceptor.incoming() {
@@ -32,7 +43,7 @@ use openssl::ssl::SslStream;
 ///        let response = request.accept(); // Form a response
 ///        let mut client = response.send().unwrap(); // Send the response
 ///        
-///        let message = WebSocketMessage::Text("Hello, client!".to_string());
+///        let message = Message::Text("Hello, client!".to_string());
 ///        let _ = client.send_message(message);
 ///        
 ///        // ...
@@ -48,14 +59,14 @@ use openssl::ssl::SslStream;
 ///# fn main() {
 ///use std::thread::Thread;
 ///use std::io::{Listener, Acceptor};
-///use websocket::{WebSocketServer, WebSocketMessage};
+///use websocket::{Server, Message};
 ///use openssl::ssl::{SslContext, SslMethod};
 ///use openssl::x509::X509FileType;
 ///
 ///let mut context = SslContext::new(SslMethod::Tlsv1).unwrap();
 ///let _ = context.set_certificate_file(&(Path::new("cert.pem")), X509FileType::PEM);
 ///let _ = context.set_private_key_file(&(Path::new("key.pem")), X509FileType::PEM);
-///let server = WebSocketServer::bind_secure("127.0.0.1:1234", &context).unwrap();
+///let server = Server::bind_secure("127.0.0.1:1234", &context).unwrap();
 ///
 ///let mut acceptor = server.listen().unwrap();
 ///for request in acceptor.incoming() {
@@ -65,7 +76,7 @@ use openssl::ssl::SslStream;
 ///        let response = request.accept(); // Form a response
 ///        let mut client = response.send().unwrap(); // Send the response
 ///        
-///        let message = WebSocketMessage::Text("Hello, client!".to_string());
+///        let message = Message::Text("Hello, client!".to_string());
 ///        let _ = client.send_message(message);
 ///        
 ///        // ...
@@ -81,7 +92,7 @@ use openssl::ssl::SslStream;
 /// This will give you an inbound WebSocketRequest which can be used with ```WebSocketResponse::new()```.
 /// Finally, call ```begin()``` or ```begin_with()``` on the response to obtain a WebSocketClient and begin
 /// sending/receiving messages.
-pub struct WebSocketServer<'a> {
+pub struct Server<'a> {
 	inner: TcpListener,
 	context: Option<&'a SslContext>,
 }
@@ -92,17 +103,17 @@ pub struct WebSocketAcceptor<'a> {
 	context: Option<&'a SslContext>,
 }
 
-impl<'a> WebSocketServer<'a> {
-	/// Bind this WebSocketServer to this socket
-	pub fn bind<T: ToSocketAddr>(addr: T) -> IoResult<WebSocketServer<'a>> {
-		Ok(WebSocketServer {
+impl<'a> Server<'a> {
+	/// Bind this Server to this socket
+	pub fn bind<T: ToSocketAddr>(addr: T) -> IoResult<Server<'a>> {
+		Ok(Server {
 			inner: try!(TcpListener::bind(addr)),
 			context: None,
 		})
 	}
-	/// Bind this WebSocketServer to this socket, utilising the given SslContext
-	pub fn bind_secure<T: ToSocketAddr>(addr: T, context: &'a SslContext) -> IoResult<WebSocketServer<'a>> {
-		Ok(WebSocketServer {
+	/// Bind this Server to this socket, utilising the given SslContext
+	pub fn bind_secure<T: ToSocketAddr>(addr: T, context: &'a SslContext) -> IoResult<Server<'a>> {
+		Ok(Server {
 			inner: try!(TcpListener::bind(addr)),
 			context: Some(context),
 		})
@@ -113,7 +124,7 @@ impl<'a> WebSocketServer<'a> {
     }
 }
 
-impl<'a> Listener<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>, WebSocketAcceptor<'a>> for WebSocketServer<'a> {
+impl<'a> Listener<Request<WebSocketStream, WebSocketStream>, WebSocketAcceptor<'a>> for Server<'a> {
 	/// Begin listening for connections
 	fn listen(self) -> IoResult<WebSocketAcceptor<'a>> {
 		Ok(WebSocketAcceptor {
@@ -148,9 +159,9 @@ impl<'a> WebSocketAcceptor<'a> {
 	}
 }
 
-impl<'a> Acceptor<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>> for WebSocketAcceptor<'a> {
+impl<'a> Acceptor<Request<WebSocketStream, WebSocketStream>> for WebSocketAcceptor<'a> {
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
-    fn accept(&mut self) -> IoResult<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>> {
+    fn accept(&mut self) -> IoResult<Request<WebSocketStream, WebSocketStream>> {
         let stream = try!(self.inner.accept());
 		let wsstream = match self.context {
 			Some(context) => {
@@ -169,7 +180,7 @@ impl<'a> Acceptor<WebSocketRequest<WebSocketStream, WebSocketStream, Inbound>> f
 			None => { WebSocketStream::Tcp(stream) }
 		};
 		
-		match WebSocketRequest::read(wsstream.clone(), wsstream.clone()) {
+		match Request::read(wsstream.clone(), wsstream.clone()) {
 			Ok(result) => { Ok(result) },
 			Err(err) => {
 				Err(IoError {

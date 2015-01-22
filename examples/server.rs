@@ -4,10 +4,10 @@ extern crate websocket;
 
 use std::thread::Thread;
 use std::io::{Listener, Acceptor};
-use websocket::{WebSocketServer, WebSocketMessage, WebSocketStream, Sender, Receiver};
+use websocket::{Server, Message, WebSocketStream, Sender, Receiver};
 
 fn main() {
-	let server = WebSocketServer::bind("127.0.0.1:2794").unwrap();
+	let server = Server::bind("127.0.0.1:2794").unwrap();
 
 	let mut acceptor = server.listen().unwrap();
 	for request in acceptor.incoming() {
@@ -25,7 +25,7 @@ fn main() {
 			
 			println!("Connection from {}", name);
 			
-			let message = WebSocketMessage::Text("Hello".to_string());
+			let message = Message::Text("Hello".to_string());
 			client.send_message(message).unwrap();
 			
 			let (mut sender, mut receiver) = client.split();
@@ -34,14 +34,14 @@ fn main() {
 				let message = message.unwrap();
 				
 				match message {
-					WebSocketMessage::Close(_) => {
-						let message = WebSocketMessage::Close(None);
+					Message::Close(_) => {
+						let message = Message::Close(None);
 						sender.send_message(message).unwrap();
 						println!("Client {} disconnected", name);
 						return;
 					}
-					WebSocketMessage::Ping(data) => {
-						let message = WebSocketMessage::Pong(data);
+					Message::Ping(data) => {
+						let message = Message::Pong(data);
 						sender.send_message(message).unwrap();
 					}
 					_ => sender.send_message(message).unwrap(),

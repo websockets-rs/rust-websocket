@@ -4,20 +4,17 @@ extern crate websocket;
 extern crate url;
 
 use std::thread::Thread;
-use std::io::{Listener, Acceptor};
 use std::io::stdin;
-use websocket::{WebSocketRequest, WebSocketMessage, Sender, Receiver};
+use websocket::{Message, Sender, Receiver};
+use websocket::Client;
 use url::Url;
 
 fn main() {
 	let url = Url::parse("ws://127.0.0.1:2794").unwrap();
-	let mut request = WebSocketRequest::connect(url).unwrap(); 
-	let key = request.key() // Keep this key so we can validate the response
-		.unwrap()
-		.clone();
+	let request = Client::connect(url).unwrap(); 
 	
 	let response = request.send().unwrap(); // Send the request and retrieve a response
-	response.validate(&key).unwrap(); // Validate the response
+	response.validate().unwrap(); // Validate the response
 	
 	// Split the client into a Sender and a Receiver
 	let (mut sender, mut receiver) = response.begin().split();
@@ -33,7 +30,7 @@ fn main() {
 			.read_line()
 			.ok()
 			.expect("Failed to read line");
-		let message = WebSocketMessage::Text(input);
-		sender.send_message(message);
+		let message = Message::Text(input);
+		sender.send_message(message).unwrap();
 	}
 }

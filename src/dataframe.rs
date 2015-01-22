@@ -2,11 +2,11 @@
 
 /// Represents a WebSocket data frame.
 ///
-/// The data held in a WebSocketDataFrame is never masked.
+/// The data held in a DataFrame is never masked.
 /// Masking/unmasking is done when sending and receiving the data frame,
 #[derive(Show, Clone, PartialEq)]
 #[stable]
-pub struct WebSocketDataFrame {
+pub struct DataFrame {
 	/// Whether or no this constitutes the end of a message
 	pub finished: bool,
 	/// The reserved portion of the data frame (RFC6455 5.2)
@@ -17,10 +17,10 @@ pub struct WebSocketDataFrame {
 	pub data: Vec<u8>,
 }
 
-impl WebSocketDataFrame {
-	/// Creates a new WebSocketDataFrame.
-	pub fn new(finished: bool, opcode: WebSocketOpcode, data: Vec<u8>) -> WebSocketDataFrame {
-		WebSocketDataFrame {
+impl DataFrame {
+	/// Creates a new DataFrame.
+	pub fn new(finished: bool, opcode: WebSocketOpcode, data: Vec<u8>) -> DataFrame {
+		DataFrame {
 			finished: finished,
 			reserved: [false; 3],
 			opcode: opcode,

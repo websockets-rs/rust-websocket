@@ -1,24 +1,23 @@
 //! The default implementation of a WebSocket Receiver.
 
-use common::{WebSocketDataFrame, WebSocketMessage};
+use dataframe::DataFrame;
+use message::Message;
 use result::{WebSocketResult, WebSocketError};
-use ws::{Receiver, Message};
 use ws::util::dataframe::read_dataframe;
+use ws;
 
 /// A Receiver that wraps a Reader and provides a default implementation using
-/// WebSocketDataFrames and WebSocketMessages.
-pub struct WebSocketReceiver<R> {
+/// DataFrames and Messages.
+pub struct Receiver<R> {
 	inner: R,
-	local: bool,
-	buffer: Vec<WebSocketDataFrame>
+	buffer: Vec<DataFrame>
 }
 
-impl<R> WebSocketReceiver<R> {
-	/// Create a new WebSocketReceiver using the specified Reader.
-	pub fn new(reader: R, local: bool) -> WebSocketReceiver<R> {
-		WebSocketReceiver {
+impl<R> Receiver<R> {
+	/// Create a new Receiver using the specified Reader.
+	pub fn new(reader: R) -> Receiver<R> {
+		Receiver {
 			inner: reader,
-			local: local,
 			buffer: Vec::new()
 		}
 	}
@@ -32,16 +31,16 @@ impl<R> WebSocketReceiver<R> {
 	}
 }
 
-impl<R: Reader> Receiver<WebSocketDataFrame> for WebSocketReceiver<R> {
-	type Message = WebSocketMessage;
+impl<R: Reader> ws::Receiver<DataFrame> for Receiver<R> {
+	type Message = Message;
 	
-	fn recv_dataframe(&mut self) -> WebSocketResult<WebSocketDataFrame> {
+	fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
 		match self.buffer.pop() {
 			Some(dataframe) => Ok(dataframe),
-			None => read_dataframe(&mut self.inner, !self.local),
+			None => read_dataframe(&mut self.inner, false),
 		}
 	}
-	fn recv_message(&mut self) -> WebSocketResult<WebSocketMessage> {
+	fn recv_message(&mut self) -> WebSocketResult<Message> {
 		let first = try!(self.recv_dataframe());
 		
 		let mut finished = first.finished;
@@ -68,6 +67,6 @@ impl<R: Reader> Receiver<WebSocketDataFrame> for WebSocketReceiver<R> {
 		
 		self.buffer.push_all(&buffer[]);
 
-		Message::from_iter(frames.into_iter())
+		ws::Message::from_iter(frames.into_iter())
 	}
 }
