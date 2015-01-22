@@ -121,7 +121,7 @@ impl WebSocketRequest<WebSocketStream, WebSocketStream, Outbound> {
 	///let response = request.send().unwrap(); // Send the request and retrieve the response
 	///response.validate(&key).unwrap(); // Ensure the response is valid, and panic if it isn't
 	///
-	///let mut client = response.begin(); // Retrieve a WebSocketClient object
+	///let mut client = response.begin(); // Retrieve a Client object
 	///# }
 	/// ```
 	pub fn connect(url: Url) -> WebSocketResult<WebSocketRequest<WebSocketStream, WebSocketStream, Outbound>> {

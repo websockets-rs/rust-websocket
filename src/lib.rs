@@ -13,7 +13,7 @@ extern crate openssl;
 extern crate bitflags;
 
 pub use self::common::*;
-pub use self::client::WebSocketClient;
+pub use self::client::Client;
 pub use self::server::WebSocketServer;
 pub use self::handshake::{WebSocketRequest, WebSocketResponse};
 

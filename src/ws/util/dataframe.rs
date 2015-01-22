@@ -53,7 +53,7 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 		data: match header.mask {
 			Some(mask) => {
 				if !should_be_masked {
-					return Err(WebSocketError::ProtocolError(
+					return Err(WebSocketError::DataFrameError(
 						"Expected unmasked data frame".to_string()
 					));
 				}
@@ -61,7 +61,7 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 			}
 			None => {
 				if should_be_masked {
-					return Err(WebSocketError::ProtocolError(
+					return Err(WebSocketError::DataFrameError(
 						"Expected masked data frame".to_string()
 					));
 				}

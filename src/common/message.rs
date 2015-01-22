@@ -32,7 +32,8 @@ impl Message<WebSocketDataFrame> for WebSocketMessage {
 	/// Attempt to form a message from an iterator over data frames.
 	///
 	/// The iterator must only provide data frames constituting
-	/// single message.
+	/// single message and also must return None once the message is
+	/// complete.
 	fn from_iter<I>(mut iter: I) -> WebSocketResult<Self>
 		where I: Iterator<Item = WebSocketDataFrame> {
 		
@@ -42,19 +43,24 @@ impl Message<WebSocketDataFrame> for WebSocketMessage {
 			)
 		);
 		
-		let mut finished = first.finished;
 		let mut data = first.data.clone();
 		
-		while !finished {
-			let dataframe = try!(
-				iter.next().ok_or(
-					WebSocketError::ProtocolError("Unexpected end of data frames".to_string())
-				)
-			);
+		match (first.opcode as u8, first.finished) {
+			// Continuation opcode on first frame
+			(0, _) => return Err(WebSocketError::ProtocolError(
+				"Unexpected continuation data frame opcode".to_string()
+			)),
+			// Fragmented control frame
+			(8...15, false) => return Err(WebSocketError::ProtocolError(
+				"Unexpected fragmented control frame".to_string()
+			)),
+			_ => (),
+		}
+		
+		for dataframe in iter {
 			if dataframe.opcode != WebSocketOpcode::Continuation {
 				return Err(WebSocketError::ProtocolError("Unexpected non-continuation data frame".to_string()));
 			}
-			finished = dataframe.finished;
 			data = data + &dataframe.data[];
 		}
 		

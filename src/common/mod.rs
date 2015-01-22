@@ -18,6 +18,8 @@ pub mod sender;
 pub mod receiver;
 pub mod stream;
 
+pub type WebSocketClient<R, W, L> = super::Client<WebSocketDataFrame, WebSocketSender<W, L>, WebSocketReceiver<R, L>>;
+
 /// Represents a local endpoint
 #[derive(Show, Copy)]
 #[stable]

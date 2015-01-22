@@ -2,17 +2,17 @@ use ws::{Sender, Receiver, Message};
 use ws::receiver::{DataFrameIterator, MessageIterator};
 use result::WebSocketResult;
 
-pub struct WebSocketClient<D, S, R> {
+pub struct Client<D, S, R> {
 	sender: S,
 	receiver: R
 }
 
-impl<D, S: Sender<D>, R: Receiver<D>> WebSocketClient<D, S, R> {
-	/// Creates a WebSocketClient from the given Sender and Receiver.
+impl<D, S: Sender<D>, R: Receiver<D>> Client<D, S, R> {
+	/// Creates a Client from the given Sender and Receiver.
 	///
-	/// Essentially the opposite of `WebSocketClient.split()`.
-	pub fn new(sender: S, receiver: R) -> WebSocketClient<D, S, R> {
-		WebSocketClient {
+	/// Essentially the opposite of `Client.split()`.
+	pub fn new(sender: S, receiver: R) -> Client<D, S, R> {
+		Client {
 			sender: sender,
 			receiver: receiver
 		}

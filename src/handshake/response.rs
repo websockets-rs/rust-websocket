@@ -13,9 +13,11 @@ use hyper::http::read_status_line;
 
 use header::{WebSocketKey, WebSocketAccept, WebSocketProtocol, WebSocketExtensions};
 
-use client::WebSocketClient;
+use client::Client;
 use common::{Inbound, Outbound, Local, Remote};
-use common::{WebSocketStream, WebSocketSender, WebSocketReceiver, WebSocketMessage, WebSocketDataFrame};
+use common::{WebSocketClient, WebSocketStream};
+use common::{WebSocketSender, WebSocketReceiver};
+use common::{WebSocketMessage, WebSocketDataFrame};
 use result::{WebSocketResult, WebSocketError};
 use ws::{Sender, Receiver};
 
@@ -29,7 +31,7 @@ pub type WebSocketOutboundResponse = WebSocketResponse<WebSocketStream, WebSocke
 /// 
 /// A WebSocketResponse can sent by a WebSocket server by calling ```accept()``` on the WebSocketRequest 
 /// and then ```send()``` on the response, or received by a WebSocket client to be consumed into a
-/// WebSocketClient with ```begin()```.
+/// Client with ```begin()```.
 /// 
 /// A type parameter that is either Inbound or Outbound ensures that only the appropriate methods
 /// can be called on either kind of request.
@@ -114,12 +116,12 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketResponse<R, W, Outbound> {
 	}
 	
 	/// Send this response with the given data frame type D, Sender B and Receiver C.
-	pub fn send_with<D, B, C>(mut self, sender: B, receiver: C) -> WebSocketResult<WebSocketClient<D, B, C>> 
+	pub fn send_with<D, B, C>(mut self, sender: B, receiver: C) -> WebSocketResult<Client<D, B, C>> 
 		where B: Sender<D>, C: Receiver<D> {
 		
 		try!(write!(&mut self.writer, "{} {}\r\n", self.version, self.status));
 		try!(write!(&mut self.writer, "{}\r\n", self.headers));
-		Ok(WebSocketClient::new(sender, receiver))
+		Ok(Client::new(sender, receiver))
 	 }
 	
 	/// Send this response, retrieving the inner Reader and Writer
@@ -129,13 +131,13 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketResponse<R, W, Outbound> {
 		Ok(self.into_inner())
 	}
 	
-	/// Send this response, returning a WebSocketClient ready to transmit/receive data frames
-	pub fn send(mut self) -> WebSocketResult<WebSocketClient<WebSocketDataFrame, WebSocketSender<W, Remote>, WebSocketReceiver<R, Remote>>> {
+	/// Send this response, returning a Client ready to transmit/receive data frames
+	pub fn send(mut self) -> WebSocketResult<WebSocketClient<R, W, Remote>> {
 		try!(write!(&mut self.writer, "{} {}\r\n", self.version, self.status));
 		try!(write!(&mut self.writer, "{}\r\n", self.headers));
 		let sender = WebSocketSender::new(self.writer);
 		let receiver = WebSocketReceiver::new(self.reader);
-		Ok(WebSocketClient::new(sender, receiver))
+		Ok(Client::new(sender, receiver))
 	}
 }
 
@@ -174,20 +176,20 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketResponse<R, W, Inbound> {
 		Ok(())
 	}
 	
-	/// Consume this response and return a WebSocketClient ready to transmit/receive data frames
+	/// Consume this response and return a Client ready to transmit/receive data frames
 	/// using the data frame type D, Sender B and Receiver C.
 	///
 	/// Does not check if the response was valid. Use ```validate()``` to ensure that the response constitutes a successful handshake.
-	pub fn begin_with<D, B, C>(self, sender: B, receiver: C) -> WebSocketClient<D, B, C> 
+	pub fn begin_with<D, B, C>(self, sender: B, receiver: C) -> Client<D, B, C> 
 		where B: Sender<D>, C: Receiver<D> {
-		WebSocketClient::new(sender, receiver)
+		Client::new(sender, receiver)
 	}
-	/// Consume this response and return a WebSocketClient ready to transmit/receive data frames.
+	/// Consume this response and return a Client ready to transmit/receive data frames.
 	///
 	/// Does not check if the response was valid. Use ```validate()``` to ensure that the response constitutes a successful handshake.
-	pub fn begin(self) -> WebSocketClient<WebSocketDataFrame, WebSocketSender<W, Local>, WebSocketReceiver<R, Local>> {
+	pub fn begin(self) -> WebSocketClient<R, W, Local> {
 		let sender = WebSocketSender::new(self.writer);
 		let receiver = WebSocketReceiver::new(self.reader);
-		WebSocketClient::new(sender, receiver)
+		Client::new(sender, receiver)
 	}
 }

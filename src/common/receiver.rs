@@ -2,8 +2,8 @@
 
 use common::{WebSocketDataFrame, WebSocketMessage};
 use common::{Local, Remote};
-use result::WebSocketResult;
-use ws::Receiver;
+use result::{WebSocketResult, WebSocketError};
+use ws::{Receiver, Message};
 use ws::util::dataframe::read_dataframe;
 
 /// A Receiver that wraps a Reader and provides a default implementation using
@@ -33,7 +33,32 @@ impl<R: Reader> Receiver<WebSocketDataFrame> for WebSocketReceiver<R, Local> {
 		}
 	}
 	fn recv_message(&mut self) -> WebSocketResult<WebSocketMessage> {
-		panic!();
+		let first = try!(self.recv_dataframe());
+		
+		let mut finished = first.finished;
+		let mut data = first.data.clone();
+		let mut buffer = Vec::new();
+		let mut frames = Vec::new();
+		
+		while !finished {
+			let next = try!(self.recv_dataframe());
+			finished = next.finished;
+			
+			match next.opcode as u8 {
+				// Continuation opcode
+				0 => frames.push(next),
+				// Control frame
+				8...15 => buffer.push(next),
+				// Others
+				_ => return Err(WebSocketError::ProtocolError(
+					"Unexpected data frame opcode".to_string()
+				)),
+			}
+		}
+		
+		self.buffer.push_all(&buffer[]);
+
+		Message::from_iter(frames.into_iter())
 	}
 }
 
@@ -47,6 +72,31 @@ impl<R: Reader> Receiver<WebSocketDataFrame> for WebSocketReceiver<R, Remote> {
 		}
 	}
 	fn recv_message(&mut self) -> WebSocketResult<WebSocketMessage> {
-		panic!();
+		let first = try!(self.recv_dataframe());
+		
+		let mut finished = first.finished;
+		let mut data = first.data.clone();
+		let mut buffer = Vec::new();
+		let mut frames = Vec::new();
+		
+		while !finished {
+			let next = try!(self.recv_dataframe());
+			finished = next.finished;
+			
+			match next.opcode as u8 {
+				// Continuation opcode
+				0 => frames.push(next),
+				// Control frame
+				8...15 => buffer.push(next),
+				// Others
+				_ => return Err(WebSocketError::ProtocolError(
+					"Unexpected data frame opcode".to_string()
+				)),
+			}
+		}
+		
+		self.buffer.push_all(&buffer[]);
+		
+		Message::from_iter(frames.into_iter())
 	}
 }
