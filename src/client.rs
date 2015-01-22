@@ -43,6 +43,22 @@ impl<D, S: Sender<D>, R: Receiver<D>> WebSocketClient<D, S, R> {
 	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, R, D> {
 		self.receiver.incoming_messages()
 	}
+	/// Returns a reference to the underlying Sender.
+	pub fn get_sender(&self) -> &S {
+		&self.sender
+	}
+	/// Returns a reference to the underlying Receiver.
+	pub fn get_reciever(&self) -> &R {
+		&self.receiver
+	}
+	/// Returns a mutable reference to the underlying Sender.
+	pub fn get_mut_sender(&mut self) -> &mut S {
+		&mut self.sender
+	}
+	/// Returns a mutable reference to the underlying Receiver.
+	pub fn get_mut_reciever(&mut self) -> &mut R {
+		&mut self.receiver
+	}
 	/// Split this client into its constituent Sender and Receiver pair.
 	///
 	/// This allows the Sender and Receiver to be sent to different threads.

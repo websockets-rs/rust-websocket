@@ -1,7 +1,7 @@
 use std::num::FromPrimitive;
 use std::io::IoResult;
 
-use default::WebSocketDataFrame;
+use common::WebSocketDataFrame;
 use result::{WebSocketResult, WebSocketError};
 
 use ws::util::header as dfh;

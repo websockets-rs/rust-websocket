@@ -12,12 +12,12 @@ extern crate openssl;
 #[macro_use]
 extern crate bitflags;
 
-pub use self::default::*;
+pub use self::common::*;
 pub use self::client::WebSocketClient;
 pub use self::server::WebSocketServer;
 pub use self::handshake::{WebSocketRequest, WebSocketResponse};
 
-pub mod default;
+pub mod common;
 pub mod result;
 pub mod handshake;
 pub mod header;
