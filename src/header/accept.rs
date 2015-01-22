@@ -1,6 +1,7 @@
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::shared::util::from_one_raw_str;
 use std::fmt::{self, Show};
+use std::hash::Writer;
 use sha1::Sha1;
 use std::str::FromStr;
 use std::slice::bytes::copy_memory;
@@ -45,7 +46,7 @@ impl WebSocketAccept {
 	pub fn new(key: &WebSocketKey) -> WebSocketAccept {
 		let concat_key = key.serialize() + MAGIC_GUID;
 		let mut sha1 = Sha1::new();
-		sha1.update(concat_key.into_bytes().as_slice());
+		sha1.write(concat_key.into_bytes().as_slice());
 		let mut bytes = [0u8; 20];
 		sha1.output(&mut bytes);
 		WebSocketAccept(bytes)
