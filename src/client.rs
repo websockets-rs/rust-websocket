@@ -1,7 +1,10 @@
+//! Contains the WebSocket client.
+
 use ws::{Sender, Receiver, Message};
 use ws::receiver::{DataFrameIterator, MessageIterator};
 use result::WebSocketResult;
 
+/// Represents a WebSocket client, which can send and receive messages/dataframes.
 pub struct Client<D, S, R> {
 	sender: S,
 	receiver: R

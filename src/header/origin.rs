@@ -1,6 +1,6 @@
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::shared::util::from_one_raw_str;
-use std::fmt::{self, Show};
+use std::fmt;
 use std::ops::Deref;
 
 /// Represents an Origin header

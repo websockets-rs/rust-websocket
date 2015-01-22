@@ -1,5 +1,6 @@
+//! Provides the default stream type for WebSocket connections.
+
 use std::io::net::tcp::TcpStream;
-use std::io::net::ip::SocketAddr;
 use std::io::IoResult;
 use openssl::ssl::SslStream;
 

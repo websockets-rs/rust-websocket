@@ -1,5 +1,6 @@
+//! Utility methods for reading and writing data frames.
+
 use std::num::FromPrimitive;
-use std::io::IoResult;
 
 use common::WebSocketDataFrame;
 use result::{WebSocketResult, WebSocketError};

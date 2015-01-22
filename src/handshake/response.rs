@@ -14,10 +14,9 @@ use hyper::http::read_status_line;
 use header::{WebSocketKey, WebSocketAccept, WebSocketProtocol, WebSocketExtensions};
 
 use client::Client;
-use common::{Inbound, Outbound, Local, Remote};
+use common::{Inbound, Outbound};
 use common::{WebSocketClient, WebSocketStream};
 use common::{WebSocketSender, WebSocketReceiver};
-use common::{WebSocketMessage, WebSocketDataFrame};
 use result::{WebSocketResult, WebSocketError};
 use ws::{Sender, Receiver};
 
@@ -132,11 +131,11 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketResponse<R, W, Outbound> {
 	}
 	
 	/// Send this response, returning a Client ready to transmit/receive data frames
-	pub fn send(mut self) -> WebSocketResult<WebSocketClient<R, W, Remote>> {
+	pub fn send(mut self) -> WebSocketResult<WebSocketClient<R, W>> {
 		try!(write!(&mut self.writer, "{} {}\r\n", self.version, self.status));
 		try!(write!(&mut self.writer, "{}\r\n", self.headers));
-		let sender = WebSocketSender::new(self.writer);
-		let receiver = WebSocketReceiver::new(self.reader);
+		let sender = WebSocketSender::new(self.writer, false);
+		let receiver = WebSocketReceiver::new(self.reader, false);
 		Ok(Client::new(sender, receiver))
 	}
 }
@@ -187,9 +186,9 @@ impl<R: Reader + Send, W: Writer + Send> WebSocketResponse<R, W, Inbound> {
 	/// Consume this response and return a Client ready to transmit/receive data frames.
 	///
 	/// Does not check if the response was valid. Use ```validate()``` to ensure that the response constitutes a successful handshake.
-	pub fn begin(self) -> WebSocketClient<R, W, Local> {
-		let sender = WebSocketSender::new(self.writer);
-		let receiver = WebSocketReceiver::new(self.reader);
+	pub fn begin(self) -> WebSocketClient<R, W> {
+		let sender = WebSocketSender::new(self.writer, true);
+		let receiver = WebSocketReceiver::new(self.reader, true);
 		Client::new(sender, receiver)
 	}
 }

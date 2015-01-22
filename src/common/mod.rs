@@ -18,17 +18,8 @@ pub mod sender;
 pub mod receiver;
 pub mod stream;
 
-pub type WebSocketClient<R, W, L> = super::Client<WebSocketDataFrame, WebSocketSender<W, L>, WebSocketReceiver<R, L>>;
-
-/// Represents a local endpoint
-#[derive(Show, Copy)]
-#[stable]
-pub struct Local;
-
-/// Represents a remote endpoint
-#[derive(Show, Copy)]
-#[stable]
-pub struct Remote;
+/// The default WebSocket client type.
+pub type WebSocketClient<R, W> = super::Client<WebSocketDataFrame, WebSocketSender<W>, WebSocketReceiver<R>>;
 
 /// Represents an inbound object
 #[derive(Show, Copy)]
