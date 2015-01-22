@@ -20,6 +20,14 @@ impl<W> WebSocketSender<W> {
 			local: local
 		}
 	}
+	/// Returns a reference to the underlying Writer.
+	pub fn get_ref(&self) -> &W {
+		&self.inner
+	}
+	/// Returns a mutable reference to the underlying Writer.
+	pub fn get_mut(&mut self) -> &mut W {
+		&mut self.inner
+	}
 }
 
 impl<W: Writer> Sender<WebSocketDataFrame> for WebSocketSender<W> {

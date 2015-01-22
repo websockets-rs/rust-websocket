@@ -48,7 +48,7 @@ pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> IoResult<()>
 	if header.len >= 126 && header.len <= 65535 {
 		try!(writer.write_be_u16(header.len as u16));
 	}
-	else {
+	else if header.len > 65535 {
 		try!(writer.write_be_u64(header.len));
 	}
 	

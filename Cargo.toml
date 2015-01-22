@@ -16,9 +16,12 @@ keywords = ["websocket", "websockets", "rfc6455"]
 
 license = "MIT"
 
+[dependencies.hyper]
+git = "https://github.com/cyderize/hyper.git"
+branch = "make-public"
+
 [dependencies]
 sha1-hasher = "*"
-hyper = "*"
 openssl = "*"
 url = "*"
 rustc-serialize = "*"

@@ -22,6 +22,14 @@ impl<R> WebSocketReceiver<R> {
 			buffer: Vec::new()
 		}
 	}
+	/// Returns a reference to the underlying Reader.
+	pub fn get_ref(&self) -> &R {
+		&self.inner
+	}
+	/// Returns a mutable reference to the underlying Reader.
+	pub fn get_mut(&mut self) -> &mut R {
+		&mut self.inner
+	}
 }
 
 impl<R: Reader> Receiver<WebSocketDataFrame> for WebSocketReceiver<R> {
@@ -39,6 +47,8 @@ impl<R: Reader> Receiver<WebSocketDataFrame> for WebSocketReceiver<R> {
 		let mut finished = first.finished;
 		let mut buffer = Vec::new();
 		let mut frames = Vec::new();
+		
+		frames.push(first);
 		
 		while !finished {
 			let next = try!(self.recv_dataframe());

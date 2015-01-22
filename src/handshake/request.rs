@@ -116,7 +116,7 @@ impl WebSocketRequest<WebSocketStream, WebSocketStream, Outbound> {
 	///let key = request.key().unwrap().clone(); // Keep this key so we can validate the response
 	///
 	///let protocol = WebSocketProtocol(vec!["rust-websocket".to_string()]);
-	///request.headers.set(protocol); /// Set the Sec-WebSocket-Protocol header
+	///request.headers.set(protocol); // Set the Sec-WebSocket-Protocol header
 	///
 	///let response = request.send().unwrap(); // Send the request and retrieve the response
 	///response.validate(&key).unwrap(); // Ensure the response is valid, and panic if it isn't
