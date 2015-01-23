@@ -21,7 +21,7 @@ impl Header for WebSocketProtocol {
 
 	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketProtocol> {
 		let protocols = raw.iter()
-			.filter_map(|line| from_one_comma_delimited(line.as_slice()))
+			.filter_map(|line| from_one_comma_delimited(&line[]))
 			.collect::<Vec<Vec<String>>>()
 			.concat();
 		if protocols.len() > 0 {
@@ -36,7 +36,7 @@ impl Header for WebSocketProtocol {
 impl HeaderFormat for WebSocketProtocol {
 	fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		let WebSocketProtocol(ref value) = *self;
-		fmt_comma_delimited(fmt, value.as_slice())
+		fmt_comma_delimited(fmt, &value[])
 	}
 }
 

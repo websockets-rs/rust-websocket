@@ -25,7 +25,7 @@ impl FromStr for WebSocketKey {
 			Ok(vec) => {
 				if vec.len() != 16 { return None; }
 				let mut array = [0u8; 16];
-				copy_memory(&mut array, vec.as_slice());
+				copy_memory(&mut array, &vec[]);
 				Some(WebSocketKey(array))
 			}
 			Err(_) => { None }
@@ -38,10 +38,9 @@ impl WebSocketKey {
 	pub fn new() -> WebSocketKey {
 		let key: [u8; 16] = unsafe {
 			// Much faster than calling random() several times
-			mem::transmute([
-				rand::random::<u64>(),
-				rand::random::<u64>()
-			])
+			mem::transmute(
+				rand::random::<(u64, u64)>()
+			)
 		};
 		WebSocketKey(key)
 	}

@@ -24,7 +24,7 @@ impl Header for WebSocketExtensions {
 
 	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketExtensions> {
 		let extensions = raw.iter()
-			.filter_map(|line| from_one_comma_delimited(line.as_slice()))
+			.filter_map(|line| from_one_comma_delimited(&line[]))
 			.collect::<Vec<Vec<String>>>()
 			.concat();
 		if extensions.len() > 0 {
@@ -39,7 +39,7 @@ impl Header for WebSocketExtensions {
 impl HeaderFormat for WebSocketExtensions {
 	fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		let WebSocketExtensions(ref value) = *self;
-		fmt_comma_delimited(fmt, value.as_slice())
+		fmt_comma_delimited(fmt, &value[])
 	}
 }
 

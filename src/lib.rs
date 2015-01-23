@@ -38,7 +38,6 @@
 extern crate hyper;
 extern crate url;
 extern crate "rustc-serialize" as serialize;
-extern crate "sha1-hasher" as sha1;
 extern crate openssl;
 
 #[macro_use]

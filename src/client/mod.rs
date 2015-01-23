@@ -80,7 +80,7 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 			&host.port.unwrap().to_string()[]
 		)[]));
 		
-		let stream = match url.scheme.as_slice() {
+		let stream = match &url.scheme[] {
 			"ws" => {
 				WebSocketStream::Tcp(connection)
 			}

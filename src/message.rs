@@ -125,7 +125,7 @@ impl CloseData {
 	pub fn into_bytes(self) -> IoResult<Vec<u8>> {
 		let mut buf = Vec::new();
 		try!(buf.write_be_u16(self.status_code));
-		Ok(buf + self.reason.into_bytes().as_slice())
+		Ok(buf + self.reason.as_bytes())
 	}
 }
 

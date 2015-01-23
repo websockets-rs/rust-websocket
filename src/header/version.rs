@@ -31,7 +31,7 @@ impl Header for WebSocketVersion {
 
 	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketVersion> {
 		from_one_raw_str(raw).map(|s : String|
-			match s.as_slice() {
+			match &s[] {
 				"13" => { WebSocketVersion::WebSocket13 }
 				_ => { WebSocketVersion::Unknown(s) }
 			}
