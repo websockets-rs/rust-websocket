@@ -1,3 +1,4 @@
+#![stable]
 //! Module containing the default implementation of data frames.
 
 /// Represents a WebSocket data frame.
@@ -5,7 +6,6 @@
 /// The data held in a DataFrame is never masked.
 /// Masking/unmasking is done when sending and receiving the data frame,
 #[derive(Show, Clone, PartialEq)]
-#[stable]
 pub struct DataFrame {
 	/// Whether or no this constitutes the end of a message
 	pub finished: bool,

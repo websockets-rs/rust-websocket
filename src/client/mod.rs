@@ -24,7 +24,31 @@ pub mod receiver;
 pub mod request;
 pub mod response;
 
-/// Represents a WebSocket client, which can send and receive messages/dataframes.
+/// Represents a WebSocket client, which can send and receive messages/data frames.
+///
+/// `D` is the data frame type, `S` is the type implementing `Sender<D>` and `R`
+/// is the type implementing `Receiver<D>`.
+///
+///#Connecting to a Server
+///
+///```no_run
+///extern crate websocket;
+///# fn main() {
+///
+///use websocket::{Client, Message};
+///use websocket::client::request::Url;
+///
+///let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
+///let request = Client::connect(url).unwrap(); // Connect to the server
+///let response = request.send().unwrap(); // Send the request
+///response.validate().unwrap(); // Ensure the response is valid
+///
+///let mut client = response.begin(); // Get a Client
+///
+///let message = Message::Text("Hello, World!".to_string());
+///client.send_message(message).unwrap(); // Send message
+///# }
+///```
 pub struct Client<D, S, R> {
 	sender: S,
 	receiver: R
@@ -104,6 +128,24 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 		self.receiver.recv_message()
 	}
 	/// Returns an iterator over incoming messages.
+	///
+	///```no_run
+	///# extern crate websocket;
+	///# fn main() {
+	///use websocket::{Client, Message};
+	///# use websocket::client::request::Url;
+	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
+	///# let request = Client::connect(url).unwrap(); // Connect to the server
+	///# let response = request.send().unwrap(); // Send the request
+	///# response.validate().unwrap(); // Ensure the response is valid
+	///
+	///let mut client = response.begin(); // Get a Client
+	///
+	///for message in client.incoming_messages() {
+	///    println!("Recv: {:?}", message.unwrap());
+	///}
+	///# }
+	///```
 	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, R, D> {
 		self.receiver.incoming_messages()
 	}
@@ -126,6 +168,32 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	/// Split this client into its constituent Sender and Receiver pair.
 	///
 	/// This allows the Sender and Receiver to be sent to different threads.
+	///
+	///```no_run
+	///# extern crate websocket;
+	///# fn main() {
+	///use websocket::{Client, Message, Sender, Receiver};
+	///use std::thread::Thread;
+	///# use websocket::client::request::Url;
+	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
+	///# let request = Client::connect(url).unwrap(); // Connect to the server
+	///# let response = request.send().unwrap(); // Send the request
+	///# response.validate().unwrap(); // Ensure the response is valid
+	///
+	///let client = response.begin(); // Get a Client
+	///
+	///let (mut sender, mut receiver) = client.split();
+	///
+	///Thread::spawn(move || {
+	///    for message in receiver.incoming_messages() {
+	///        println!("Recv: {:?}", message.unwrap());
+	///    }
+	///});
+	///
+	///let message = Message::Text("Hello, World!".to_string());
+	///sender.send_message(message).unwrap();
+	///# }
+	///```
 	pub fn split(self) -> (S, R) {
 		(self.sender, self.receiver)
 	}

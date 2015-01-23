@@ -5,13 +5,10 @@ use std::ops::Deref;
 
 /// Represents an Origin header
 #[derive(PartialEq, Clone, Show)]
-#[stable]
 pub struct Origin(pub String);
 
-#[stable]
 impl Deref for Origin {
 	type Target = String;
-	#[stable]
     fn deref<'a>(&'a self) -> &'a String {
         &self.0
     }

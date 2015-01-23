@@ -2,6 +2,7 @@ use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
 use std::fmt::{self, Show};
 use std::rand;
+use std::mem;
 use std::str::FromStr;
 use std::slice::bytes::copy_memory;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
@@ -11,7 +12,6 @@ use serialize::base64::{ToBase64, FromBase64, STANDARD};
 #[stable]
 pub struct WebSocketKey(pub [u8; 16]);
 
-#[stable]
 impl Show for WebSocketKey {
 	#[stable]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -19,9 +19,7 @@ impl Show for WebSocketKey {
 	}
 }
 
-#[stable]
 impl FromStr for WebSocketKey {
-	#[stable]
 	fn from_str(key: &str) -> Option<WebSocketKey> {
 		match key.from_base64() {
 			Ok(vec) => {
@@ -35,19 +33,19 @@ impl FromStr for WebSocketKey {
 	}
 }
 
-#[stable]
 impl WebSocketKey {
 	/// Generate a new, random WebSocketKey
-	#[stable]
 	pub fn new() -> WebSocketKey {
-		let mut key = [0u8; 16];
-		for item in key.iter_mut() {
-			*item = rand::random::<u8>();
-		}
+		let key: [u8; 16] = unsafe {
+			// Much faster than calling random() several times
+			mem::transmute([
+				rand::random::<u64>(),
+				rand::random::<u64>()
+			])
+		};
 		WebSocketKey(key)
 	}
 	/// Return the Base64 encoding of this WebSocketKey
-	#[stable]
 	pub fn serialize(&self) -> String {
 		let WebSocketKey(key) = *self;
 		key.to_base64(STANDARD)

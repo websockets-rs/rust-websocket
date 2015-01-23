@@ -1,22 +1,21 @@
 //! Utility functions for masking data frame payload data
-#![stable]
 use std::rand;
+use std::mem;
 
 /// Masks data to send to a server
-#[stable]
 pub fn mask_data(key: [u8; 4], buf: &[u8]) -> Vec<u8> {
-	let mut out = Vec::new();
+	let mut out = Vec::with_capacity(buf.len());
 	let mut zip_iter = buf.iter().zip(key.iter().cycle());
 	for (&buf_item, &key_item) in zip_iter {
-		out.push((buf_item ^ key_item) as u8);
+		out.push(buf_item ^ key_item);
 	}
 	out
 }
 
 /// Generates a random masking key
-#[stable]
 pub fn gen_mask() -> [u8; 4] {
-	[rand::random::<u8>(), rand::random::<u8>(), rand::random::<u8>(), rand::random::<u8>()]
+	// Faster than just calling random() many times
+	unsafe { mem::transmute(rand::random::<u32>()) }
 }
 
 #[test]

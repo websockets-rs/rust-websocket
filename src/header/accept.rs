@@ -12,20 +12,15 @@ static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 /// Represents a Sec-WebSocket-Accept header
 #[derive(PartialEq, Clone, Copy)]
-#[stable]
 pub struct WebSocketAccept([u8; 20]);
 
-#[stable]
 impl Show for WebSocketAccept {
-	#[stable]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "WebSocketAccept({})", self.serialize())
 	}
 }
 
-#[stable]
 impl FromStr for WebSocketAccept {
-	#[stable]
 	fn from_str(accept: &str) -> Option<WebSocketAccept> {
 		match accept.from_base64() {
 			Ok(vec) => {
@@ -39,20 +34,17 @@ impl FromStr for WebSocketAccept {
 	}
 }
 
-#[stable]
 impl WebSocketAccept {
 	/// Create a new WebSocketAccept from the given WebSocketKey
-	#[stable]
 	pub fn new(key: &WebSocketKey) -> WebSocketAccept {
 		let concat_key = key.serialize() + MAGIC_GUID;
 		let mut sha1 = Sha1::new();
-		sha1.write(concat_key.into_bytes().as_slice());
+		sha1.write(concat_key.as_bytes());
 		let mut bytes = [0u8; 20];
 		sha1.output(&mut bytes);
 		WebSocketAccept(bytes)
 	}
 	/// Return the Base64 encoding of this WebSocketAccept
-	#[stable]
 	pub fn serialize(&self) -> String {
 		let WebSocketAccept(accept) = *self;
 		accept.to_base64(STANDARD)

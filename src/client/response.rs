@@ -29,6 +29,27 @@ pub struct Response<R: Reader, W: Writer> {
 }
 
 impl<R: Reader, W: Writer> Response<R, W> {
+	/// Reads a Response off the stream associated with a Request.
+	pub fn read(mut request: Request<R, W>) -> WebSocketResult<Response<R, W>> {
+		let (status, version, headers) = {
+			let reader = request.get_mut_reader();
+			let (version, raw_status) = try!(read_status_line(reader));
+			let status = match FromPrimitive::from_u16(raw_status.0) {
+				Some(status) => { status }
+				None => { return Err(WebSocketError::ResponseError("Could not get status code".to_string())); }
+			};
+			let headers = try!(Headers::from_raw(reader));
+			(status, version, headers)
+		};
+		
+		Ok(Response {
+			status: status,
+			headers: headers,
+			version: version,
+			request: request
+		})
+	}
+	
 	/// Short-cut to obtain the WebSocketAccept value
 	pub fn accept(&self) -> Option<&WebSocketAccept> {
 		self.headers.get()
@@ -103,27 +124,4 @@ impl<R: Reader, W: Writer> Response<R, W> {
 		let receiver = Receiver::new(reader);
 		Client::new(sender, receiver)
 	}
-}
-
-/// Reads a Response off the stream associated with a Request.
-pub fn read_response<R, W>(mut request: Request<R, W>) -> WebSocketResult<Response<R, W>>
-	where R: Reader, W: Writer {
-	
-	let (status, version, headers) = {
-		let reader = request.get_mut_reader();
-		let (version, raw_status) = try!(read_status_line(reader));
-		let status = match FromPrimitive::from_u16(raw_status.0) {
-			Some(status) => { status }
-			None => { return Err(WebSocketError::ResponseError("Could not get status code".to_string())); }
-		};
-		let headers = try!(Headers::from_raw(reader));
-		(status, version, headers)
-	};
-	
-	Ok(Response {
-		status: status,
-		headers: headers,
-		version: version,
-		request: request
-	})
 }

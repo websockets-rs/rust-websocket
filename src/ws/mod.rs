@@ -1,5 +1,7 @@
 //! A module containing the traits and structs that lower layer of Rust-WebSocket is based on.
 //!
+//! This should not need to be used by regular users.
+//!
 //! Rust-WebSocket is based on three core traits: `Message`, `Sender` and `Receiver`. These
 //! traits have default implementations outside this module, however can be implemented
 //! by a user to extend the functionality provided.

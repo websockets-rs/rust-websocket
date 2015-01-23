@@ -1,13 +1,12 @@
 #![allow(unstable)]
 
 extern crate websocket;
-extern crate url;
 
 use std::thread::Thread;
 use std::io::stdin;
 use websocket::{Message, Sender, Receiver};
+use websocket::client::request::Url;
 use websocket::Client;
-use url::Url;
 
 fn main() {
 	let url = Url::parse("ws://127.0.0.1:2794").unwrap();

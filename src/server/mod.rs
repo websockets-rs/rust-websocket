@@ -1,5 +1,4 @@
 //! Provides an implementation of a WebSocket server
-#![unstable]
 use std::io::{Listener, Acceptor};
 use std::io::net::tcp::{TcpListener, TcpAcceptor};
 use std::io::net::ip::{SocketAddr, ToSocketAddr};

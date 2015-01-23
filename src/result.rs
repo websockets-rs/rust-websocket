@@ -1,3 +1,4 @@
+#![stable]
 //! The result type used within Rust-WebSocket
 
 use std::io::IoError;

@@ -5,13 +5,10 @@ use std::ops::Deref;
 
 /// Represents a Sec-WebSocket-Protocol header
 #[derive(PartialEq, Clone, Show)]
-#[stable]
 pub struct WebSocketProtocol(pub Vec<String>);
 
-#[stable]
 impl Deref for WebSocketProtocol {
 	type Target = Vec<String>;
-	#[stable]
     fn deref<'a>(&'a self) -> &'a Vec<String> {
         &self.0
     }

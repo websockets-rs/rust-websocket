@@ -8,7 +8,7 @@ use hyper::header::{Upgrade, Protocol};
 
 use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensions, Origin};
 use result::{WebSocketResult, WebSocketError};
-use client::response::{Response, read_response};
+use client::response::Response;
 use ws::util::url::url_to_host;
 
 /// Represents a WebSocket request
@@ -127,6 +127,6 @@ impl<R: Reader, W: Writer> Request<R, W> {
 		let path = self.url.serialize_path().unwrap();
 		try!(write!(&mut self.writer, "GET {} {}\r\n", path, self.version));
 		try!(write!(&mut self.writer, "{}\r\n", self.headers));
-		read_response(self)
+		Response::read(self)
 	}
 }

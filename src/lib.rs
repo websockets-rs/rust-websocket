@@ -1,8 +1,40 @@
 #![allow(unstable)]
 #![warn(missing_docs)]
+#![unstable]
 
 //! Rust-WebSocket is a WebSocket (RFC6455) library written in Rust.
 //!
+//! # Clients
+//! WebSocket clients make use of the `Client` object, which features two connection
+//! functions: `connect()` and `connect_ssl_context()`. See the `Client` struct
+//! documentation for more information. These both return a client-side `Request`
+//! object which is sent to the server with the `send()` method. The `Request` can
+//! be altered, typically using `Request.headers.set()` to add additional headers
+//! or change existing ones before calling `send()`.
+//!
+//! Calling `send()` on a `Request` will obtain a `Response`, which can be checked
+//! with the `validate()` method, which will return `Ok(())` if the response is a
+//! valid one. Data frames and messages can then be sent by obtaining a `Client`
+//! object with `begin()`.
+//!
+//! # Servers
+//! WebSocket servers act similarly to the `TcpListener`, and listen for connections.
+//! See the `Server` struct documentation for more information. The `bind()` and
+//! `bind_secure()` functions will bind the server to the given `SocketAddr`. A call
+//! to `listen()` will then return an acceptor, which accepts Requests with
+//! `accept()`.
+//!
+//! Requests can be validated using `validate()`, and other parts of the request may
+//! be examined (e.g. the Host header and/or the Origin header). A call to `accept()`
+//! or `fail()` will generate a `Response` which either accepts the connection, or
+//! denies it respectively.
+//! 
+//! A `Response` can then be altered if necessary, and is sent with the 'send()`
+//! method, returning a `Client` ready to send and receive data frames or messages.
+//!
+//! # Extending Rust-WebSocket
+//! The `ws` module contains the traits and functions used by Rust-WebSockt at a lower
+//! level. Their usage is explained in the module documentation.
 extern crate hyper;
 extern crate url;
 extern crate "rustc-serialize" as serialize;
