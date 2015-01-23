@@ -30,23 +30,23 @@ pub struct Request<R: Reader, W: Writer> {
 }
 
 impl<R: Reader, W: Writer> Request<R, W> {
-	/// Short-cut to obtain the WebSocketKey value
+	/// Short-cut to obtain the WebSocketKey value.
 	pub fn key(&self) -> Option<&WebSocketKey> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain the WebSocketVersion value
+	/// Short-cut to obtain the WebSocketVersion value.
 	pub fn version(&self) -> Option<&WebSocketVersion> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain the WebSocketProtocol value
+	/// Short-cut to obtain the WebSocketProtocol value.
 	pub fn protocol(&self) -> Option<&WebSocketProtocol> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain the WebSocketExtensions value
+	/// Short-cut to obtain the WebSocketExtensions value.
 	pub fn extensions(&self) -> Option<&WebSocketExtensions> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain the Origin value
+	/// Short-cut to obtain the Origin value.
 	pub fn origin(&self) -> Option<&Origin> {
 		self.headers.get()
 	}
@@ -73,7 +73,7 @@ impl<R: Reader, W: Writer> Request<R, W> {
 	/// Reads an inbound request.
 	/// 
 	/// This method is used within servers, and returns an inbound WebSocketRequest.
-	/// An error will be returned if the request read does not constitute a 
+	/// An error will be returned if the request cannot be read, or is not a valid HTTP request.
 	pub fn read(reader: R, writer: W) -> WebSocketResult<Request<R, W>> {
 		let mut reader = reader;
 		let (method, uri, version) = try!(read_request_line(&mut reader));
@@ -95,7 +95,7 @@ impl<R: Reader, W: Writer> Request<R, W> {
 	}
 	/// Check if this constitutes a valid request.
 	///
-	/// Note that ```accept()``` calls this function internally, however this may be useful for handling bad requests
+	/// Note that `accept()` calls this function internally, however this may be useful for handling bad requests
 	/// in a custom way.
 	pub fn validate(&self) -> WebSocketResult<()> {
 		if self.version == HttpVersion::Http09 || self.version == HttpVersion::Http10 {
@@ -133,7 +133,7 @@ impl<R: Reader, W: Writer> Request<R, W> {
 	
 	/// Accept this request, ready to send a response.
 	///
-	/// This function calls ```validate()``` on the request, and if the request is found to be invalid,
+	/// This function calls `validate()` on the request, and if the request is found to be invalid,
 	/// generates a response with a Bad Request status code.
 	pub fn accept(self) -> Response<R, W> {
 		match self.validate() {

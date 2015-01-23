@@ -83,14 +83,6 @@ pub mod receiver;
 ///}
 /// # }
 /// ```
-///#Custom implementations
-/// Rust-WebSocket allows you to use any (sendable) Reader and Writer with a WebSocketClient.
-/// This means you can implement your own server in which ever way you please.
-/// 
-/// The essential things are to obtain a Reader and a Writer and pass them to ```WebSocketRequest::read()```.
-/// This will give you an inbound WebSocketRequest which can be used with ```WebSocketResponse::new()```.
-/// Finally, call ```begin()``` or ```begin_with()``` on the response to obtain a WebSocketClient and begin
-/// sending/receiving messages.
 pub struct Server<'a> {
 	inner: TcpListener,
 	context: Option<&'a SslContext>,

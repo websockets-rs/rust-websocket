@@ -29,6 +29,7 @@ impl<W> Sender<W> {
 }
 
 impl<W: Writer> ws::Sender<DataFrame> for Sender<W> {
+	/// Sends a single data frame to the remote endpoint.
 	fn send_dataframe(&mut self, dataframe: DataFrame) -> WebSocketResult<()> {
 		write_dataframe(&mut self.inner, true, dataframe)
 	}

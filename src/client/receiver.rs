@@ -33,13 +33,14 @@ impl<R> Receiver<R> {
 
 impl<R: Reader> ws::Receiver<DataFrame> for Receiver<R> {
 	type Message = Message;
-	
+	/// Reads a single data frame from the remote endpoint.
 	fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
 		match self.buffer.pop() {
 			Some(dataframe) => Ok(dataframe),
 			None => read_dataframe(&mut self.inner, false),
 		}
 	}
+	/// Reads a single message from this receiver.
 	fn recv_message(&mut self) -> WebSocketResult<Message> {
 		let first = try!(self.recv_dataframe());
 		

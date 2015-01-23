@@ -29,6 +29,14 @@ pub mod response;
 /// `D` is the data frame type, `S` is the type implementing `Sender<D>` and `R`
 /// is the type implementing `Receiver<D>`.
 ///
+/// For most cases, the data frame type will be `dataframe::DataFrame`, the Sender
+/// type will be `client::Sender<stream::WebSocketStream>` and the receiver type
+/// will be `client::Receiver<stream::WebSocketStream>`.
+///
+/// A `Client` can be split into a `Sender` and a `Receiver` which can then be moved
+/// to different threads, often using a send loop and receiver loop concurrently,
+/// as shown in the client example in `examples/client.rs`.
+///
 ///#Connecting to a Server
 ///
 ///```no_run
@@ -143,6 +151,29 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///
 	///for message in client.incoming_messages() {
 	///    println!("Recv: {:?}", message.unwrap());
+	///}
+	///# }
+	///```
+	///
+	/// Note that since this method mutably borrows the `Client`, it may be necessary to
+	/// first `split()` the `Client` and call `incoming_messages()` on the returned
+	/// `Receiver` to be able to send messages within an iteration.
+	///
+	///```no_run
+	///# extern crate websocket;
+	///# fn main() {
+	///use websocket::{Client, Message, Sender, Receiver};
+	///# use websocket::client::request::Url;
+	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
+	///# let request = Client::connect(url).unwrap(); // Connect to the server
+	///# let response = request.send().unwrap(); // Send the request
+	///# response.validate().unwrap(); // Ensure the response is valid
+	///
+	///let client = response.begin(); // Get a Client
+	///let (mut sender, mut receiver) = client.split(); // Split the Client
+	///for message in receiver.incoming_messages() {
+	///    // Echo the message back
+	///    sender.send_message(message.unwrap()).unwrap();
 	///}
 	///# }
 	///```

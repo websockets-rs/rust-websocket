@@ -11,7 +11,9 @@ use result::{WebSocketResult, WebSocketError};
 use client::response::Response;
 use ws::util::url::url_to_host;
 
-/// Represents a WebSocket request
+/// Represents a WebSocket request.
+///
+/// Note that nothing is written to the internal Writer until the `send()` method is called.
 pub struct Request<R: Reader, W: Writer> {
 	/// The target URI for this request.
     pub url: Url,
@@ -25,7 +27,11 @@ pub struct Request<R: Reader, W: Writer> {
 }
 
 impl<R: Reader, W: Writer> Request<R, W> {
-	/// Creates a new client-side request
+	/// Creates a new client-side request.
+	///
+	/// In general `Client::connect()` should be used for connecting to servers.
+	/// However, if the request is to be written to a different Writer, this function
+	/// may be used.
 	pub fn new(url: Url, reader: R, writer: W) -> WebSocketResult<Request<R, W>> {
 		let mut headers = Headers::new();
 		let host = try!(url_to_host(&url).ok_or(
@@ -47,55 +53,55 @@ impl<R: Reader, W: Writer> Request<R, W> {
 			writer: writer
 		})
 	}
-	/// Short-cut to obtain the WebSocketKey value
+	/// Short-cut to obtain the WebSocketKey value.
 	pub fn key(&self) -> Option<&WebSocketKey> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain the WebSocketVersion value
+	/// Short-cut to obtain the WebSocketVersion value.
 	pub fn version(&self) -> Option<&WebSocketVersion> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain the WebSocketProtocol value
+	/// Short-cut to obtain the WebSocketProtocol value.
 	pub fn protocol(&self) -> Option<&WebSocketProtocol> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain the WebSocketExtensions value
+	/// Short-cut to obtain the WebSocketExtensions value.
 	pub fn extensions(&self) -> Option<&WebSocketExtensions> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain the Origin value
+	/// Short-cut to obtain the Origin value.
 	pub fn origin(&self) -> Option<&Origin> {
 		self.headers.get()
 	}
-	/// Short-cut to obtain a mutable reference to the WebSocketKey value
+	/// Short-cut to obtain a mutable reference to the WebSocketKey value.
 	///
 	/// Note that to add a header that does not already exist, ```Request.headers.set()```
 	/// must be used.
 	pub fn key_mut(&mut self) -> Option<&mut WebSocketKey> {
 		self.headers.get_mut()
 	}
-	/// Short-cut to obtain a mutable reference to the WebSocketVersion value
+	/// Short-cut to obtain a mutable reference to the WebSocketVersion value.
 	///
 	/// Note that to add a header that does not already exist, ```Request.headers.set()```
 	/// must be used.
 	pub fn version_mut(&mut self) -> Option<&mut WebSocketVersion> {
 		self.headers.get_mut()
 	}
-	/// Short-cut to obtaina mutable reference to  the WebSocketProtocol value
+	/// Short-cut to obtaina mutable reference to  the WebSocketProtocol value.
 	///
 	/// Note that to add a header that does not already exist, ```Request.headers.set()```
 	/// must be used.
 	pub fn protocol_mut(&mut self) -> Option<&mut WebSocketProtocol> {
 		self.headers.get_mut()
 	}
-	/// Short-cut to obtain a mutable reference to the WebSocketExtensions value
+	/// Short-cut to obtain a mutable reference to the WebSocketExtensions value.
 	///
 	/// Note that to add a header that does not already exist, ```Request.headers.set()```
 	/// must be used.
 	pub fn extensions_mut(&mut self) -> Option<&mut WebSocketExtensions> {
 		self.headers.get_mut()
 	}
-	/// Short-cut to obtain a mutable reference to the Origin value
+	/// Short-cut to obtain a mutable reference to the Origin value.
 	///
 	/// Note that to add a header that does not already exist, ```Request.headers.set()```
 	/// must be used.
@@ -118,7 +124,7 @@ impl<R: Reader, W: Writer> Request<R, W> {
 	pub fn get_mut_writer(&mut self) -> &mut W {
 		&mut self.writer
 	}
-	/// Return the inner Reader and Writer
+	/// Return the inner Reader and Writer.
 	pub fn into_inner(self) -> (R, W) {
 		(self.reader, self.writer)
 	}

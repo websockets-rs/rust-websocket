@@ -25,7 +25,7 @@ And add ```extern crate websocket;``` to your project.
 
 ## Usage
 
-See the documentation for the latest release of the library [here](http://cyderize.github.io/rust-websocket/doc/websocket), and also the examples, which can be run with:
+See the documentation for the latest release of the library [here](http://cyderize.github.io/rust-websocket/doc/websocket), and also the examples, which are located in `/examples` and can be run with:
 
 ```
 cargo run --example server
@@ -36,6 +36,14 @@ And in a separate terminal:
 ```
 cargo run --example client
 ```
+
+## Testing
+
+The library can be tested using `cargo test` to run tests and `cargo bench` to run bench tests.
+
+A number of tests are included, which ensure core WebSocket functionality works as expected.
+
+These tests are not yet comprehensive, and are still being worked on.
 
 ## License
 
