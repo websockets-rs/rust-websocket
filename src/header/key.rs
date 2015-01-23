@@ -70,6 +70,7 @@ impl HeaderFormat for WebSocketKey {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use test;
 	#[test]
 	fn test_websocket_key() {
 		use header::Headers;
@@ -79,5 +80,31 @@ mod tests {
 		headers.set(extensions);
 		
 		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Key: QUFBQUFBQUFBQUFBQUFBQQ==\r\n");
+	}
+	
+	#[bench]
+	fn bench_header_key(b: &mut test::Bencher) {
+		b.iter(|| {
+			let mut key = WebSocketKey::new();
+			test::black_box(&mut key);
+		});
+	}
+
+	#[bench]
+	fn bench_header_key_serialize(b: &mut test::Bencher) {
+		b.iter(|| {
+			let key = WebSocketKey::new();
+			let mut serialized = key.serialize();
+			test::black_box(&mut serialized);
+		});
+	}
+
+	#[bench]
+	fn bench_header_serialize_key(b: &mut test::Bencher) {
+		let key = WebSocketKey::new();
+		b.iter(|| {
+			let mut serialized = key.serialize();
+			test::black_box(&mut serialized);
+		});
 	}
 }

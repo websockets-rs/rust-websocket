@@ -43,6 +43,9 @@ extern crate openssl;
 #[macro_use]
 extern crate bitflags;
 
+#[cfg(test)]
+extern crate test;
+
 pub use self::client::Client;
 pub use self::server::Server;
 pub use self::dataframe::DataFrame;
