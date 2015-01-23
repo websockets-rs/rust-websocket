@@ -40,13 +40,17 @@ impl HeaderFormat for WebSocketProtocol {
 	}
 }
 
-#[test]
-fn test_websocket_protocol() {
-	use header::Headers;
-	
-	let protocol = WebSocketProtocol(vec!["foo".to_string(), "bar".to_string()]);
-	let mut headers = Headers::new();
-	headers.set(protocol);
-	
-	assert_eq!(&headers.to_string()[], "Sec-WebSocket-Protocol: foo, bar\r\n");
+#[cfg(test)]
+mod tests {
+	use super::*;
+	#[test]
+	fn test_websocket_protocol() {
+		use header::Headers;
+		
+		let protocol = WebSocketProtocol(vec!["foo".to_string(), "bar".to_string()]);
+		let mut headers = Headers::new();
+		headers.set(protocol);
+		
+		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Protocol: foo, bar\r\n");
+	}
 }

@@ -98,3 +98,62 @@ pub fn read_header<R>(reader: &mut R) -> IoResult<DataFrameHeader>
 	})
 }
 
+#[cfg(test)]
+mod tests {
+	use super::*;
+	#[test]
+	fn test_read_header_simple() {
+		let header = [0x81, 0x2B];
+		let obtained = read_header(&mut &header[]).unwrap();
+		let expected = DataFrameHeader {
+			flags: FIN, 
+			opcode: 1, 
+			mask: None, 
+			len: 43
+		};
+		assert_eq!(obtained, expected);
+	}
+	
+	#[test]
+	fn test_write_header_simple() {
+		let header = DataFrameHeader {
+			flags: FIN, 
+			opcode: 1, 
+			mask: None, 
+			len: 43
+		};
+		let expected = [0x81, 0x2B];
+		let mut obtained = Vec::new();
+		write_header(&mut obtained, header).unwrap();
+		
+		assert_eq!(&obtained[], &expected[]);
+	}
+
+	#[test]
+	fn test_read_header_complex() {
+		let header = [0x42, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
+		let obtained = read_header(&mut &header[]).unwrap();
+		let expected = DataFrameHeader {
+			flags: RSV1, 
+			opcode: 2, 
+			mask: Some([2, 4, 8, 16]), 
+			len: 512
+		};
+		assert_eq!(obtained, expected);
+	}
+	
+	#[test]
+	fn test_write_header_complex() {
+		let header = DataFrameHeader {
+			flags: RSV1, 
+			opcode: 2, 
+			mask: Some([2, 4, 8, 16]), 
+			len: 512
+		};
+		let expected = [0x42, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
+		let mut obtained = Vec::new();
+		write_header(&mut obtained, header).unwrap();
+		
+		assert_eq!(&obtained[], &expected[]);
+	}
+}

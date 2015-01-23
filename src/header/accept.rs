@@ -36,7 +36,10 @@ impl FromStr for WebSocketAccept {
 impl WebSocketAccept {
 	/// Create a new WebSocketAccept from the given WebSocketKey
 	pub fn new(key: &WebSocketKey) -> WebSocketAccept {
-		let concat_key = key.serialize() + MAGIC_GUID;
+		let serialized = key.serialize();
+		let mut concat_key = String::with_capacity(serialized.len() + 36);
+		concat_key.push_str(&serialized[]);
+		concat_key.push_str(MAGIC_GUID);
 		let output = hash(HashType::SHA1, concat_key.as_bytes());
 		let mut bytes = [0u8; 20];
 		copy_memory(&mut bytes, &output[]);
@@ -65,14 +68,19 @@ impl HeaderFormat for WebSocketAccept {
 	}
 }
 
-#[test]
-fn test_websocket_accept() {
-	use header::Headers;
-	
-	let key = FromStr::from_str("dGhlIHNhbXBsZSBub25jZQ==").unwrap();
-	let accept = WebSocketAccept::new(&key);
-	let mut headers = Headers::new();
-	headers.set(accept);
-	
-	assert_eq!(&headers.to_string()[], "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n");
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use std::str::FromStr;
+	#[test]
+	fn test_websocket_accept() {
+		use header::Headers;
+		
+		let key = FromStr::from_str("dGhlIHNhbXBsZSBub25jZQ==").unwrap();
+		let accept = WebSocketAccept::new(&key);
+		let mut headers = Headers::new();
+		headers.set(accept);
+		
+		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n");
+	}
 }

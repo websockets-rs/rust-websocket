@@ -31,13 +31,17 @@ impl HeaderFormat for Origin {
 	}
 }
 
-#[test]
-fn test_origin() {
-	use header::Headers;
-	
-	let origin = Origin("foo bar".to_string());
-	let mut headers = Headers::new();
-	headers.set(origin);
-	
-	assert_eq!(&headers.to_string()[], "Origin: foo bar\r\n");
+#[cfg(test)]
+mod tests {
+	use super::*;
+	#[test]
+	fn test_origin() {
+		use header::Headers;
+		
+		let origin = Origin("foo bar".to_string());
+		let mut headers = Headers::new();
+		headers.set(origin);
+		
+		assert_eq!(&headers.to_string()[], "Origin: foo bar\r\n");
+	}
 }

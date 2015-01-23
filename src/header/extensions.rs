@@ -42,14 +42,17 @@ impl HeaderFormat for WebSocketExtensions {
 		fmt_comma_delimited(fmt, &value[])
 	}
 }
-
-#[test]
-fn test_websocket_extensions() {
-	use header::Headers;
-	
-	let extensions = WebSocketExtensions(vec!["foo".to_string(), "bar".to_string()]);
-	let mut headers = Headers::new();
-	headers.set(extensions);
-	
-	assert_eq!(&headers.to_string()[], "Sec-WebSocket-Extensions: foo, bar\r\n");
+#[cfg(test)]
+mod tests {
+	use super::*;
+	#[test]
+	fn test_websocket_extensions() {
+		use header::Headers;
+		
+		let extensions = WebSocketExtensions(vec!["foo".to_string(), "bar".to_string()]);
+		let mut headers = Headers::new();
+		headers.set(extensions);
+		
+		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Extensions: foo, bar\r\n");
+	}
 }

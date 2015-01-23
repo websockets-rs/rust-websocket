@@ -67,13 +67,17 @@ impl HeaderFormat for WebSocketKey {
 	}
 }
 
-#[test]
-fn test_websocket_key() {
-	use header::Headers;
-	
-	let extensions = WebSocketKey([65; 16]);
-	let mut headers = Headers::new();
-	headers.set(extensions);
-	
-	assert_eq!(&headers.to_string()[], "Sec-WebSocket-Key: QUFBQUFBQUFBQUFBQUFBQQ==\r\n");
+#[cfg(test)]
+mod tests {
+	use super::*;
+	#[test]
+	fn test_websocket_key() {
+		use header::Headers;
+		
+		let extensions = WebSocketKey([65; 16]);
+		let mut headers = Headers::new();
+		headers.set(extensions);
+		
+		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Key: QUFBQUFBQUFBQUFBQUFBQQ==\r\n");
+	}
 }

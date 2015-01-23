@@ -18,14 +18,18 @@ pub fn gen_mask() -> [u8; 4] {
 	unsafe { mem::transmute(rand::random::<u32>()) }
 }
 
-#[test]
-fn test_mask_data() {
-	let key = [1u8, 2u8, 3u8, 4u8];
-	let original = vec![10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8, 17u8];
-	let expected = vec![11u8, 9u8, 15u8, 9u8, 15u8, 13u8, 19u8, 21u8];
-	let obtained = mask_data(key, &original[]);
-	let reversed = mask_data(key, &obtained[]);
-	
-	assert_eq!(original, reversed);
-    assert_eq!(obtained, expected);
+#[cfg(test)]
+mod tests {
+	use super::*;
+	#[test]
+	fn test_mask_data() {
+		let key = [1u8, 2u8, 3u8, 4u8];
+		let original = vec![10u8, 11u8, 12u8, 13u8, 14u8, 15u8, 16u8, 17u8];
+		let expected = vec![11u8, 9u8, 15u8, 9u8, 15u8, 13u8, 19u8, 21u8];
+		let obtained = mask_data(key, &original[]);
+		let reversed = mask_data(key, &obtained[]);
+		
+		assert_eq!(original, reversed);
+		assert_eq!(obtained, expected);
+	}
 }
