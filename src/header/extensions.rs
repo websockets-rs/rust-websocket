@@ -4,7 +4,7 @@ use std::fmt;
 use std::ops::Deref;
 
 /// Represents a Sec-WebSocket-Extensions header
-#[derive(PartialEq, Clone, Show)]
+#[derive(PartialEq, Clone, Debug)]
 #[stable]
 pub struct WebSocketExtensions(pub Vec<String>);
 
@@ -18,7 +18,7 @@ impl Deref for WebSocketExtensions {
 }
 
 impl Header for WebSocketExtensions {
-	fn header_name(_: Option<WebSocketExtensions>) -> &'static str {
+	fn header_name() -> &'static str {
 		"Sec-WebSocket-Extensions"
 	}
 
@@ -45,8 +45,10 @@ impl HeaderFormat for WebSocketExtensions {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use hyper::header::{Header, HeaderFormatter};
+	use test;
 	#[test]
-	fn test_websocket_extensions() {
+	fn test_header_extensions() {
 		use header::Headers;
 		
 		let extensions = WebSocketExtensions(vec!["foo".to_string(), "bar".to_string()]);
@@ -54,5 +56,22 @@ mod tests {
 		headers.set(extensions);
 		
 		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Extensions: foo, bar\r\n");
+	}
+	#[bench]
+	fn bench_header_extensions_parse(b: &mut test::Bencher) {
+		let value = vec![b"foo, bar".to_vec()];
+		b.iter(|| {
+			let mut extensions: WebSocketExtensions = Header::parse_header(&value[]).unwrap();
+			test::black_box(&mut extensions);
+		});
+	}
+	#[bench]
+	fn bench_header_extensions_format(b: &mut test::Bencher) {
+		let value = vec![b"foo, bar".to_vec()];
+		let val: WebSocketExtensions = Header::parse_header(&value[]).unwrap();
+		let fmt = HeaderFormatter(&val);
+		b.iter(|| {
+			format!("{}", fmt);
+		});
 	}
 }

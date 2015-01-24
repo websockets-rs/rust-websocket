@@ -4,7 +4,7 @@ use std::fmt;
 use std::ops::Deref;
 
 /// Represents an Origin header
-#[derive(PartialEq, Clone, Show)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct Origin(pub String);
 
 impl Deref for Origin {
@@ -15,7 +15,7 @@ impl Deref for Origin {
 }
 
 impl Header for Origin {
-	fn header_name(_: Option<Origin>) -> &'static str {
+	fn header_name() -> &'static str {
 		"Origin"
 	}
 
@@ -34,8 +34,10 @@ impl HeaderFormat for Origin {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use hyper::header::{Header, HeaderFormatter};
+	use test;
 	#[test]
-	fn test_origin() {
+	fn test_header_origin() {
 		use header::Headers;
 		
 		let origin = Origin("foo bar".to_string());
@@ -43,5 +45,22 @@ mod tests {
 		headers.set(origin);
 		
 		assert_eq!(&headers.to_string()[], "Origin: foo bar\r\n");
+	}
+	#[bench]
+	fn bench_header_origin_parse(b: &mut test::Bencher) {
+		let value = vec![b"foobar".to_vec()];
+		b.iter(|| {
+			let mut origin: Origin = Header::parse_header(&value[]).unwrap();
+			test::black_box(&mut origin);
+		});
+	}
+	#[bench]
+	fn bench_header_origin_format(b: &mut test::Bencher) {
+		let value = vec![b"foobar".to_vec()];
+		let val: Origin = Header::parse_header(&value[]).unwrap();
+		let fmt = HeaderFormatter(&val);
+		b.iter(|| {
+			format!("{}", fmt);
+		});
 	}
 }

@@ -9,7 +9,7 @@ use dataframe::WebSocketOpcode;
 use ws;
 
 /// Represents a WebSocket message.
-#[derive(PartialEq, Clone, Show)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Message {
 	/// A message containing UTF-8 text data
 	Text(String),
@@ -70,7 +70,7 @@ impl ws::Message<DataFrame> for Message {
 			WebSocketOpcode::Close => {
 				if data.len() > 0 {				
 					let status_code = try!((&data[]).read_be_u16());
-					let reason = try!(bytes_to_string(data.slice_from(2)));
+					let reason = try!(bytes_to_string(&data[2..]));
 					let close_data = CloseData::new(status_code, reason);
 					Message::Close(Some(close_data))
 				}
@@ -105,7 +105,7 @@ impl ws::Message<DataFrame> for Message {
 }
 
 /// Represents data contained in a Close message
-#[derive(PartialEq, Clone, Show)]
+#[derive(PartialEq, Clone, Debug)]
 pub struct CloseData {
 	/// The status-code of the CloseData
 	pub status_code: u16,

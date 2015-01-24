@@ -1,6 +1,6 @@
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
-use std::fmt::{self, Show};
+use std::fmt::{self, Debug};
 use std::rand;
 use std::mem;
 use std::str::FromStr;
@@ -12,7 +12,7 @@ use serialize::base64::{ToBase64, FromBase64, STANDARD};
 #[stable]
 pub struct WebSocketKey(pub [u8; 16]);
 
-impl Show for WebSocketKey {
+impl Debug for WebSocketKey {
 	#[stable]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "WebSocketKey({})", self.serialize())
@@ -52,7 +52,7 @@ impl WebSocketKey {
 }
 
 impl Header for WebSocketKey {
-	fn header_name(_: Option<WebSocketKey>) -> &'static str {
+	fn header_name() -> &'static str {
 		"Sec-WebSocket-Key"
 	}
 
@@ -70,9 +70,10 @@ impl HeaderFormat for WebSocketKey {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use hyper::header::{Header, HeaderFormatter};
 	use test;
 	#[test]
-	fn test_websocket_key() {
+	fn test_header_key() {
 		use header::Headers;
 		
 		let extensions = WebSocketKey([65; 16]);
@@ -81,30 +82,28 @@ mod tests {
 		
 		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Key: QUFBQUFBQUFBQUFBQUFBQQ==\r\n");
 	}
-	
 	#[bench]
-	fn bench_header_key(b: &mut test::Bencher) {
+	fn bench_header_key_new(b: &mut test::Bencher) {
 		b.iter(|| {
 			let mut key = WebSocketKey::new();
 			test::black_box(&mut key);
 		});
 	}
-
 	#[bench]
-	fn bench_header_key_serialize(b: &mut test::Bencher) {
+	fn bench_header_key_parse(b: &mut test::Bencher) {
+		let value = vec![b"QUFBQUFBQUFBQUFBQUFBQQ==".to_vec()];
 		b.iter(|| {
-			let key = WebSocketKey::new();
-			let mut serialized = key.serialize();
-			test::black_box(&mut serialized);
+			let mut key: WebSocketKey = Header::parse_header(&value[]).unwrap();
+			test::black_box(&mut key);
 		});
 	}
-
 	#[bench]
-	fn bench_header_serialize_key(b: &mut test::Bencher) {
-		let key = WebSocketKey::new();
+	fn bench_header_key_format(b: &mut test::Bencher) {
+		let value = vec![b"QUFBQUFBQUFBQUFBQUFBQQ==".to_vec()];
+		let val: WebSocketKey = Header::parse_header(&value[]).unwrap();
+		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			let mut serialized = key.serialize();
-			test::black_box(&mut serialized);
+			format!("{}", fmt);
 		});
 	}
 }

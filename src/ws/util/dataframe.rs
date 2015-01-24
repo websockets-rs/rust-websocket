@@ -72,3 +72,62 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 	})
 }
 
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use dataframe::{DataFrame, WebSocketOpcode};
+	use test;
+	#[test]
+	fn test_read_dataframe() {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let mut dataframe = vec![0x81, 0x2B];
+		dataframe.push_all(data);
+		let obtained = read_dataframe(&mut &dataframe[], false).unwrap();
+		let expected = DataFrame {
+			finished: true, 
+			reserved: [false; 3], 
+			opcode: WebSocketOpcode::Text, 
+			data: data.to_vec()
+		};
+		assert_eq!(obtained, expected);
+	}
+	#[test]
+	fn test_write_dataframe() {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let mut expected = vec![0x81, 0x2B];
+		expected.push_all(data);
+		let dataframe = DataFrame {
+			finished: true, 
+			reserved: [false; 3], 
+			opcode: WebSocketOpcode::Text, 
+			data: data.to_vec()
+		};
+		let mut obtained = Vec::new();
+		write_dataframe(&mut obtained, false, dataframe).unwrap();
+		
+		assert_eq!(&obtained[], &expected[]);
+	}
+	#[bench]
+	fn bench_read_dataframe(b: &mut test::Bencher) {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let mut dataframe = vec![0x81, 0x2B];
+		dataframe.push_all(data);
+		b.iter(|| {
+			read_dataframe(&mut &dataframe[], false).unwrap();
+		});
+	}
+	#[bench]
+	fn bench_write_dataframe(b: &mut test::Bencher) {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let dataframe = DataFrame {
+			finished: true, 
+			reserved: [false; 3], 
+			opcode: WebSocketOpcode::Text, 
+			data: data.to_vec()
+		};
+		let mut writer = Vec::with_capacity(45);
+		b.iter(|| {
+			write_dataframe(&mut writer, false, dataframe.clone()).unwrap();
+		});
+	}
+}

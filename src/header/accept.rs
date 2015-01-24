@@ -1,6 +1,6 @@
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
-use std::fmt::{self, Show};
+use std::fmt::{self, Debug};
 use std::str::FromStr;
 use std::slice::bytes::copy_memory;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
@@ -13,7 +13,7 @@ static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 #[derive(PartialEq, Clone, Copy)]
 pub struct WebSocketAccept([u8; 20]);
 
-impl Show for WebSocketAccept {
+impl Debug for WebSocketAccept {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "WebSocketAccept({})", self.serialize())
 	}
@@ -53,7 +53,7 @@ impl WebSocketAccept {
 }
 
 impl Header for WebSocketAccept {
-	fn header_name(_: Option<WebSocketAccept>) -> &'static str {
+	fn header_name() -> &'static str {
 		"Sec-WebSocket-Accept"
 	}
 
@@ -73,11 +73,10 @@ mod tests {
 	use super::*;
 	use test;
 	use std::str::FromStr;
-	use header::WebSocketKey;
+	use header::{Headers, WebSocketKey};
+	use hyper::header::{Header, HeaderFormatter};
 	#[test]
-	fn test_websocket_accept() {
-		use header::Headers;
-		
+	fn test_header_accept() {
 		let key = FromStr::from_str("dGhlIHNhbXBsZSBub25jZQ==").unwrap();
 		let accept = WebSocketAccept::new(&key);
 		let mut headers = Headers::new();
@@ -85,33 +84,29 @@ mod tests {
 		
 		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n");
 	}
-	
 	#[bench]
-	fn bench_header_accept(b: &mut test::Bencher) {
+	fn bench_header_accept_new(b: &mut test::Bencher) {
 		let key = WebSocketKey::new();
 		b.iter(|| {
 			let mut accept = WebSocketAccept::new(&key);
 			test::black_box(&mut accept);
 		});
 	}
-
 	#[bench]
-	fn bench_header_accept_serialize(b: &mut test::Bencher) {
-		let key = WebSocketKey::new();
+	fn bench_header_accept_parse(b: &mut test::Bencher) {
+		let value = vec![b"s3pPLMBiTxaQ9kYGzzhZRbK+xOo=".to_vec()];
 		b.iter(|| {
-			let accept = WebSocketAccept::new(&key);
-			let mut serialized = accept.serialize();
-			test::black_box(&mut serialized);
+			let mut accept: WebSocketAccept = Header::parse_header(&value[]).unwrap();
+			test::black_box(&mut accept);
 		});
 	}
-
 	#[bench]
-	fn bench_header_serialize_accept(b: &mut test::Bencher) {
-		let key = WebSocketKey::new();
-		let accept = WebSocketAccept::new(&key);
+	fn bench_header_accept_format(b: &mut test::Bencher) {
+		let value = vec![b"s3pPLMBiTxaQ9kYGzzhZRbK+xOo=".to_vec()];
+		let val: WebSocketAccept = Header::parse_header(&value[]).unwrap();
+		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			let mut serialized = accept.serialize();
-			test::black_box(&mut serialized);
+			format!("{}", fmt);
 		});
 	}
 }

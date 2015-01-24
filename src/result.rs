@@ -4,6 +4,7 @@
 use std::io::IoError;
 use std::str::Utf8Error;
 use std::error::{Error, FromError};
+use std::fmt;
 use openssl::ssl::error::SslError;
 use hyper::HttpError;
 use url::ParseError;
@@ -12,7 +13,7 @@ use url::ParseError;
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
 
 /// Represents a WebSocket error
-#[derive(Show, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum WebSocketError {
 	/// A WebSocket protocol error
 	ProtocolError(String),
@@ -34,6 +35,14 @@ pub enum WebSocketError {
 	SslError(SslError),
 	/// A UTF-8 error
 	Utf8Error(Utf8Error),
+}
+
+impl fmt::Display for WebSocketError {
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+		try!(fmt.write_str("WebSocketError: "));
+		try!(fmt.write_str(self.description()));
+		Ok(())
+	}
 }
 
 impl Error for WebSocketError {

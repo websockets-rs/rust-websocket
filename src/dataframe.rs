@@ -5,7 +5,7 @@
 ///
 /// The data held in a DataFrame is never masked.
 /// Masking/unmasking is done when sending and receiving the data frame,
-#[derive(Show, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DataFrame {
 	/// Whether or no this constitutes the end of a message
 	pub finished: bool,
@@ -30,7 +30,7 @@ impl DataFrame {
 }
 
 /// Represents a WebSocket data frame opcode
-#[derive(Clone, Show, Copy, PartialEq, FromPrimitive)]
+#[derive(Clone, Debug, Copy, PartialEq, FromPrimitive)]
 pub enum WebSocketOpcode {
 	/// A continuation data frame
 	Continuation,

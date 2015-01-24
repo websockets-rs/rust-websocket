@@ -4,7 +4,7 @@ use std::io::IoResult;
 
 bitflags! {
 	/// Flags relevant to a WebSocket data frame.
-	#[derive(Show)]
+	#[derive(Debug)]
 	flags DataFrameFlags: u8 {
 		const FIN = 0x80,
 		const RSV1 = 0x40,
@@ -14,7 +14,7 @@ bitflags! {
 }
 
 /// Represents a data frame header.
-#[derive(Show, Copy, PartialEq)]
+#[derive(Debug, Copy, PartialEq)]
 pub struct DataFrameHeader {
 	/// The bit flags for the first byte of the header.
 	pub flags: DataFrameFlags, 
@@ -101,6 +101,7 @@ pub fn read_header<R>(reader: &mut R) -> IoResult<DataFrameHeader>
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use test;
 	#[test]
 	fn test_read_header_simple() {
 		let header = [0x81, 0x2B];
@@ -113,7 +114,6 @@ mod tests {
 		};
 		assert_eq!(obtained, expected);
 	}
-	
 	#[test]
 	fn test_write_header_simple() {
 		let header = DataFrameHeader {
@@ -123,12 +123,11 @@ mod tests {
 			len: 43
 		};
 		let expected = [0x81, 0x2B];
-		let mut obtained = Vec::new();
+		let mut obtained = Vec::with_capacity(2);
 		write_header(&mut obtained, header).unwrap();
 		
 		assert_eq!(&obtained[], &expected[]);
 	}
-
 	#[test]
 	fn test_read_header_complex() {
 		let header = [0x42, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
@@ -141,7 +140,6 @@ mod tests {
 		};
 		assert_eq!(obtained, expected);
 	}
-	
 	#[test]
 	fn test_write_header_complex() {
 		let header = DataFrameHeader {
@@ -151,9 +149,29 @@ mod tests {
 			len: 512
 		};
 		let expected = [0x42, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
-		let mut obtained = Vec::new();
+		let mut obtained = Vec::with_capacity(8);
 		write_header(&mut obtained, header).unwrap();
 		
 		assert_eq!(&obtained[], &expected[]);
+	}
+	#[bench]
+	fn bench_read_header(b: &mut test::Bencher) {
+		let header = vec![0x42u8, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
+		b.iter(|| {
+			read_header(&mut &header[]).unwrap();
+		});
+	}
+	#[bench]
+	fn bench_write_header(b: &mut test::Bencher) {
+		let header = DataFrameHeader {
+			flags: RSV1, 
+			opcode: 2, 
+			mask: Some([2, 4, 8, 16]), 
+			len: 512
+		};
+		let mut writer = Vec::with_capacity(8);
+		b.iter(|| {
+			write_header(&mut writer, header).unwrap();
+		});
 	}
 }
