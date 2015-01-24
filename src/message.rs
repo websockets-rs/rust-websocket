@@ -57,9 +57,22 @@ impl ws::Message<DataFrame> for Message {
 			_ => (),
 		}
 		
+		if first.reserved != [false; 3] {
+			return Err(WebSocketError::ProtocolError(
+				"Unsupported reserved bits received".to_string()
+			));
+		}
+		
 		for dataframe in iter {
 			if dataframe.opcode != WebSocketOpcode::Continuation {
-				return Err(WebSocketError::ProtocolError("Unexpected non-continuation data frame".to_string()));
+				return Err(WebSocketError::ProtocolError(
+					"Unexpected non-continuation data frame".to_string()
+				));
+			}
+			if dataframe.reserved != [false; 3] {
+				return Err(WebSocketError::ProtocolError(
+					"Unsupported reserved bits received".to_string()
+				));
 			}
 			data = data + &dataframe.data[];
 		}
@@ -80,7 +93,9 @@ impl ws::Message<DataFrame> for Message {
 			}
 			WebSocketOpcode::Ping => Message::Ping(data),
 			WebSocketOpcode::Pong => Message::Pong(data),
-			_ => return Err(WebSocketError::ProtocolError("Unsupported opcode received".to_string())),
+			_ => return Err(WebSocketError::ProtocolError(
+				"Unsupported opcode received".to_string()
+			)),
 		})
 	}
 	/// Turns this message into an iterator over data frames

@@ -35,19 +35,18 @@ impl<R: Reader> ws::Receiver<DataFrame> for Receiver<R> {
 	type Message = Message;
 	
 	fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
-		match self.buffer.pop() {
-			Some(dataframe) => Ok(dataframe),
-			None => read_dataframe(&mut self.inner, true),
-		}
+		read_dataframe(&mut self.inner, true)
 	}
 	fn recv_message(&mut self) -> WebSocketResult<Message> {
-		let first = try!(self.recv_dataframe());
-		
-		let mut finished = first.finished;
-		let mut buffer = Vec::new();
-		let mut frames = Vec::new();
-		
-		frames.push(first);
+		let mut finished = if self.buffer.is_empty() {
+			let first = try!(self.recv_dataframe());
+			let finished = first.finished;
+			self.buffer.push(first);
+			finished
+		}
+		else {
+			false
+		};
 		
 		while !finished {
 			let next = try!(self.recv_dataframe());
@@ -55,18 +54,21 @@ impl<R: Reader> ws::Receiver<DataFrame> for Receiver<R> {
 			
 			match next.opcode as u8 {
 				// Continuation opcode
-				0 => frames.push(next),
+				0 => self.buffer.push(next),
 				// Control frame
-				8...15 => buffer.push(next),
+				8...15 => {
+					return ws::Message::from_iter(vec![next].into_iter());
+				}
 				// Others
 				_ => return Err(WebSocketError::ProtocolError(
 					"Unexpected data frame opcode".to_string()
 				)),
 			}
 		}
-		
-		self.buffer.push_all(&buffer[]);
 
-		ws::Message::from_iter(frames.into_iter())
+		let buffer = self.buffer.clone();
+		self.buffer.clear();
+		
+		ws::Message::from_iter(buffer.into_iter())
 	}
 }

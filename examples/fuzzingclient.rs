@@ -42,7 +42,7 @@ fn main() {
 				Ok(message) => message,
 				Err(e) => {
 					println!("Error: {:?}", e);
-					let _ = sender.send_message(Message::Close(Some(CloseData::new(1002, "".to_string()))));
+					let _ = sender.send_message(Message::Close(None));
 					break;
 				}
 			};
@@ -54,8 +54,8 @@ fn main() {
 				Message::Binary(data) => {
 					sender.send_message(Message::Binary(data)).unwrap();
 				}
-				Message::Close(data) => {
-					let _ = sender.send_message(Message::Close(data));
+				Message::Close(_) => {
+					let _ = sender.send_message(Message::Close(None));
 					break;
 				}
 				Message::Ping(data) => {
@@ -94,8 +94,8 @@ fn get_case_count(addr: String) -> usize {
 				count = json::decode(&data[]).unwrap();
 				println!("Will run {} cases...", count);
 			}
-			Message::Close(data) => {
-				let _ = sender.send_message(Message::Close(data));
+			Message::Close(_) => {
+				let _ = sender.send_message(Message::Close(None));
 				break;
 			}
 			Message::Ping(data) => {
@@ -122,13 +122,13 @@ fn update_reports(addr: String, agent: &str) {
 			Ok(message) => message,
 			Err(e) => {
 				println!("Error: {:?}", e);
-				let _ = sender.send_message(Message::Close(Some(CloseData::new(1002, "".to_string()))));
+				let _ = sender.send_message(Message::Close(None));
 				return;
 			}
 		};
 		match message {
-			Message::Close(data) => {
-				let _ = sender.send_message(Message::Close(data));
+			Message::Close(_) => {
+				let _ = sender.send_message(Message::Close(None));
 				println!("Reports updated.");
 				println!("Test suite finished!");
 				return;
