@@ -14,6 +14,7 @@ use ws::util::url::url_to_host;
 /// Represents a WebSocket request.
 ///
 /// Note that nothing is written to the internal Writer until the `send()` method is called.
+#[derive(Debug)]
 pub struct Request<R: Reader, W: Writer> {
 	/// The target URI for this request.
     pub url: Url,
@@ -130,7 +131,14 @@ impl<R: Reader, W: Writer> Request<R, W> {
 	}
 	/// Sends the request to the server and returns a response.
 	pub fn send(mut self) -> WebSocketResult<Response<R, W>> {
-		let path = self.url.serialize_path().unwrap();
+		let mut path = self.url.serialize_path().unwrap();
+		match self.url.query.clone() {
+			Some(query) => {
+				path.push_str("?");
+				path.push_str(&query[]);
+			}
+			None => (),
+		}
 		try!(write!(&mut self.writer, "GET {} {}\r\n", path, self.version));
 		try!(write!(&mut self.writer, "{}\r\n", self.headers));
 		Response::read(self)

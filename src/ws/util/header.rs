@@ -1,6 +1,6 @@
 //! Utility functions for reading and writing data frame headers.
 
-use std::io::IoResult;
+use result::{WebSocketResult, WebSocketError};
 
 bitflags! {
 	/// Flags relevant to a WebSocket data frame.
@@ -27,10 +27,19 @@ pub struct DataFrameHeader {
 }
 
 /// Writes a data frame header.
-pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> IoResult<()>
+pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResult<()>
 	where W: Writer {
 
-	assert!(header.opcode <= 0xF);
+	if header.opcode > 0xF {
+		return Err(WebSocketError::DataFrameError(
+			"Invalid data frame opcode".to_string()
+		));
+	}
+	if header.opcode >= 8 && header.len >= 126 {
+		return Err(WebSocketError::DataFrameError(
+			"Control frame length too long".to_string()
+		));
+	}
 	
 	// Write 'FIN', 'RSV1', 'RSV2', 'RSV3' and 'opcode'
 	try!(writer.write_u8((header.flags.bits) | header.opcode));
@@ -62,7 +71,7 @@ pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> IoResult<()>
 }
 
 /// Reads a data frame header.
-pub fn read_header<R>(reader: &mut R) -> IoResult<DataFrameHeader>
+pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 	where R: Reader {
 
 	let byte0 = try!(reader.read_u8());
@@ -73,10 +82,32 @@ pub fn read_header<R>(reader: &mut R) -> IoResult<DataFrameHeader>
 	
 	let len = match byte1 & 0x7F {
 		0...125 => (byte1 & 0x7F) as u64,
-		126 => try!(reader.read_be_u16()) as u64,
-		127 => try!(reader.read_be_u64()),
+		126 => {
+			let len = try!(reader.read_be_u16()) as u64;
+			if len <= 125 {
+				return Err(WebSocketError::DataFrameError(
+					"Invalid data frame length".to_string()
+				));
+			}
+			len
+		}
+		127 => {
+			let len = try!(reader.read_be_u64());
+			if len <= 65535 {
+				return Err(WebSocketError::DataFrameError(
+					"Invalid data frame length".to_string()
+				));
+			}
+			len
+		}
 		_ => unreachable!(),
 	};
+	
+	if opcode >= 8 && len >= 126 {
+		return Err(WebSocketError::DataFrameError(
+			"Control frame length too long".to_string()
+		));
+	}
 	
 	let mask = if byte1 & 0x80 == 0x80 {
 		Some([

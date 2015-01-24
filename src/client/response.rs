@@ -17,6 +17,7 @@ use dataframe::DataFrame;
 use ws;
 
 /// Represents a WebSocket response.
+#[derive(Debug)]
 pub struct Response<R: Reader, W: Writer> {
 	/// The status of the response
 	pub status: StatusCode,
