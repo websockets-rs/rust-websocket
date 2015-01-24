@@ -5,6 +5,8 @@ use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
 use hyper::header::{Upgrade, Protocol};
 
+use unicase::UniCase;
+
 use header::{WebSocketAccept, WebSocketProtocol, WebSocketExtensions};
 use server::{Request, Sender, Receiver};
 use client::Client;
@@ -66,7 +68,7 @@ impl<R: Reader, W: Writer> Response<R, W> {
 		let mut headers = Headers::new();
 		headers.set(WebSocketAccept::new(request.key().unwrap()));
 		headers.set(Connection(vec![
-			ConnectionOption::ConnectionHeader("Upgrade".to_string())
+			ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
 		]));
 		headers.set(Upgrade(vec![Protocol::WebSocket]));
 		Response {

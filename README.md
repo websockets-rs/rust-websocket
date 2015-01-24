@@ -10,7 +10,7 @@ Rust-WebSocket provides a framework for dealing with WebSocket connections (both
 To add a library release version from [crates.io](https://crates.io/crates/websocket) to a Cargo project, add this to the 'dependencies' section of your Cargo.toml:
 
 ```INI
-websocket = "~0.10.1"
+websocket = "~0.10.2"
 ```
 
 To add the library's Git repository to a Cargo project, add this to your Cargo.toml:
@@ -41,9 +41,27 @@ cargo run --example client
 
 The library can be tested using `cargo test` to run tests and `cargo bench` to run bench tests.
 
-A number of tests are included, which ensure core WebSocket functionality works as expected.
+A number of tests are included, which ensure core WebSocket functionality works as expected. These tests are not yet comprehensive, and are still being worked on.
 
-These tests are not yet comprehensive, and are still being worked on.
+##Autobahn TestSuite
+
+Rust-WebSocket uses the [Autobahn TestSuite](http://autobahn.ws/testsuite) to test conformance to RFC6455. If you have Autobahn TestSuite installed you can run these tests yourself using the commands:
+
+```
+wstest -m fuzzingserver
+cargo run --example autobahn-client
+```
+
+To test the client implementation, and
+
+```
+wstest -m fuzzingclient
+cargo run --example autobahn-server
+```
+
+To test the server implementation. The spec files are available [here](http://cyderize.github.io/rust-websocket/autobahn).
+
+The results of these tests are available [here](http://cyderize.github.io/rust-websocket/autobahn).
 
 ## License
 

@@ -14,6 +14,8 @@ use hyper::header::{Upgrade, Protocol};
 use hyper::http::read_request_line;
 use hyper::method::Method;
 
+use unicase::UniCase;
+
 /// Represents a server-side (incoming) request.
 pub struct Request<R: Reader, W: Writer> {
 	/// The target URI for this request.
@@ -121,7 +123,7 @@ impl<R: Reader, W: Writer> Request<R, W> {
 		
 		match self.headers.get() {
 			Some(&Connection(ref connection)) => {
-				if !connection.contains(&(ConnectionOption::ConnectionHeader("Upgrade".to_string()))) {
+				if !connection.contains(&(ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string())))) {
 					return Err(WebSocketError::RequestError("Invalid Connection WebSocket header".to_string()));
 				}
 			}

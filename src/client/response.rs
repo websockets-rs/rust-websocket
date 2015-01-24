@@ -9,6 +9,8 @@ use hyper::header::{Connection, ConnectionOption};
 use hyper::header::{Upgrade, Protocol};
 use hyper::http::read_status_line;
 
+use unicase::UniCase;
+
 use header::{WebSocketAccept, WebSocketProtocol, WebSocketExtensions};
 
 use client::{Client, Request, Sender, Receiver};
@@ -104,7 +106,7 @@ impl<R: Reader, W: Writer> Response<R, W> {
 		if self.headers.get() != Some(&(Upgrade(vec![Protocol::WebSocket]))) {
 			return Err(WebSocketError::ResponseError("Upgrade field must be WebSocket".to_string()));
 		}
-		if self.headers.get() != Some(&(Connection(vec![ConnectionOption::ConnectionHeader("Upgrade".to_string())]))) {
+		if self.headers.get() != Some(&(Connection(vec![ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))]))) {
 			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'".to_string()));
 		}
 		Ok(())

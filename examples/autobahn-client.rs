@@ -33,6 +33,14 @@ fn main() {
 		let ws_uri = Url::parse(&url[]).unwrap();
 		let request = Client::connect(ws_uri).unwrap();
 		let response = request.send().unwrap();
+		match response.validate() {
+			Ok(()) => (),
+			Err(e) => {
+				println!("{:?}", e);
+				current_case_id += 1;
+				continue;
+			}
+		}
 		let (mut sender, mut receiver) = response.begin().split();
 		
 		println!("Executing test case: {}/{}", current_case_id, case_count);
@@ -76,6 +84,13 @@ fn get_case_count(addr: String) -> usize {
 	let ws_uri = Url::parse(&url[]).unwrap();
 	let request = Client::connect(ws_uri).unwrap();
 	let response = request.send().unwrap();
+	match response.validate() {
+		Ok(()) => (),
+		Err(e) => {
+			println!("{:?}", e);
+			return 0;
+		}
+	}
 	let (mut sender, mut receiver) = response.begin().split();
 	
 	let mut count = 0;
@@ -113,6 +128,13 @@ fn update_reports(addr: String, agent: &str) {
 	let ws_uri = Url::parse(&url[]).unwrap();
 	let request = Client::connect(ws_uri).unwrap();
 	let response = request.send().unwrap();
+	match response.validate() {
+		Ok(()) => (),
+		Err(e) => {
+			println!("{:?}", e);
+			return;
+		}
+	}
 	let (mut sender, mut receiver) = response.begin().split();
 	
 	println!("Updating reports...");

@@ -36,6 +36,7 @@
 //! The `ws` module contains the traits and functions used by Rust-WebSockt at a lower
 //! level. Their usage is explained in the module documentation.
 extern crate hyper;
+extern crate unicase;
 extern crate url;
 extern crate "rustc-serialize" as serialize;
 extern crate openssl;
