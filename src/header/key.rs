@@ -9,11 +9,9 @@ use serialize::base64::{ToBase64, FromBase64, STANDARD};
 
 /// Represents a Sec-WebSocket-Key header.
 #[derive(PartialEq, Clone, Copy)]
-#[stable]
 pub struct WebSocketKey(pub [u8; 16]);
 
 impl Debug for WebSocketKey {
-	#[stable]
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		write!(f, "WebSocketKey({})", self.serialize())
 	}

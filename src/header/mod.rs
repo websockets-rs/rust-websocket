@@ -16,5 +16,5 @@ mod accept;
 mod key;
 mod protocol;
 mod version;
-mod extensions;
+pub mod extensions;
 mod origin;

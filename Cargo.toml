@@ -17,11 +17,9 @@ keywords = ["websocket", "websockets", "rfc6455"]
 license = "MIT"
 
 [dependencies.hyper]
-git = "https://github.com/cyderize/hyper.git"
-branch = "case-insensitive"
+git = "https://github.com/hyperium/hyper.git"
 
 [dependencies]
-
 unicase = "*"
 openssl = "*"
 url = "*"

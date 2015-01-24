@@ -1,19 +1,99 @@
+//! Provides the Sec-WebSocket-Extensions header.
+
 use hyper::header::{Header, HeaderFormat};
-use hyper::header::parsing::{from_one_comma_delimited, fmt_comma_delimited};
+use hyper::header::parsing::{from_comma_delimited, fmt_comma_delimited};
 use std::fmt;
+use std::str::FromStr;
 use std::ops::Deref;
 
 /// Represents a Sec-WebSocket-Extensions header
 #[derive(PartialEq, Clone, Debug)]
-#[stable]
-pub struct WebSocketExtensions(pub Vec<String>);
+pub struct WebSocketExtensions(pub Vec<Extension>);
 
-#[stable]
 impl Deref for WebSocketExtensions {
-	type Target = Vec<String>;
-	#[stable]
-    fn deref<'a>(&'a self) -> &'a Vec<String> {
+	type Target = Vec<Extension>;
+
+    fn deref<'a>(&'a self) -> &'a Vec<Extension> {
         &self.0
+    }
+}
+
+#[derive(PartialEq, Clone, Debug)]
+/// A WebSocket extension
+pub struct Extension {
+	/// The name of this extension
+	pub name: String,
+	/// The parameters for this extension
+	pub params: Vec<Parameter>
+}
+
+impl Extension {
+	/// Creates a new extension with the given name
+	pub fn new(name: String) -> Extension {
+		Extension {
+			name: name,
+			params: Vec::new()
+		}
+	}
+}
+
+impl FromStr for Extension {
+	fn from_str(s: &str) -> Option<Extension> {
+		let mut ext = s.split(';').map(|x| x.trim());
+		Some(Extension {
+			name: match ext.next() {
+				Some(x) => x.to_string(),
+				None => return None,
+			},
+			params: ext.map(|x| {
+				let mut pair = x.splitn(1, '=').map(|x| x.trim().to_string());
+				
+				Parameter {
+					name: pair.next().unwrap(),
+					value: pair.next()
+				}
+			}).collect()
+		})
+	}
+}
+
+impl fmt::Display for Extension {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(write!(f, "{}", self.name));
+		for param in self.params.iter() {
+			try!(write!(f, "; {}", param));
+		}
+		Ok(())
+    }
+}
+
+#[derive(PartialEq, Clone, Debug)]
+/// A parameter for an Extension
+pub struct Parameter {
+	/// The name of this parameter
+	pub name: String,
+	/// The value of this parameter, if any
+	pub value: Option<String>
+}
+
+impl Parameter {
+	/// Creates a new parameter with the given name and value
+	pub fn new(name: String, value: Option<String>) -> Parameter {
+		Parameter {
+			name: name,
+			value: value
+		}
+	}
+}
+
+impl fmt::Display for Parameter {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        try!(write!(f, "{}", self.name));
+		match self.value {
+			Some(ref x) => try!(write!(f, "={}", x)),
+			None => (),
+		}
+		Ok(())
     }
 }
 
@@ -23,16 +103,7 @@ impl Header for WebSocketExtensions {
 	}
 
 	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketExtensions> {
-		let extensions = raw.iter()
-			.filter_map(|line| from_one_comma_delimited(&line[]))
-			.collect::<Vec<Vec<String>>>()
-			.concat();
-		if extensions.len() > 0 {
-			Some(WebSocketExtensions(extensions))
-		}
-		else {
-			None
-		}
+		from_comma_delimited(raw).map(|vec| WebSocketExtensions(vec))
 	}
 }
 
@@ -42,6 +113,7 @@ impl HeaderFormat for WebSocketExtensions {
 		fmt_comma_delimited(fmt, &value[])
 	}
 }
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -50,16 +122,17 @@ mod tests {
 	#[test]
 	fn test_header_extensions() {
 		use header::Headers;
+		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
+		let extensions: WebSocketExtensions = Header::parse_header(&value[]).unwrap();
 		
-		let extensions = WebSocketExtensions(vec!["foo".to_string(), "bar".to_string()]);
 		let mut headers = Headers::new();
 		headers.set(extensions);
 		
-		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Extensions: foo, bar\r\n");
+		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Extensions: foo, bar; baz; qux=quux\r\n");
 	}
 	#[bench]
 	fn bench_header_extensions_parse(b: &mut test::Bencher) {
-		let value = vec![b"foo, bar".to_vec()];
+		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
 		b.iter(|| {
 			let mut extensions: WebSocketExtensions = Header::parse_header(&value[]).unwrap();
 			test::black_box(&mut extensions);
@@ -67,7 +140,7 @@ mod tests {
 	}
 	#[bench]
 	fn bench_header_extensions_format(b: &mut test::Bencher) {
-		let value = vec![b"foo, bar".to_vec()];
+		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
 		let val: WebSocketExtensions = Header::parse_header(&value[]).unwrap();
 		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
