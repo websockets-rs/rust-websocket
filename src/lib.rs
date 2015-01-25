@@ -47,6 +47,9 @@ extern crate bitflags;
 #[cfg(test)]
 extern crate test;
 
+#[cfg(feature = "permessage-deflate")]
+extern crate flate2;
+
 pub use self::client::Client;
 pub use self::server::Server;
 pub use self::dataframe::DataFrame;
@@ -54,6 +57,9 @@ pub use self::message::Message;
 pub use self::stream::WebSocketStream;
 pub use self::ws::Sender;
 pub use self::ws::Receiver;
+
+#[cfg(feature = "permessage-deflate")]
+pub use self::deflate::DeflateMessage;
 
 pub mod client;
 pub mod server;
@@ -64,3 +70,6 @@ pub mod stream;
 pub mod header;
 
 pub mod ws;
+
+#[cfg(feature = "permessage-deflate")]
+pub mod deflate;

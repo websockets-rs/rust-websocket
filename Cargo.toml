@@ -16,6 +16,9 @@ keywords = ["websocket", "websockets", "rfc6455"]
 
 license = "MIT"
 
+[features]
+permessage-deflate = ["flate2"]
+
 [dependencies.hyper]
 git = "https://github.com/hyperium/hyper.git"
 
@@ -25,3 +28,7 @@ openssl = "*"
 url = "*"
 rustc-serialize = "*"
 bitflags = "*"
+
+[dependencies.flate2]
+version = "*"
+optional = true
