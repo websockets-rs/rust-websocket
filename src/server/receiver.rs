@@ -1,7 +1,6 @@
 //! The default implementation of a WebSocket Receiver.
 
-use dataframe::DataFrame;
-use message::Message;
+use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
 use ws::util::dataframe::read_dataframe;
 use ws;
@@ -32,14 +31,21 @@ impl<R> Receiver<R> {
 }
 
 impl<R: Reader> ws::Receiver<DataFrame> for Receiver<R> {
-	type Message = Message;
-	
+	/// Reads a single data frame from the remote endpoint.
 	fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
 		read_dataframe(&mut self.inner, true)
 	}
-	fn recv_message(&mut self) -> WebSocketResult<Message> {
+	/// Returns the data frames that constitute one message.
+	fn recv_message_dataframes(&mut self) -> WebSocketResult<Vec<DataFrame>> {
 		let mut finished = if self.buffer.is_empty() {
 			let first = try!(self.recv_dataframe());
+			
+			if first.opcode == Opcode::Continuation {
+				return Err(WebSocketError::ProtocolError(
+					"Unexpected continuation data frame opcode".to_string()
+				));
+			}
+			
 			let finished = first.finished;
 			self.buffer.push(first);
 			finished
@@ -57,7 +63,7 @@ impl<R: Reader> ws::Receiver<DataFrame> for Receiver<R> {
 				0 => self.buffer.push(next),
 				// Control frame
 				8...15 => {
-					return ws::Message::from_iter(vec![next].into_iter());
+					return Ok(vec![next]);
 				}
 				// Others
 				_ => return Err(WebSocketError::ProtocolError(
@@ -69,6 +75,6 @@ impl<R: Reader> ws::Receiver<DataFrame> for Receiver<R> {
 		let buffer = self.buffer.clone();
 		self.buffer.clear();
 		
-		ws::Message::from_iter(buffer.into_iter())
+		Ok(buffer)
 	}
 }

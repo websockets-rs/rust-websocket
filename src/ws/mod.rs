@@ -32,14 +32,8 @@
 //!
 //! A Receiver<D> receives data frames of type D and messages of type Receiver::Message,
 //! typically wrapping an underlying Reader, by implementing the `recv_dataframe()` and 
-//! `recv_message()` methods. The `recv_message()` method typically makes use of the `Message`
-//! ability to form a message from an iterator over data frames.
-//!
-//! If a receiver wishes to work with the Message type, the receiver must ensure that
-//! it only gives the `Message::from_iter()` function an iterator over data frames
-//! which constitute a single message. If control frames are interleaved within a message,
-//! those frames must not be passed to the iterator (until, for example, the next call to
-//! `recv_message()`.
+//! `recv_message_dataframes()` methods. The `recv_message_dataframes()` method has to
+//! form a `Vec` of data frames which comprise one whole, single message.
 //!
 //! To make life easier for a `Receiver`, several utility functions are provided which read
 //! various pieces of data from a Reader. These are found within the `util` module.

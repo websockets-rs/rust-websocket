@@ -132,7 +132,9 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 		self.receiver.incoming_dataframes()
 	}
 	/// Reads a single message from this receiver.
-	pub fn recv_message(&mut self) -> WebSocketResult<<R as ws::Receiver<D>>::Message> {
+	pub fn recv_message<M, I>(&mut self) -> WebSocketResult<M>
+		where M: ws::Message<D, DataFrameIterator = I>, I: Iterator<Item = D> {
+		
 		self.receiver.recv_message()
 	}
 	/// Returns an iterator over incoming messages.
@@ -149,7 +151,7 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///
 	///let mut client = response.begin(); // Get a Client
 	///
-	///for message in client.incoming_messages() {
+	///for message in client.incoming_messages::<Message>() {
 	///    println!("Recv: {:?}", message.unwrap());
 	///}
 	///# }
@@ -171,13 +173,15 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///
 	///let client = response.begin(); // Get a Client
 	///let (mut sender, mut receiver) = client.split(); // Split the Client
-	///for message in receiver.incoming_messages() {
+	///for message in receiver.incoming_messages::<Message>() {
 	///    // Echo the message back
 	///    sender.send_message(message.unwrap()).unwrap();
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, R, D> {
+	pub fn incoming_messages<'a, M>(&'a mut self) -> MessageIterator<'a, R, D, M>
+		where M: ws::Message<D> {
+		
 		self.receiver.incoming_messages()
 	}
 	/// Returns a reference to the underlying Sender.
@@ -216,7 +220,7 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///let (mut sender, mut receiver) = client.split();
 	///
 	///Thread::spawn(move || {
-	///    for message in receiver.incoming_messages() {
+	///    for message in receiver.incoming_messages::<Message>() {
 	///        println!("Recv: {:?}", message.unwrap());
 	///    }
 	///});

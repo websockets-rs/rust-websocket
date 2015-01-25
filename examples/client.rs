@@ -20,7 +20,9 @@ fn main() {
 	
 	Thread::spawn(move || {
 		for message in receiver.incoming_messages() {
-			println!("Recv: {:?}", message.unwrap());
+			if let Message::Text(text) = message.unwrap() {
+				println!("Recv: {}", text);
+			}
 		}
 	});
 	

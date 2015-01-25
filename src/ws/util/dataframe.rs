@@ -42,9 +42,22 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 	where R: Reader {
 
 	let header = try!(dfh::read_header(reader));
+	let finished = header.flags.contains(dfh::FIN);
+	
+	match (header.opcode, finished) {
+		// Continuation opcode on first frame
+		(0, _) => return Err(WebSocketError::ProtocolError(
+			"Unexpected continuation data frame opcode".to_string()
+		)),
+		// Fragmented control frame
+		(8...15, false) => return Err(WebSocketError::ProtocolError(
+			"Unexpected fragmented control frame".to_string()
+		)),
+		_ => (),
+	}
 	
 	Ok(DataFrame {
-		finished: header.flags.contains(dfh::FIN),
+		finished: finished,
 		reserved: [
 			header.flags.contains(dfh::RSV1),
 			header.flags.contains(dfh::RSV2),
@@ -75,7 +88,7 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use dataframe::{DataFrame, WebSocketOpcode};
+	use dataframe::{DataFrame, Opcode};
 	use test;
 	#[test]
 	fn test_read_dataframe() {
@@ -86,7 +99,7 @@ mod tests {
 		let expected = DataFrame {
 			finished: true, 
 			reserved: [false; 3], 
-			opcode: WebSocketOpcode::Text, 
+			opcode: Opcode::Text, 
 			data: data.to_vec()
 		};
 		assert_eq!(obtained, expected);
@@ -99,7 +112,7 @@ mod tests {
 		let dataframe = DataFrame {
 			finished: true, 
 			reserved: [false; 3], 
-			opcode: WebSocketOpcode::Text, 
+			opcode: Opcode::Text, 
 			data: data.to_vec()
 		};
 		let mut obtained = Vec::new();
@@ -122,7 +135,7 @@ mod tests {
 		let dataframe = DataFrame {
 			finished: true, 
 			reserved: [false; 3], 
-			opcode: WebSocketOpcode::Text, 
+			opcode: Opcode::Text, 
 			data: data.to_vec()
 		};
 		let mut writer = Vec::with_capacity(45);

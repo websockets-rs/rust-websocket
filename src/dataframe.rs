@@ -12,14 +12,14 @@ pub struct DataFrame {
 	/// The reserved portion of the data frame (RFC6455 5.2)
 	pub reserved: [bool; 3],
 	/// The opcode associated with this data frame
-	pub opcode: WebSocketOpcode,
+	pub opcode: Opcode,
 	/// The payload associated with this data frame
 	pub data: Vec<u8>,
 }
 
 impl DataFrame {
 	/// Creates a new DataFrame.
-	pub fn new(finished: bool, opcode: WebSocketOpcode, data: Vec<u8>) -> DataFrame {
+	pub fn new(finished: bool, opcode: Opcode, data: Vec<u8>) -> DataFrame {
 		DataFrame {
 			finished: finished,
 			reserved: [false; 3],
@@ -31,7 +31,7 @@ impl DataFrame {
 
 /// Represents a WebSocket data frame opcode
 #[derive(Clone, Debug, Copy, PartialEq, FromPrimitive)]
-pub enum WebSocketOpcode {
+pub enum Opcode {
 	/// A continuation data frame
 	Continuation,
 	/// A UTF-8 text data frame

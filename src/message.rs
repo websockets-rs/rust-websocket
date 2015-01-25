@@ -2,10 +2,9 @@
 
 use std::io::IoResult;
 use std::iter::{Take, Repeat, repeat};
-use std::str::from_utf8;
 use result::{WebSocketResult, WebSocketError};
-use dataframe::DataFrame;
-use dataframe::WebSocketOpcode;
+use dataframe::{DataFrame, Opcode};
+use ws::util::message::message_from_data;
 use ws;
 
 /// Represents a WebSocket message.
@@ -29,33 +28,15 @@ pub enum Message {
 
 impl ws::Message<DataFrame> for Message {
 	type DataFrameIterator = Take<Repeat<DataFrame>>;
-	/// Attempt to form a message from an iterator over data frames.
-	///
-	/// The iterator must only provide data frames constituting
-	/// single message and also must return None once the message is
-	/// complete.
-	fn from_iter<I>(mut iter: I) -> WebSocketResult<Self>
-		where I: Iterator<Item = DataFrame> {
+	/// Attempt to form a message from a series of data frames
+	fn from_dataframes(frames: Vec<DataFrame>) -> WebSocketResult<Message> {
+		let mut iter = frames.iter();
 		
-		let first = try!(
-			iter.next().ok_or(
-				WebSocketError::ProtocolError("Cannot form message with no data frame".to_string())
-			)
-		);
+		let first = try!(iter.next().ok_or(WebSocketError::ProtocolError(
+			"No dataframes provided".to_string()
+		)));
 		
 		let mut data = first.data.clone();
-		
-		match (first.opcode as u8, first.finished) {
-			// Continuation opcode on first frame
-			(0, _) => return Err(WebSocketError::ProtocolError(
-				"Unexpected continuation data frame opcode".to_string()
-			)),
-			// Fragmented control frame
-			(8...15, false) => return Err(WebSocketError::ProtocolError(
-				"Unexpected fragmented control frame".to_string()
-			)),
-			_ => (),
-		}
 		
 		if first.reserved != [false; 3] {
 			return Err(WebSocketError::ProtocolError(
@@ -64,7 +45,7 @@ impl ws::Message<DataFrame> for Message {
 		}
 		
 		for dataframe in iter {
-			if dataframe.opcode != WebSocketOpcode::Continuation {
+			if dataframe.opcode != Opcode::Continuation {
 				return Err(WebSocketError::ProtocolError(
 					"Unexpected non-continuation data frame".to_string()
 				));
@@ -77,42 +58,23 @@ impl ws::Message<DataFrame> for Message {
 			data = data + &dataframe.data[];
 		}
 		
-		Ok(match first.opcode {
-			WebSocketOpcode::Text => Message::Text(try!(bytes_to_string(&data[]))),
-			WebSocketOpcode::Binary => Message::Binary(data),
-			WebSocketOpcode::Close => {
-				if data.len() > 0 {				
-					let status_code = try!((&data[]).read_be_u16());
-					let reason = try!(bytes_to_string(&data[2..]));
-					let close_data = CloseData::new(status_code, reason);
-					Message::Close(Some(close_data))
-				}
-				else {
-					Message::Close(None)
-				}
-			}
-			WebSocketOpcode::Ping => Message::Ping(data),
-			WebSocketOpcode::Pong => Message::Pong(data),
-			_ => return Err(WebSocketError::ProtocolError(
-				"Unsupported opcode received".to_string()
-			)),
-		})
+		message_from_data(first.opcode, data)
 	}
 	/// Turns this message into an iterator over data frames
 	fn into_iter(self) -> Take<Repeat<DataFrame>> {
 		// Just return a single data frame representing this message.
 		let (opcode, data) = match self {
-			Message::Text(payload) => (WebSocketOpcode::Text, payload.into_bytes()),
-			Message::Binary(payload) => (WebSocketOpcode::Binary, payload),
+			Message::Text(payload) => (Opcode::Text, payload.into_bytes()),
+			Message::Binary(payload) => (Opcode::Binary, payload),
 			Message::Close(payload) => (
-					WebSocketOpcode::Close,
+					Opcode::Close,
 					match payload {
 						Some(payload) => { payload.into_bytes().unwrap() }
 						None => { Vec::new() }
 					} 
 			),
-			Message::Ping(payload) => (WebSocketOpcode::Ping, payload),
-			Message::Pong(payload) => (WebSocketOpcode::Pong, payload),
+			Message::Ping(payload) => (Opcode::Ping, payload),
+			Message::Pong(payload) => (Opcode::Pong, payload),
 		};
 		let dataframe = DataFrame::new(true, opcode, data);
 		repeat(dataframe).take(1)
@@ -142,9 +104,4 @@ impl CloseData {
 		try!(buf.write_be_u16(self.status_code));
 		Ok(buf + self.reason.as_bytes())
 	}
-}
-
-fn bytes_to_string(data: &[u8]) -> WebSocketResult<String> {
-	let utf8 = try!(from_utf8(data));
-	Ok(utf8.to_string())
 }
