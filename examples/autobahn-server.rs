@@ -10,7 +10,7 @@ use websocket::{Server, Message, Sender, Receiver};
 fn main() {
 	let args = os::args();
 	let addr = match args.len() {
-		1 => "127.0.0.1:9001".to_string(),
+		1 => "127.0.0.1:9002".to_string(),
 		2 => args[1].clone(),
 		_ => panic!("Wrong number of arguments"),
 	};

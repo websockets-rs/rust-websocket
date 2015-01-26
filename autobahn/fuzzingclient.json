@@ -3,7 +3,7 @@
 	"servers": [
 		{
 			"agent": "rust-websocket",
-			"url": "ws://127.0.0.1:9001"
+			"url": "ws://127.0.0.1:9002"
 		}
 	],
 	"cases": ["*"],

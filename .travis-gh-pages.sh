@@ -14,7 +14,7 @@ wstest -m fuzzingserver -s ./autobahn/fuzzingserver.json &
 FUZZINGSERVER_PID=$!
 sleep 2
 ./build-examples/autobahn-client
-kill -9 $FUZZINGSERVER_PID
+kill -9 ${FUZZINGSERVER_PID}
 echo "Done running Autobahn TestSuite for client"
 
 echo "Running Autobahn TestSuite for server..."
@@ -22,7 +22,7 @@ echo "Running Autobahn TestSuite for server..."
 WSSERVER_PID=$!
 sleep 2
 wstest -m fuzzingclient -s ./autobahn/fuzzingclient.json
-kill -9 $WSSERVER_PID
+kill -9 ${WSSERVER_PID}
 echo "Done running Autobahn TestSuite for server"
 
 echo "Generating gh-pages..."
