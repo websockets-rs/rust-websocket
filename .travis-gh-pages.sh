@@ -12,7 +12,7 @@ echo "Done generating documentation (found version ${PROJECT_VERSION})"
 echo "Running Autobahn TestSuite for client..."
 wstest -m fuzzingserver -s ./autobahn/fuzzingserver.json & 
 FUZZINGSERVER_PID=$!
-sleep 2
+sleep 10
 ./build-examples/autobahn-client
 kill -9 ${FUZZINGSERVER_PID}
 echo "Done running Autobahn TestSuite for client"
@@ -20,7 +20,7 @@ echo "Done running Autobahn TestSuite for client"
 echo "Running Autobahn TestSuite for server..."
 ./build-examples/autobahn-server &
 WSSERVER_PID=$!
-sleep 2
+sleep 10
 wstest -m fuzzingclient -s ./autobahn/fuzzingclient.json
 kill -9 ${WSSERVER_PID}
 echo "Done running Autobahn TestSuite for server"
