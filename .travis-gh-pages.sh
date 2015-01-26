@@ -6,19 +6,19 @@ CRATE_NAME=websocket
 mv ./target/examples ./build-examples
 
 echo "Generating documentation..."
-PROJECT_VERSION=$(cargo doc | grep "/Compiling ${CRATE_NAME} v" | sed 's/.*Compiling '"${CRATE_NAME}"' v\(.*\) .*/\1/')
-echo "Done generating documentation"
+PROJECT_VERSION=$(cargo doc | grep "Compiling ${CRATE_NAME} v" | sed 's/.*Compiling '"${CRATE_NAME}"' v\(.*\) .*/\1/')
+echo "Done generating documentation (found version ${PROJECT_VERSION})"
 
 echo "Running Autobahn TestSuite for client..."
 wstest -m fuzzingserver -s ./autobahn/fuzzingserver.json & 
 FUZZINGSERVER_PID=$!
 sleep 2
-./build-examples/autobahn-client &>/dev/null
+./build-examples/autobahn-client
 kill -9 $FUZZINGSERVER_PID
 echo "Done running Autobahn TestSuite for client"
 
 echo "Running Autobahn TestSuite for server..."
-./build-examples/autobahn-server &>/dev/null &
+./build-examples/autobahn-server &
 WSSERVER_PID=$!
 sleep 2
 wstest -m fuzzingclient -s ./autobahn/fuzzingclient.json
