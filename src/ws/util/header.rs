@@ -103,10 +103,17 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 		_ => unreachable!(),
 	};
 	
-	if opcode >= 8 && len >= 126 {
-		return Err(WebSocketError::DataFrameError(
-			"Control frame length too long".to_string()
-		));
+	if opcode >= 8 {
+		if len >= 126 {
+			return Err(WebSocketError::DataFrameError(
+				"Control frame length too long".to_string()
+			));
+		}
+		if !flags.contains(FIN) {
+			return Err(WebSocketError::ProtocolError(
+				"Illegal fragmented control frame".to_string()
+			));
+		}
 	}
 	
 	let mask = if byte1 & 0x80 == 0x80 {

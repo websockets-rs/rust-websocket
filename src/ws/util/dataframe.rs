@@ -42,22 +42,9 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 	where R: Reader {
 
 	let header = try!(dfh::read_header(reader));
-	let finished = header.flags.contains(dfh::FIN);
-	
-	match (header.opcode, finished) {
-		// Continuation opcode on first frame
-		(0, _) => return Err(WebSocketError::ProtocolError(
-			"Unexpected continuation data frame opcode".to_string()
-		)),
-		// Fragmented control frame
-		(8...15, false) => return Err(WebSocketError::ProtocolError(
-			"Unexpected fragmented control frame".to_string()
-		)),
-		_ => (),
-	}
 	
 	Ok(DataFrame {
-		finished: finished,
+		finished: header.flags.contains(dfh::FIN),
 		reserved: [
 			header.flags.contains(dfh::RSV1),
 			header.flags.contains(dfh::RSV2),
