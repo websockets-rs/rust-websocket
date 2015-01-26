@@ -1,0 +1,39 @@
+#client, #server {
+	line-height: 100%;
+}
+#client > * > *, #server > * > * {
+	width: 16px;
+	height: 16px;
+	display: inline-block;
+	margin: 0px 1px;
+	border-radius: 3px;
+}
+.passed {
+	background-color: #0F0;
+	border: solid 1px #090;
+}
+.non-strict {
+	background-color: #FF0;
+	border: solid 1px #990;
+}
+.failed {
+	background-color: #F00;
+	border: solid 1px #900;
+}
+.unimplemented {
+	background-color: #F0F;
+	border: solid 1px #909;
+}
+.informational {
+	background-color: #AAA;
+	border: solid 1px #777;
+}
+.unclean {
+	background: #F90;
+	border-left: solid 1px #940;
+	width: 8px;
+	height: 16px;
+	position: relative;
+	left: 7px;
+	display: inline-block;
+}

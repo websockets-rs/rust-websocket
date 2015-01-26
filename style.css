@@ -1,0 +1,173 @@
+html, body {
+	margin:0;
+	padding:0;
+	height:100%;
+}
+
+body {
+	font-family:'Noto Sans', sans-serif;
+	font-size:12pt;
+	line-height:150%;
+}
+
+pre code {
+	background-color:#F9F9F9;
+	border:solid 1px #CCC;
+	border-radius:3px;
+	display:block;
+	overflow:auto;
+	padding:5px;
+	line-height:130%;
+}
+
+code {
+	font-family:'Droid Sans Mono', serif;
+	font-size:10pt;
+}
+
+header {
+	text-align:right;
+	position:relative;
+}
+
+footer {
+	background-color:#EEE;
+	border-top:solid 1px #DDD;
+	color:#444;
+	font-size:10pt;
+	position:absolute;
+	bottom:0;
+	width:100%;
+	height:100px;
+	padding-bottom:12px;
+}
+
+footer p {
+	margin-bottom:0;
+}
+
+a {
+	color:#1155FF;
+}
+
+a:hover {
+	color:#0022AA;
+}
+
+.c1 {
+	color:#A71D5D;
+}
+.c2 {
+	color:#DF5000;
+}
+.c3 {
+	color:#795DA3;
+}
+
+#wrapper {
+	min-height:100%;
+	position:relative;
+}
+
+#main {
+	padding-bottom:111px;
+}
+
+#title {
+	float:left;
+}
+
+#version {
+	font-size:12pt;
+	font-weight:normal;
+	white-space:nowrap;
+}
+
+#navigation {
+	position:absolute;
+	right:5px;
+	top:17px;
+}
+
+#navigation ul {
+	list-style:none;
+	margin:-10px;
+	padding:0;
+}
+
+#navigation ul li {
+	display:inline-block;
+	margin:15px 5px;
+}
+
+#navigation ul li a {
+	text-decoration:none;
+	padding:7px 12px;
+	background-color:#1A87ED;
+	border:solid 1px #0C569B;
+	color:#FFF;
+}
+
+#navigation ul li a:hover {
+	background-color:#1D6DB7;
+}
+
+#navigation ul li:first-child a {
+	background-color:#1272CC;
+}
+
+#navigation ul li:first-child a:hover {
+	background-color:#2A8DEA;
+}
+
+#bar {
+	padding:7px 9px;
+	background-color:#FDD;
+	border:solid 1px #DD0000;
+	color:#DD0000;
+}
+
+#bar > * {
+	margin:0;
+}
+
+.centered {
+	width:80%;
+	margin:auto;
+}
+
+.clearfix {
+	clear:both;
+}
+
+@media (max-width: 1200px) {
+	.centered {
+		width:90%;
+	}
+}
+
+@media (max-width: 900px) {
+	#version {
+		display:none;
+	}
+}
+
+@media (max-width: 740px) {
+	header {
+		text-align:center;
+	}
+	#navigation {
+		top:0;
+		margin-bottom:24px;
+	}
+	#title, #navigation {
+		float:none;
+		position:relative;
+	}
+	#version {
+		display:inline;
+	}
+	.centered {
+		width:95%;
+	}
+}
