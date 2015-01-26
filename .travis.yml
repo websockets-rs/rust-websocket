@@ -1,1 +1,13 @@
 language: rust
+
+script:
+  - cargo build
+  - cargo test
+  - cargo bench --no-run
+
+after_success:
+  - ./.travis-gh-pages.sh
+
+env:
+  global:
+    secure: "g79arUER26fJvQu5/e/KvPl8jgnOv+LYD64x0PEZzRY7x+Bo0F45gjDTUG40AEdeh4upxT6twnSo6y+/v8V71NY0b+lPM2q3pS4KicQaDSLfigR1ogMo5A+Iv6l3shRFJhMiDapO3OlcvI2i+U6Er7sUcqIkZaUbbohGI1/0DtE="
