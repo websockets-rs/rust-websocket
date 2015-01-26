@@ -2,6 +2,7 @@ language: rust
 
 install:
   - sudo pip install autobahntestsuite
+  - sudo pip install ghp-import
 
 script:
   - cargo build
