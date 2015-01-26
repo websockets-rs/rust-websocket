@@ -5,6 +5,7 @@ install:
   - sudo pip install ghp-import
 
 after_success:
+  - chmod +x .travis-gh-pages.sh
   - ./.travis-gh-pages.sh
 
 env:
