@@ -1,5 +1,8 @@
 language: rust
 
+install:
+  - sudo pip install autobahntestsuite
+
 script:
   - cargo build
   - cargo test
