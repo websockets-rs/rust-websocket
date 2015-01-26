@@ -4,11 +4,6 @@ install:
   - sudo pip install autobahntestsuite
   - sudo pip install ghp-import
 
-script:
-  - cargo build
-  - cargo test
-  - cargo bench --no-run
-
 after_success:
   - ./.travis-gh-pages.sh
 
