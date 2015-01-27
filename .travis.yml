@@ -4,14 +4,12 @@ after_success:
   - sudo pip install autobahntestsuite
   - sudo pip install ghp-import
   - >
-    wstest -m fuzzingserver -s ./autobahn/fuzzingserver.json & ; 
-    FUZZINGSERVER_PID=$! ; 
+    wstest -m fuzzingserver -s ./autobahn/fuzzingserver.json & FUZZINGSERVER_PID=$! ; 
     sleep 10 ; 
     cargo run --example autobahn-client ; 
     kill -9 ${FUZZINGSERVER_PID}
   - >
-    cargo run --example autobahn-server & ; 
-    WSSERVER_PID=$! ; 
+    cargo run --example autobahn-server & WSSERVER_PID=$! ; 
     sleep 10 ; 
     wstest -m fuzzingclient -s ./autobahn/fuzzingclient.json ; 
     kill -9 ${WSSERVER_PID}
@@ -27,6 +25,8 @@ after_success:
     mv ./autobahn/client/index.json ./autobahn/client/index.temp && rm ./autobahn/client/*.json && mv ./autobahn/client/index.temp ./autobahn/client/index.json ;
     cd ../
   - >
+    [ $TRAVIS_BRANCH = master ] &&
+    [ $TRAVIS_PULL_REQUEST = false ] &&
     ghp-import -n ./rust-websocket-html && 
     git push -fq https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
 
