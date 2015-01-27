@@ -1,12 +1,34 @@
 language: rust
 
-install:
+after_success:
   - sudo pip install autobahntestsuite
   - sudo pip install ghp-import
-
-after_success:
-  - chmod +x .travis-gh-pages.sh
-  - ./.travis-gh-pages.sh
+  - >
+    wstest -m fuzzingserver -s ./autobahn/fuzzingserver.json & ; 
+    FUZZINGSERVER_PID=$! ; 
+    sleep 10 ; 
+    cargo run --example autobahn-client ; 
+    kill -9 ${FUZZINGSERVER_PID}
+  - >
+    cargo run --example autobahn-server & ; 
+    WSSERVER_PID=$! ; 
+    sleep 10 ; 
+    wstest -m fuzzingclient -s ./autobahn/fuzzingclient.json ; 
+    kill -9 ${WSSERVER_PID}
+  - >
+    PROJECT_VERSION=$(cargo doc | grep "Compiling websocket v" | sed 's/.*Compiling websocket v\(.*\) .*/\1/') ; 
+    curl -sL https://github.com/${TRAVIS_REPO_SLUG}/archive/html.tar.gz | tar xz ; 
+    cd ./rust-websocket-html && 
+    find . -type f | xargs sed -i 's/<!--VERSION-->/'"${PROJECT_VERSION}"'/g' ; 
+    mv ../target/doc ./doc ; 
+    mv ../autobahn/server ./autobahn/server ; 
+    mv ../autobahn/client ./autobahn/client ; 
+    mv ./autobahn/server/index.json ./autobahn/server/index.temp && rm ./autobahn/server/*.json && mv ./autobahn/server/index.temp ./autobahn/server/index.json ; 
+    mv ./autobahn/client/index.json ./autobahn/client/index.temp && rm ./autobahn/client/*.json && mv ./autobahn/client/index.temp ./autobahn/client/index.json ;
+    cd ../
+  - >
+    ghp-import -n ./rust-websocket-html && 
+    git push -fq https://${TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git gh-pages
 
 env:
   global:
