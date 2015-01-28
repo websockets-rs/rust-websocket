@@ -30,8 +30,8 @@ pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: DataFrame) -> W
 	try!(dfh::write_header(writer, header));
 	
 	match masking_key {
-		Some(mask) => try!(writer.write(&mask::mask_data(mask, &dataframe.data[])[])),
-		None => try!(writer.write(&dataframe.data[])),
+		Some(mask) => try!(writer.write_all(&mask::mask_data(mask, &dataframe.data[])[])),
+		None => try!(writer.write_all(&dataframe.data[])),
 	}
 	
 	Ok(())

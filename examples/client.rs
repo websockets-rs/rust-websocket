@@ -4,7 +4,7 @@ extern crate websocket;
 
 use std::thread::Thread;
 use std::sync::mpsc::channel;
-use std::io::stdin;
+use std::old_io::stdin;
 
 use websocket::{Message, Sender, Receiver};
 use websocket::client::request::Url;

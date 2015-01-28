@@ -1,6 +1,6 @@
 //! Module containing the default implementation for messages.
 
-use std::io::IoResult;
+use std::old_io::IoResult;
 use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
 use dataframe::{DataFrame, Opcode};
