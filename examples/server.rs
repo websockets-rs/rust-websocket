@@ -3,7 +3,7 @@
 extern crate websocket;
 
 use std::thread::Thread;
-use std::io::{Listener, Acceptor};
+use std::old_io::{Listener, Acceptor};
 use websocket::{Server, Message, Sender, Receiver};
 
 fn main() {

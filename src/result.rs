@@ -1,7 +1,7 @@
 #![stable]
 //! The result type used within Rust-WebSocket
 
-use std::io::IoError;
+use std::old_io::IoError;
 use std::str::Utf8Error;
 use std::error::{Error, FromError};
 use std::fmt;

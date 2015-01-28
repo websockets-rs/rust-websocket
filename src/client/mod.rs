@@ -1,6 +1,6 @@
 //! Contains the WebSocket client.
 
-use std::io::TcpStream;
+use std::old_io::TcpStream;
 
 use ws;
 use ws::util::url::url_to_host;

@@ -1,9 +1,9 @@
 #![stable]
 //! Provides the default stream type for WebSocket connections.
 
-use std::io::IoResult;
-use std::io::TcpStream;
-use std::io::net::ip::SocketAddr;
+use std::old_io::IoResult;
+use std::old_io::TcpStream;
+use std::old_io::net::ip::SocketAddr;
 use openssl::ssl::SslStream;
 
 /// A useful stream type for carrying WebSocket connections.
@@ -24,10 +24,10 @@ impl Reader for WebSocketStream {
 }
 
 impl Writer for WebSocketStream {
-	fn write(&mut self, msg: &[u8]) -> IoResult<()> {
+	fn write_all(&mut self, msg: &[u8]) -> IoResult<()> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.write(msg),
-			WebSocketStream::Ssl(ref mut inner) => inner.write(msg),
+			WebSocketStream::Tcp(ref mut inner) => inner.write_all(msg),
+			WebSocketStream::Ssl(ref mut inner) => inner.write_all(msg),
 		}
 	}
 }

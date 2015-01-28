@@ -1,8 +1,8 @@
 //! Provides an implementation of a WebSocket server
-use std::io::{Listener, Acceptor};
-use std::io::net::tcp::{TcpListener, TcpAcceptor};
-use std::io::net::ip::{SocketAddr, ToSocketAddr};
-use std::io::{IoResult, IoError, IoErrorKind};
+use std::old_io::{Listener, Acceptor};
+use std::old_io::net::tcp::{TcpListener, TcpAcceptor};
+use std::old_io::net::ip::{SocketAddr, ToSocketAddr};
+use std::old_io::{IoResult, IoError, IoErrorKind};
 
 pub use self::request::Request;
 pub use self::response::Response;
@@ -29,7 +29,7 @@ pub mod receiver;
 ///extern crate websocket;
 ///# fn main() {
 ///use std::thread::Thread;
-///use std::io::{Listener, Acceptor};
+///use std::old_io::{Listener, Acceptor};
 ///use websocket::{Server, Message};
 ///
 ///let server = Server::bind("127.0.0.1:1234").unwrap();
@@ -57,7 +57,7 @@ pub mod receiver;
 ///extern crate openssl;
 ///# fn main() {
 ///use std::thread::Thread;
-///use std::io::{Listener, Acceptor};
+///use std::old_io::{Listener, Acceptor};
 ///use websocket::{Server, Message};
 ///use openssl::ssl::{SslContext, SslMethod};
 ///use openssl::x509::X509FileType;
