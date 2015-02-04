@@ -1,5 +1,3 @@
-#![allow(unstable)]
-
 extern crate websocket;
 
 use std::thread::Thread;

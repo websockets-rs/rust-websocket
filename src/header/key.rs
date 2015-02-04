@@ -6,6 +6,7 @@ use std::mem;
 use std::str::FromStr;
 use std::slice::bytes::copy_memory;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
+use result::{WebSocketResult, WebSocketError};
 
 /// Represents a Sec-WebSocket-Key header.
 #[derive(PartialEq, Clone, Copy)]
@@ -18,15 +19,25 @@ impl Debug for WebSocketKey {
 }
 
 impl FromStr for WebSocketKey {
-	fn from_str(key: &str) -> Option<WebSocketKey> {
+	type Err = WebSocketError;
+
+	fn from_str(key: &str) -> WebSocketResult<WebSocketKey> {
 		match key.from_base64() {
 			Ok(vec) => {
-				if vec.len() != 16 { return None; }
+				if vec.len() != 16 {
+					return Err(WebSocketError::ProtocolError(
+						"Sec-WebSocket-Key must be 16 bytes".to_string()
+					));
+				}
 				let mut array = [0u8; 16];
 				copy_memory(&mut array, &vec[]);
-				Some(WebSocketKey(array))
+				Ok(WebSocketKey(array))
 			}
-			Err(_) => { None }
+			Err(_) => {
+				return Err(WebSocketError::ProtocolError(
+					"Invalid Sec-WebSocket-Accept".to_string()
+				));
+			}
 		}
 	}
 }

@@ -1,6 +1,7 @@
-#![allow(unstable)]
 #![warn(missing_docs)]
 #![unstable]
+
+#![deny(unused_mut)]
 
 //! Rust-WebSocket is a WebSocket (RFC6455) library written in Rust.
 //!

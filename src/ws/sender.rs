@@ -12,8 +12,7 @@ pub trait Sender<D> {
 	
 	/// Sends a single message using this sender.
 	fn send_message<M>(&mut self, message: M) -> WebSocketResult<()> 
-		where M: Message<D>, <M as Message<D>>::DataFrameIterator: Iterator<Item = D> {
-		// FIXME: Shouldn't need to have the second part of the where clause (#20890)
+		where M: Message<D> {
 		
 		for dataframe in message.into_iter() {
 			try!(self.send_dataframe(dataframe));

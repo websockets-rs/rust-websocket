@@ -119,7 +119,7 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	}
 	/// Sends a single message to the remote endpoint.
 	pub fn send_message<M>(&mut self, message: M) -> WebSocketResult<()> 
-		where M: ws::Message<D>, <M as ws::Message<D>>::DataFrameIterator: Iterator<Item = D> {
+		where M: ws::Message<D> {
 		
 		self.sender.send_message(message)
 	}

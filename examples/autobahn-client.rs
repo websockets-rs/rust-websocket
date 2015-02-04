@@ -1,5 +1,3 @@
-#![allow(unstable)]
-
 extern crate websocket;
 extern crate "rustc-serialize" as serialize;
 

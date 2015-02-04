@@ -5,7 +5,8 @@ use std::str::FromStr;
 use std::slice::bytes::copy_memory;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
 use header::WebSocketKey;
-use openssl::crypto::hash::{HashType, hash};
+use openssl::crypto::hash::{self, hash};
+use result::{WebSocketResult, WebSocketError};
 
 static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
@@ -20,15 +21,25 @@ impl Debug for WebSocketAccept {
 }
 
 impl FromStr for WebSocketAccept {
-	fn from_str(accept: &str) -> Option<WebSocketAccept> {
+	type Err = WebSocketError;
+
+	fn from_str(accept: &str) -> WebSocketResult<WebSocketAccept> {
 		match accept.from_base64() {
 			Ok(vec) => {
-				if vec.len() != 20 { return None; }
+				if vec.len() != 20 {
+					return Err(WebSocketError::ProtocolError(
+						"Sec-WebSocket-Accept must be 20 bytes".to_string()
+					));
+				}
 				let mut array = [0u8; 20];
 				copy_memory(&mut array, &vec[]);
-				Some(WebSocketAccept(array))
+				Ok(WebSocketAccept(array))
 			}
-			Err(_) => { None }
+			Err(_) => {
+				return Err(WebSocketError::ProtocolError(
+					"Invalid Sec-WebSocket-Accept ".to_string()
+				));
+			}
 		}
 	}
 }
@@ -40,7 +51,7 @@ impl WebSocketAccept {
 		let mut concat_key = String::with_capacity(serialized.len() + 36);
 		concat_key.push_str(&serialized[]);
 		concat_key.push_str(MAGIC_GUID);
-		let output = hash(HashType::SHA1, concat_key.as_bytes());
+		let output = hash(hash::Type::SHA1, concat_key.as_bytes());
 		let mut bytes = [0u8; 20];
 		copy_memory(&mut bytes, &output[]);
 		WebSocketAccept(bytes)

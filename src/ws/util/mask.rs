@@ -5,7 +5,7 @@ use std::mem;
 /// Masks data to send to a server
 pub fn mask_data(key: [u8; 4], buf: &[u8]) -> Vec<u8> {
 	let mut out = Vec::with_capacity(buf.len());
-	let mut zip_iter = buf.iter().zip(key.iter().cycle());
+	let zip_iter = buf.iter().zip(key.iter().cycle());
 	for (&buf_item, &key_item) in zip_iter {
 		out.push(buf_item ^ key_item);
 	}

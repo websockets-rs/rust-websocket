@@ -5,6 +5,7 @@ use hyper::header::parsing::{from_comma_delimited, fmt_comma_delimited};
 use std::fmt;
 use std::str::FromStr;
 use std::ops::Deref;
+use result::{WebSocketResult, WebSocketError};
 
 /// Represents a Sec-WebSocket-Extensions header
 #[derive(PartialEq, Clone, Debug)]
@@ -38,12 +39,16 @@ impl Extension {
 }
 
 impl FromStr for Extension {
-	fn from_str(s: &str) -> Option<Extension> {
+	type Err = WebSocketError;
+	
+	fn from_str(s: &str) -> WebSocketResult<Extension> {
 		let mut ext = s.split(';').map(|x| x.trim());
-		Some(Extension {
+		Ok(Extension {
 			name: match ext.next() {
 				Some(x) => x.to_string(),
-				None => return None,
+				None => return Err(WebSocketError::ProtocolError(
+					"Invalid Sec-WebSocket-Extensions extension name".to_string()
+				)),
 			},
 			params: ext.map(|x| {
 				let mut pair = x.splitn(1, '=').map(|x| x.trim().to_string());
