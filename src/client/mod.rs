@@ -1,6 +1,7 @@
 //! Contains the WebSocket client.
 
 use std::old_io::TcpStream;
+use std::marker::PhantomData;
 
 use ws;
 use ws::util::url::url_to_host;
@@ -59,7 +60,8 @@ pub mod response;
 ///```
 pub struct Client<D, S, R> {
 	sender: S,
-	receiver: R
+	receiver: R,
+	_dataframe: PhantomData<D>
 }
 
 impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
@@ -85,10 +87,10 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 		
 		let connection = try!(TcpStream::connect(&(
 			host.hostname + ":" + 
-			&host.port.unwrap().to_string()[]
-		)[]));
+			&host.port.unwrap().to_string()[..]
+		)[..]));
 		
-		let stream = match &url.scheme[] {
+		let stream = match &url.scheme[..] {
 			"ws" => {
 				WebSocketStream::Tcp(connection)
 			}
@@ -110,7 +112,8 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	pub fn new(sender: S, receiver: R) -> Client<D, S, R> {
 		Client {
 			sender: sender,
-			receiver: receiver
+			receiver: receiver,
+			_dataframe: PhantomData
 		}
 	}
 	/// Sends a single data frame to the remote endpoint.

@@ -31,7 +31,7 @@ impl Header for WebSocketVersion {
 
 	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketVersion> {
 		from_one_raw_str(raw).map(|s : String|
-			match &s[] {
+			match &s[..] {
 				"13" => { WebSocketVersion::WebSocket13 }
 				_ => { WebSocketVersion::Unknown(s) }
 			}
@@ -58,20 +58,20 @@ mod tests {
 		let mut headers = Headers::new();
 		headers.set(version);
 		
-		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Version: 13\r\n");
+		assert_eq!(&headers.to_string()[..], "Sec-WebSocket-Version: 13\r\n");
 	}
 	#[bench]
 	fn bench_header_version_parse(b: &mut test::Bencher) {
 		let value = vec![b"13".to_vec()];
 		b.iter(|| {
-			let mut version: WebSocketVersion = Header::parse_header(&value[]).unwrap();
+			let mut version: WebSocketVersion = Header::parse_header(&value[..]).unwrap();
 			test::black_box(&mut version);
 		});
 	}
 	#[bench]
 	fn bench_header_version_format(b: &mut test::Bencher) {
 		let value = vec![b"13".to_vec()];
-		let val: WebSocketVersion = Header::parse_header(&value[]).unwrap();
+		let val: WebSocketVersion = Header::parse_header(&value[..]).unwrap();
 		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
 			format!("{}", fmt);

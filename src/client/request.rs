@@ -137,7 +137,7 @@ impl<R: Reader, W: Writer> Request<R, W> {
 		match self.url.query.clone() {
 			Some(query) => {
 				path.push_str("?");
-				path.push_str(&query[]);
+				path.push_str(&query[..]);
 			}
 			None => (),
 		}

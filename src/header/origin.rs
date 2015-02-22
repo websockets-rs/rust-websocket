@@ -44,20 +44,20 @@ mod tests {
 		let mut headers = Headers::new();
 		headers.set(origin);
 		
-		assert_eq!(&headers.to_string()[], "Origin: foo bar\r\n");
+		assert_eq!(&headers.to_string()[..], "Origin: foo bar\r\n");
 	}
 	#[bench]
 	fn bench_header_origin_parse(b: &mut test::Bencher) {
 		let value = vec![b"foobar".to_vec()];
 		b.iter(|| {
-			let mut origin: Origin = Header::parse_header(&value[]).unwrap();
+			let mut origin: Origin = Header::parse_header(&value[..]).unwrap();
 			test::black_box(&mut origin);
 		});
 	}
 	#[bench]
 	fn bench_header_origin_format(b: &mut test::Bencher) {
 		let value = vec![b"foobar".to_vec()];
-		let val: Origin = Header::parse_header(&value[]).unwrap();
+		let val: Origin = Header::parse_header(&value[..]).unwrap();
 		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
 			format!("{}", fmt);

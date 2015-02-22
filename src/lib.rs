@@ -1,4 +1,5 @@
 #![warn(missing_docs)]
+#![feature(old_io, io, core)]
 #![unstable]
 
 #![deny(unused_mut)]
@@ -41,6 +42,7 @@ extern crate unicase;
 extern crate url;
 extern crate "rustc-serialize" as serialize;
 extern crate openssl;
+extern crate rand;
 
 #[macro_use]
 extern crate bitflags;

@@ -27,7 +27,7 @@ impl Header for WebSocketProtocol {
 impl HeaderFormat for WebSocketProtocol {
 	fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		let WebSocketProtocol(ref value) = *self;
-		fmt_comma_delimited(fmt, &value[])
+		fmt_comma_delimited(fmt, &value[..])
 	}
 }
 
@@ -44,20 +44,20 @@ mod tests {
 		let mut headers = Headers::new();
 		headers.set(protocol);
 		
-		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Protocol: foo, bar\r\n");
+		assert_eq!(&headers.to_string()[..], "Sec-WebSocket-Protocol: foo, bar\r\n");
 	}
 	#[bench]
 	fn bench_header_protocol_parse(b: &mut test::Bencher) {
 		let value = vec![b"foo, bar".to_vec()];
 		b.iter(|| {
-			let mut protocol: WebSocketProtocol = Header::parse_header(&value[]).unwrap();
+			let mut protocol: WebSocketProtocol = Header::parse_header(&value[..]).unwrap();
 			test::black_box(&mut protocol);
 		});
 	}
 	#[bench]
 	fn bench_header_protocol_format(b: &mut test::Bencher) {
 		let value = vec![b"foo, bar".to_vec()];
-		let val: WebSocketProtocol = Header::parse_header(&value[]).unwrap();
+		let val: WebSocketProtocol = Header::parse_header(&value[..]).unwrap();
 		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
 			format!("{}", fmt);

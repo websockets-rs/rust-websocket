@@ -115,7 +115,7 @@ impl Header for WebSocketExtensions {
 impl HeaderFormat for WebSocketExtensions {
 	fn fmt_header(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		let WebSocketExtensions(ref value) = *self;
-		fmt_comma_delimited(fmt, &value[])
+		fmt_comma_delimited(fmt, &value[..])
 	}
 }
 
@@ -128,25 +128,25 @@ mod tests {
 	fn test_header_extensions() {
 		use header::Headers;
 		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
-		let extensions: WebSocketExtensions = Header::parse_header(&value[]).unwrap();
+		let extensions: WebSocketExtensions = Header::parse_header(&value[..]).unwrap();
 		
 		let mut headers = Headers::new();
 		headers.set(extensions);
 		
-		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Extensions: foo, bar; baz; qux=quux\r\n");
+		assert_eq!(&headers.to_string()[..], "Sec-WebSocket-Extensions: foo, bar; baz; qux=quux\r\n");
 	}
 	#[bench]
 	fn bench_header_extensions_parse(b: &mut test::Bencher) {
 		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
 		b.iter(|| {
-			let mut extensions: WebSocketExtensions = Header::parse_header(&value[]).unwrap();
+			let mut extensions: WebSocketExtensions = Header::parse_header(&value[..]).unwrap();
 			test::black_box(&mut extensions);
 		});
 	}
 	#[bench]
 	fn bench_header_extensions_format(b: &mut test::Bencher) {
 		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
-		let val: WebSocketExtensions = Header::parse_header(&value[]).unwrap();
+		let val: WebSocketExtensions = Header::parse_header(&value[..]).unwrap();
 		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
 			format!("{}", fmt);

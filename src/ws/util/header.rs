@@ -143,7 +143,7 @@ mod tests {
 	#[test]
 	fn test_read_header_simple() {
 		let header = [0x81, 0x2B];
-		let obtained = read_header(&mut &header[]).unwrap();
+		let obtained = read_header(&mut &header[..]).unwrap();
 		let expected = DataFrameHeader {
 			flags: FIN, 
 			opcode: 1, 
@@ -164,12 +164,12 @@ mod tests {
 		let mut obtained = Vec::with_capacity(2);
 		write_header(&mut obtained, header).unwrap();
 		
-		assert_eq!(&obtained[], &expected[]);
+		assert_eq!(&obtained[..], &expected[..]);
 	}
 	#[test]
 	fn test_read_header_complex() {
 		let header = [0x42, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
-		let obtained = read_header(&mut &header[]).unwrap();
+		let obtained = read_header(&mut &header[..]).unwrap();
 		let expected = DataFrameHeader {
 			flags: RSV1, 
 			opcode: 2, 
@@ -190,13 +190,13 @@ mod tests {
 		let mut obtained = Vec::with_capacity(8);
 		write_header(&mut obtained, header).unwrap();
 		
-		assert_eq!(&obtained[], &expected[]);
+		assert_eq!(&obtained[..], &expected[..]);
 	}
 	#[bench]
 	fn bench_read_header(b: &mut test::Bencher) {
 		let header = vec![0x42u8, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
 		b.iter(|| {
-			read_header(&mut &header[]).unwrap();
+			read_header(&mut &header[..]).unwrap();
 		});
 	}
 	#[bench]

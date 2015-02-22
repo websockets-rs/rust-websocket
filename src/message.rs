@@ -55,7 +55,7 @@ impl ws::Message<DataFrame> for Message {
 					"Unsupported reserved bits received".to_string()
 				));
 			}
-			data = data + &dataframe.data[];
+			data = data + &dataframe.data[..];
 		}
 		
 		message_from_data(first.opcode, data)

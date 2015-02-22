@@ -32,7 +32,7 @@ impl FromStr for WebSocketAccept {
 					));
 				}
 				let mut array = [0u8; 20];
-				copy_memory(&mut array, &vec[]);
+				copy_memory(&mut array, &vec[..]);
 				Ok(WebSocketAccept(array))
 			}
 			Err(_) => {
@@ -49,11 +49,11 @@ impl WebSocketAccept {
 	pub fn new(key: &WebSocketKey) -> WebSocketAccept {
 		let serialized = key.serialize();
 		let mut concat_key = String::with_capacity(serialized.len() + 36);
-		concat_key.push_str(&serialized[]);
+		concat_key.push_str(&serialized[..]);
 		concat_key.push_str(MAGIC_GUID);
 		let output = hash(hash::Type::SHA1, concat_key.as_bytes());
 		let mut bytes = [0u8; 20];
-		copy_memory(&mut bytes, &output[]);
+		copy_memory(&mut bytes, &output[..]);
 		WebSocketAccept(bytes)
 	}
 	/// Return the Base64 encoding of this WebSocketAccept
@@ -93,7 +93,7 @@ mod tests {
 		let mut headers = Headers::new();
 		headers.set(accept);
 		
-		assert_eq!(&headers.to_string()[], "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n");
+		assert_eq!(&headers.to_string()[..], "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n");
 	}
 	#[bench]
 	fn bench_header_accept_new(b: &mut test::Bencher) {
@@ -107,14 +107,14 @@ mod tests {
 	fn bench_header_accept_parse(b: &mut test::Bencher) {
 		let value = vec![b"s3pPLMBiTxaQ9kYGzzhZRbK+xOo=".to_vec()];
 		b.iter(|| {
-			let mut accept: WebSocketAccept = Header::parse_header(&value[]).unwrap();
+			let mut accept: WebSocketAccept = Header::parse_header(&value[..]).unwrap();
 			test::black_box(&mut accept);
 		});
 	}
 	#[bench]
 	fn bench_header_accept_format(b: &mut test::Bencher) {
 		let value = vec![b"s3pPLMBiTxaQ9kYGzzhZRbK+xOo=".to_vec()];
-		let val: WebSocketAccept = Header::parse_header(&value[]).unwrap();
+		let val: WebSocketAccept = Header::parse_header(&value[..]).unwrap();
 		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
 			format!("{}", fmt);

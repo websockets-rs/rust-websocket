@@ -8,11 +8,11 @@ use std::str::from_utf8;
 /// Creates a Message from an Opcode and data.
 pub fn message_from_data(opcode: Opcode, data: Vec<u8>) -> WebSocketResult<Message> {
 	Ok(match opcode {	
-		Opcode::Text => Message::Text(try!(bytes_to_string(&data[]))),
+		Opcode::Text => Message::Text(try!(bytes_to_string(&data[..]))),
 		Opcode::Binary => Message::Binary(data),
 		Opcode::Close => {
 			if data.len() > 0 {				
-				let status_code = try!((&data[]).read_be_u16());
+				let status_code = try!((&data[..]).read_be_u16());
 				let reason = try!(bytes_to_string(&data[2..]));
 				let close_data = CloseData::new(status_code, reason);
 				Message::Close(Some(close_data))

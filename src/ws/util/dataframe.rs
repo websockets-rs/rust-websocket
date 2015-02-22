@@ -30,8 +30,8 @@ pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: DataFrame) -> W
 	try!(dfh::write_header(writer, header));
 	
 	match masking_key {
-		Some(mask) => try!(writer.write_all(&mask::mask_data(mask, &dataframe.data[])[])),
-		None => try!(writer.write_all(&dataframe.data[])),
+		Some(mask) => try!(writer.write_all(&mask::mask_data(mask, &dataframe.data[..])[..])),
+		None => try!(writer.write_all(&dataframe.data[..])),
 	}
 	
 	Ok(())
@@ -58,7 +58,7 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 						"Expected unmasked data frame".to_string()
 					));
 				}
-				mask::mask_data(mask, &try!(reader.read_exact(header.len as usize))[])
+				mask::mask_data(mask, &try!(reader.read_exact(header.len as usize))[..])
 			}
 			None => {
 				if should_be_masked {
@@ -82,7 +82,7 @@ mod tests {
 		let data = b"The quick brown fox jumps over the lazy dog";
 		let mut dataframe = vec![0x81, 0x2B];
 		dataframe.push_all(data);
-		let obtained = read_dataframe(&mut &dataframe[], false).unwrap();
+		let obtained = read_dataframe(&mut &dataframe[..], false).unwrap();
 		let expected = DataFrame {
 			finished: true, 
 			reserved: [false; 3], 
@@ -105,7 +105,7 @@ mod tests {
 		let mut obtained = Vec::new();
 		write_dataframe(&mut obtained, false, dataframe).unwrap();
 		
-		assert_eq!(&obtained[], &expected[]);
+		assert_eq!(&obtained[..], &expected[..]);
 	}
 	#[bench]
 	fn bench_read_dataframe(b: &mut test::Bencher) {
@@ -113,7 +113,7 @@ mod tests {
 		let mut dataframe = vec![0x81, 0x2B];
 		dataframe.push_all(data);
 		b.iter(|| {
-			read_dataframe(&mut &dataframe[], false).unwrap();
+			read_dataframe(&mut &dataframe[..], false).unwrap();
 		});
 	}
 	#[bench]
