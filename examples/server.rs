@@ -1,6 +1,8 @@
+#![feature(old_io)]
+
 extern crate websocket;
 
-use std::thread::Thread;
+use std::thread;
 use std::old_io::{Listener, Acceptor};
 use websocket::{Server, Message, Sender, Receiver};
 
@@ -10,7 +12,7 @@ fn main() {
 	let mut acceptor = server.listen().unwrap();
 	for request in acceptor.incoming() {
 		// Spawn a new thread for each connection.
-		Thread::spawn(move || {
+		thread::spawn(move || {
 			let request = request.unwrap(); // Get the request
 			request.validate().unwrap();
 			let response = request.accept(); // Form a response

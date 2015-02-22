@@ -1,21 +1,14 @@
 extern crate websocket;
 extern crate "rustc-serialize" as serialize;
 
-use std::os;
-
 use websocket::client::request::Url;
 use websocket::{Client, Message, Sender, Receiver};
 use websocket::message::CloseData;
 use serialize::json;
 
 fn main() {
-	let args = os::args();
-	let (addr, agent) = match args.len() {
-		1 => ("ws://127.0.0.1:9001".to_string(), "rust-websocket"),
-		2 => (args[1].clone(), "rust-websocket"),
-		3 => (args[1].clone(), &args[2][]),
-		_ => panic!("Wrong number of arguments"),
-	};
+	let addr = "ws://127.0.0.1:9001".to_string();
+	let agent = "rust-websocket";
 	
 	println!("Using fuzzingserver {}", addr);
 	println!("Using agent {}", agent);
@@ -26,9 +19,9 @@ fn main() {
 	let case_count = get_case_count(addr.clone());
 	
 	while current_case_id <= case_count {
-		let url = addr.clone() + "/runCase?case=" + &current_case_id.to_string()[] + "&agent=" + agent;
+		let url = addr.clone() + "/runCase?case=" + &current_case_id.to_string()[..] + "&agent=" + agent;
 		
-		let ws_uri = Url::parse(&url[]).unwrap();
+		let ws_uri = Url::parse(&url[..]).unwrap();
 		let request = Client::connect(ws_uri).unwrap();
 		let response = request.send().unwrap();
 		match response.validate() {
@@ -79,7 +72,7 @@ fn main() {
 
 fn get_case_count(addr: String) -> usize {
 	let url = addr + "/getCaseCount";
-	let ws_uri = Url::parse(&url[]).unwrap();
+	let ws_uri = Url::parse(&url[..]).unwrap();
 	let request = Client::connect(ws_uri).unwrap();
 	let response = request.send().unwrap();
 	match response.validate() {
@@ -104,7 +97,7 @@ fn get_case_count(addr: String) -> usize {
 		};
 		match message {
 			Message::Text(data) => {
-				count = json::decode(&data[]).unwrap();
+				count = json::decode(&data[..]).unwrap();
 				println!("Will run {} cases...", count);
 			}
 			Message::Close(_) => {
@@ -123,7 +116,7 @@ fn get_case_count(addr: String) -> usize {
 
 fn update_reports(addr: String, agent: &str) {
 	let url = addr + "/updateReports?agent=" + agent;
-	let ws_uri = Url::parse(&url[]).unwrap();
+	let ws_uri = Url::parse(&url[..]).unwrap();
 	let request = Client::connect(ws_uri).unwrap();
 	let response = request.send().unwrap();
 	match response.validate() {

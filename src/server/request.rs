@@ -31,6 +31,8 @@ pub struct Request<R: Reader, W: Writer> {
 	writer: W,
 }
 
+unsafe impl<R, W> Send for Request<R, W> where R: Reader + Send, W: Writer + Send { }
+
 impl<R: Reader, W: Writer> Request<R, W> {
 	/// Short-cut to obtain the WebSocketKey value.
 	pub fn key(&self) -> Option<&WebSocketKey> {

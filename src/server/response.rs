@@ -26,6 +26,8 @@ pub struct Response<R: Reader, W: Writer> {
 	request: Request<R, W>
 }
 
+unsafe impl<R, W> Send for Response<R, W> where R: Reader + Send, W: Writer + Send { }
+
 impl<R: Reader, W: Writer> Response<R, W> {
 	/// Short-cut to obtain the WebSocketAccept value
 	pub fn accept(&self) -> Option<&WebSocketAccept> {

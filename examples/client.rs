@@ -1,6 +1,8 @@
+#![feature(old_io)]
+
 extern crate websocket;
 
-use std::thread::Thread;
+use std::thread;
 use std::sync::mpsc::channel;
 use std::old_io::stdin;
 
@@ -26,7 +28,7 @@ fn main() {
 	
 	let tx_1 = tx.clone();
 	
-	let send_loop = Thread::scoped(move || {
+	let send_loop = thread::scoped(move || {
 		loop {
 			// Send loop
 			let message = match rx.recv() {
@@ -56,7 +58,7 @@ fn main() {
 		}
 	});
 
-	let receive_loop = Thread::scoped(move || {
+	let receive_loop = thread::scoped(move || {
 		// Receive loop
 		for message in receiver.incoming_messages() {
 			let message = match message {
