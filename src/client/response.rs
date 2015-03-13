@@ -1,6 +1,7 @@
 //! Structs for WebSocket responses
 use std::option::Option;
 use std::num::FromPrimitive;
+use std::io::{Read, Write};
 
 use hyper::status::StatusCode;
 use hyper::version::HttpVersion;
@@ -20,7 +21,7 @@ use ws;
 
 /// Represents a WebSocket response.
 #[derive(Debug)]
-pub struct Response<R: Reader, W: Writer> {
+pub struct Response<R: Read, W: Write> {
 	/// The status of the response
 	pub status: StatusCode,
 	/// The headers contained in this response
@@ -31,9 +32,9 @@ pub struct Response<R: Reader, W: Writer> {
 	request: Request<R, W>
 }
 
-unsafe impl<R, W> Send for Response<R, W> where R: Reader + Send, W: Writer + Send { }
+unsafe impl<R, W> Send for Response<R, W> where R: Read + Send, W: Write + Send { }
 
-impl<R: Reader, W: Writer> Response<R, W> {
+impl<R: Read, W: Write> Response<R, W> {
 	/// Reads a Response off the stream associated with a Request.
 	///
 	/// This is called by Request.send(), and does not need to be called by the user.

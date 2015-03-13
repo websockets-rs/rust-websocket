@@ -1,5 +1,5 @@
 #![warn(missing_docs)]
-#![feature(old_io, io, core)]
+#![feature(io, net, core)]
 #![unstable]
 
 #![deny(unused_mut)]
@@ -22,9 +22,9 @@
 //! # Servers
 //! WebSocket servers act similarly to the `TcpListener`, and listen for connections.
 //! See the `Server` struct documentation for more information. The `bind()` and
-//! `bind_secure()` functions will bind the server to the given `SocketAddr`. A call
-//! to `listen()` will then return an acceptor, which accepts Requests with
-//! `accept()`.
+//! `bind_secure()` functions will bind the server to the given `SocketAddr`.
+//! `Server` implements Iterator and can be used to iterate over incoming `Request`
+//! items.
 //!
 //! Requests can be validated using `validate()`, and other parts of the request may
 //! be examined (e.g. the Host header and/or the Origin header). A call to `accept()`
@@ -43,6 +43,7 @@ extern crate url;
 extern crate "rustc-serialize" as serialize;
 extern crate openssl;
 extern crate rand;
+extern crate byteorder;
 
 #[macro_use]
 extern crate bitflags;

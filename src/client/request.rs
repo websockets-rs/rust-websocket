@@ -1,4 +1,6 @@
 //! Structs for client-side (outbound) WebSocket requests
+use std::io::{Read, Write};
+
 pub use url::Url;
 
 use hyper::version::HttpVersion;
@@ -17,7 +19,7 @@ use ws::util::url::url_to_host;
 ///
 /// Note that nothing is written to the internal Writer until the `send()` method is called.
 #[derive(Debug)]
-pub struct Request<R: Reader, W: Writer> {
+pub struct Request<R: Read, W: Write> {
 	/// The target URI for this request.
     pub url: Url,
     /// The HTTP version of this request.
@@ -29,9 +31,9 @@ pub struct Request<R: Reader, W: Writer> {
 	writer: W,
 }
 
-unsafe impl<R, W> Send for Request<R, W> where R: Reader + Send, W: Writer + Send { }
+unsafe impl<R, W> Send for Request<R, W> where R: Read + Send, W: Write + Send { }
 
-impl<R: Reader, W: Writer> Request<R, W> {
+impl<R: Read, W: Write> Request<R, W> {
 	/// Creates a new client-side request.
 	///
 	/// In general `Client::connect()` should be used for connecting to servers.

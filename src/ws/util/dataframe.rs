@@ -1,6 +1,7 @@
 //! Utility methods for reading and writing data frames.
 
 use std::num::FromPrimitive;
+use std::io::{Read, Write};
 
 use dataframe::DataFrame;
 use result::{WebSocketResult, WebSocketError};
@@ -10,7 +11,7 @@ use ws::util::mask;
 
 /// Writes a DataFrame to a Writer.
 pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: DataFrame) -> WebSocketResult<()>
-	where W: Writer {
+	where W: Write {
 	
 	let mut flags = dfh::DataFrameFlags::empty();
 	if dataframe.finished { flags.insert(dfh::FIN); }
@@ -39,7 +40,7 @@ pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: DataFrame) -> W
 
 /// Reads a DataFrame from a Reader.
 pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<DataFrame> 
-	where R: Reader {
+	where R: Read {
 
 	let header = try!(dfh::read_header(reader));
 	
@@ -58,7 +59,10 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 						"Expected unmasked data frame".to_string()
 					));
 				}
-				mask::mask_data(mask, &try!(reader.read_exact(header.len as usize))[..])
+
+				let mut bytes = vec![0; header.len as usize];
+				try!(reader.read(&mut bytes));
+				mask::mask_data(mask, &bytes)
 			}
 			None => {
 				if should_be_masked {
@@ -66,7 +70,10 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 						"Expected masked data frame".to_string()
 					));
 				}
-				try!(reader.read_exact(header.len as usize))
+
+				let mut bytes = vec![0; header.len as usize];
+				try!(reader.read(&mut bytes));
+				bytes
 			}
 		}
 	})

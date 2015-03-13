@@ -1,4 +1,6 @@
 //! Struct for server-side WebSocket response.
+use std::io::{Read, Write};
+
 use hyper::status::StatusCode;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
@@ -15,7 +17,7 @@ use dataframe::DataFrame;
 use ws;
 
 /// Represents a server-side (outgoing) response.
-pub struct Response<R: Reader, W: Writer> {
+pub struct Response<R: Read, W: Write> {
 	/// The status of the response
 	pub status: StatusCode,
 	/// The headers contained in this response
@@ -26,9 +28,9 @@ pub struct Response<R: Reader, W: Writer> {
 	request: Request<R, W>
 }
 
-unsafe impl<R, W> Send for Response<R, W> where R: Reader + Send, W: Writer + Send { }
+unsafe impl<R, W> Send for Response<R, W> where R: Read + Send, W: Write + Send { }
 
-impl<R: Reader, W: Writer> Response<R, W> {
+impl<R: Read, W: Write> Response<R, W> {
 	/// Short-cut to obtain the WebSocketAccept value
 	pub fn accept(&self) -> Option<&WebSocketAccept> {
 		self.headers.get()

@@ -1,13 +1,14 @@
 #![stable]
 //! The result type used within Rust-WebSocket
 
-use std::old_io::IoError;
+use std::io;
 use std::str::Utf8Error;
 use std::error::{Error, FromError};
 use std::fmt;
 use openssl::ssl::error::SslError;
 use hyper::HttpError;
 use url::ParseError;
+use byteorder;
 
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
@@ -26,7 +27,7 @@ pub enum WebSocketError {
 	/// No data available
 	NoDataAvailable,
 	/// An input/output error
-	IoError(IoError),
+	IoError(io::Error),
 	/// An HTTP parsing error
 	HttpError(HttpError),
 	/// A URL parsing error
@@ -73,8 +74,8 @@ impl Error for WebSocketError {
     }
 }
 
-impl FromError<IoError> for WebSocketError {
-    fn from_error(err: IoError) -> WebSocketError {
+impl FromError<io::Error> for WebSocketError {
+    fn from_error(err: io::Error) -> WebSocketError {
         WebSocketError::IoError(err)
     }
 }
@@ -101,4 +102,13 @@ impl FromError<Utf8Error> for WebSocketError {
     fn from_error(err: Utf8Error) -> WebSocketError {
         WebSocketError::Utf8Error(err)
     }
+}
+
+impl FromError<byteorder::Error> for WebSocketError {
+	fn from_error(err: byteorder::Error) -> WebSocketError {
+		match err {
+			byteorder::Error::UnexpectedEOF => WebSocketError::NoDataAvailable,
+			byteorder::Error::Io(err) => FromError::from_error(err)
+		}
+	}
 }

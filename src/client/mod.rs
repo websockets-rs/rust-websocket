@@ -1,6 +1,6 @@
 //! Contains the WebSocket client.
 
-use std::old_io::TcpStream;
+use std::net::TcpStream;
 use std::marker::PhantomData;
 
 use ws;
@@ -87,7 +87,7 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 		
 		let connection = try!(TcpStream::connect(&(
 			host.hostname + ":" + 
-			&host.port.unwrap().to_string()[..]
+			&host.port.unwrap().to_string()
 		)[..]));
 		
 		let stream = match &url.scheme[..] {
@@ -101,7 +101,7 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 			_ => { return Err(WebSocketError::RequestError("URI scheme not supported".to_string())); }
 		};
 		
-		Request::new(url, stream.clone(), stream)
+		Request::new(url, try!(stream.try_clone()), stream)
 	}
 }
 
