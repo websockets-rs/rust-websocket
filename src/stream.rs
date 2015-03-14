@@ -1,9 +1,8 @@
 #![stable]
 //! Provides the default stream type for WebSocket connections.
 
-use std::old_io::IoResult;
-use std::old_io::TcpStream;
-use std::old_io::net::ip::SocketAddr;
+use std::io::{self, Read, Write};
+use std::net::{SocketAddr, Shutdown, TcpStream};
 use openssl::ssl::SslStream;
 
 /// A useful stream type for carrying WebSocket connections.
@@ -14,95 +13,79 @@ pub enum WebSocketStream {
 	Ssl(SslStream<TcpStream>)
 }
 
-impl Reader for WebSocketStream {
-	fn read(&mut self, buf: &mut [u8]) -> IoResult<usize> {
+impl Read for WebSocketStream {
+	fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
 		match *self {
-        	WebSocketStream::Tcp(ref mut inner) => inner.read(buf),
+		WebSocketStream::Tcp(ref mut inner) => inner.read(buf),
 			WebSocketStream::Ssl(ref mut inner) => inner.read(buf),
 		}
 	}
 }
 
-impl Writer for WebSocketStream {
-	fn write_all(&mut self, msg: &[u8]) -> IoResult<()> {
+impl Write for WebSocketStream {
+	fn write(&mut self, msg: &[u8]) -> io::Result<usize> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.write_all(msg),
-			WebSocketStream::Ssl(ref mut inner) => inner.write_all(msg),
+			WebSocketStream::Tcp(ref mut inner) => inner.write(msg),
+			WebSocketStream::Ssl(ref mut inner) => inner.write(msg),
+		}
+	}
+
+	fn flush(&mut self) -> io::Result<()> {
+		match *self {
+			WebSocketStream::Tcp(ref mut inner) => inner.flush(),
+			WebSocketStream::Ssl(ref mut inner) => inner.flush(),
 		}
 	}
 }
 
 impl WebSocketStream {
-	/// See `TcpStream.peer_name()`.
-	pub fn peer_name(&mut self) -> IoResult<SocketAddr> {
+	/// See `TcpStream.peer_addr()`.
+	pub fn peer_addr(&mut self) -> io::Result<SocketAddr> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.peer_name(),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().peer_name(),
+			WebSocketStream::Tcp(ref mut inner) => inner.peer_addr(),
+			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().peer_addr(),
 		}
 	}
-	/// See `TcpStream.socket_name()`.
-	pub fn socket_name(&mut self) -> IoResult<SocketAddr> {
+	/// See `TcpStream.socket_addr()`.
+	pub fn socket_addr(&mut self) -> io::Result<SocketAddr> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.socket_name(),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().socket_name(),
+			WebSocketStream::Tcp(ref mut inner) => inner.socket_addr(),
+			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().socket_addr(),
 		}
 	}
 	/// See `TcpStream.set_nodelay()`.
-	pub fn set_nodelay(&mut self, nodelay: bool) -> IoResult<()> {
+	pub fn set_nodelay(&mut self, nodelay: bool) -> io::Result<()> {
 		match *self {
 			WebSocketStream::Tcp(ref mut inner) => inner.set_nodelay(nodelay),
 			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_nodelay(nodelay),
 		}
 	}
 	/// See `TcpStream.set_keepalive()`.
-	pub fn set_keepalive(&mut self, delay_in_seconds: Option<usize>) -> IoResult<()> {
+	pub fn set_keepalive(&mut self, delay_in_seconds: Option<u32>) -> io::Result<()> {
 		match *self {
 			WebSocketStream::Tcp(ref mut inner) => inner.set_keepalive(delay_in_seconds),
 			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_keepalive(delay_in_seconds),
 		}
 	}
 	/// See `TcpStream.close_read()`.
-	pub fn close_read(&mut self) -> IoResult<()> {
+	pub fn close_read(&mut self) -> io::Result<()> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.close_read(),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().close_read(),
+			WebSocketStream::Tcp(ref mut inner) => inner.shutdown(Shutdown::Read),
+			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().shutdown(Shutdown::Read),
 		}
 	}
 	/// See `TcpStream.close_write()`.
-	pub fn close_write(&mut self) -> IoResult<()> {
+	pub fn close_write(&mut self) -> io::Result<()> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.close_write(),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().close_write(),
+			WebSocketStream::Tcp(ref mut inner) => inner.shutdown(Shutdown::Write),
+			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().shutdown(Shutdown::Write),
 		}
 	}
-	/// See `TcpStream.set_timeout()`.
-	pub fn set_timeout(&mut self, timeout_ms: Option<u64>) {
-		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.set_timeout(timeout_ms),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_timeout(timeout_ms),
-		}
-	}
-	/// See `TcpStream.set_read_timeout()`.
-	pub fn set_read_timeout(&mut self, timeout_ms: Option<u64>) {
-		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.set_read_timeout(timeout_ms),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_read_timeout(timeout_ms),
-		}
-	}
-	/// See `TcpStream.set_write_timeout()`.
-	pub fn set_write_timeout(&mut self, timeout_ms: Option<u64>) {
-		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.set_write_timeout(timeout_ms),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_write_timeout(timeout_ms),
-		}
-	}
-}
-
-impl Clone for WebSocketStream {
-	fn clone(&self) -> WebSocketStream {
-		match *self {
-			WebSocketStream::Tcp(ref inner) => WebSocketStream::Tcp(inner.clone()),
-			WebSocketStream::Ssl(ref inner) => WebSocketStream::Ssl(inner.clone()),
-		}
+	/// See `TcpStream.try_clone()`.
+	pub fn try_clone(&self) -> io::Result<WebSocketStream> {
+		Ok(match *self {
+			WebSocketStream::Tcp(ref inner) => WebSocketStream::Tcp(try!(inner.try_clone())),
+			WebSocketStream::Ssl(ref inner) => WebSocketStream::Ssl(try!(inner.try_clone())),
+		})
 	}
 }

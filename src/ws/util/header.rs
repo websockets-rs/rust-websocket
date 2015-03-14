@@ -1,6 +1,8 @@
 //! Utility functions for reading and writing data frame headers.
 
+use std::io::{Read, Write};
 use result::{WebSocketResult, WebSocketError};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 bitflags! {
 	/// Flags relevant to a WebSocket data frame.
@@ -28,7 +30,7 @@ pub struct DataFrameHeader {
 
 /// Writes a data frame header.
 pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResult<()>
-	where W: Writer {
+	where W: Write {
 
 	if header.opcode > 0xF {
 		return Err(WebSocketError::DataFrameError(
@@ -55,10 +57,10 @@ pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResu
 	
 	// Write 'Extended payload length'
 	if header.len >= 126 && header.len <= 65535 {
-		try!(writer.write_be_u16(header.len as u16));
+		try!(writer.write_u16::<BigEndian>(header.len as u16));
 	}
 	else if header.len > 65535 {
-		try!(writer.write_be_u64(header.len));
+		try!(writer.write_u64::<BigEndian>(header.len));
 	}
 	
 	// Write 'Masking-key'
@@ -72,7 +74,7 @@ pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResu
 
 /// Reads a data frame header.
 pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
-	where R: Reader {
+	where R: Read {
 
 	let byte0 = try!(reader.read_u8());
 	let byte1 = try!(reader.read_u8());
@@ -83,7 +85,7 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 	let len = match byte1 & 0x7F {
 		0...125 => (byte1 & 0x7F) as u64,
 		126 => {
-			let len = try!(reader.read_be_u16()) as u64;
+			let len = try!(reader.read_u16::<BigEndian>()) as u64;
 			if len <= 125 {
 				return Err(WebSocketError::DataFrameError(
 					"Invalid data frame length".to_string()
@@ -92,7 +94,7 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 			len
 		}
 		127 => {
-			let len = try!(reader.read_be_u64());
+			let len = try!(reader.read_u64::<BigEndian>());
 			if len <= 65535 {
 				return Err(WebSocketError::DataFrameError(
 					"Invalid data frame length".to_string()

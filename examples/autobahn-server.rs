@@ -1,18 +1,14 @@
-#![feature(old_io)]
-
 extern crate websocket;
 
 use std::thread;
-use std::old_io::{Listener, Acceptor};
 use websocket::{Server, Message, Sender, Receiver};
 
 fn main() {
 	let addr = "127.0.0.1:9002".to_string();
 	
 	let server = Server::bind(&addr[..]).unwrap();
-	let mut acceptor = server.listen().unwrap();
 	
-	for request in acceptor.incoming() {
+	for request in server {
 		thread::spawn(move || {
 			let request = request.unwrap();
 			request.validate().unwrap();

@@ -1,5 +1,6 @@
 //! The default implementation of a WebSocket Receiver.
 
+use std::io::Read;
 use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
 use ws::util::dataframe::read_dataframe;
@@ -30,7 +31,7 @@ impl<R> Receiver<R> {
 	}
 }
 
-impl<R: Reader> ws::Receiver<DataFrame> for Receiver<R> {
+impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
 	/// Reads a single data frame from the remote endpoint.
 	fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
 		read_dataframe(&mut self.inner, false)

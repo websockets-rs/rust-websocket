@@ -1,9 +1,10 @@
 //! Module containing the default implementation for messages.
 
-use std::old_io::IoResult;
+use std::io;
 use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
 use dataframe::{DataFrame, Opcode};
+use byteorder::{WriteBytesExt, BigEndian};
 use ws::util::message::message_from_data;
 use ws;
 
@@ -99,9 +100,9 @@ impl CloseData {
 		}
 	}
 	/// Convert this into a vector of bytes
-	pub fn into_bytes(self) -> IoResult<Vec<u8>> {
+	pub fn into_bytes(self) -> io::Result<Vec<u8>> {
 		let mut buf = Vec::new();
-		try!(buf.write_be_u16(self.status_code));
+		try!(buf.write_u16::<BigEndian>(self.status_code));
 		Ok(buf + self.reason.as_bytes())
 	}
 }

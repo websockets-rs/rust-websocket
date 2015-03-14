@@ -1,5 +1,7 @@
 //! The server-side WebSocket request.
 
+use std::io::{Read, Write};
+
 use server::Response;
 use result::{WebSocketResult, WebSocketError};
 use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensions, Origin};
@@ -17,7 +19,7 @@ use hyper::method::Method;
 use unicase::UniCase;
 
 /// Represents a server-side (incoming) request.
-pub struct Request<R: Reader, W: Writer> {
+pub struct Request<R: Read, W: Write> {
 	/// The target URI for this request.
     pub url: RequestUri,
 	
@@ -31,9 +33,9 @@ pub struct Request<R: Reader, W: Writer> {
 	writer: W,
 }
 
-unsafe impl<R, W> Send for Request<R, W> where R: Reader + Send, W: Writer + Send { }
+unsafe impl<R, W> Send for Request<R, W> where R: Read + Send, W: Write + Send { }
 
-impl<R: Reader, W: Writer> Request<R, W> {
+impl<R: Read, W: Write> Request<R, W> {
 	/// Short-cut to obtain the WebSocketKey value.
 	pub fn key(&self) -> Option<&WebSocketKey> {
 		self.headers.get()

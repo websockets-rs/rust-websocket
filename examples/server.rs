@@ -1,16 +1,12 @@
-#![feature(old_io)]
-
 extern crate websocket;
 
 use std::thread;
-use std::old_io::{Listener, Acceptor};
 use websocket::{Server, Message, Sender, Receiver};
 
 fn main() {
 	let server = Server::bind("127.0.0.1:2794").unwrap();
 
-	let mut acceptor = server.listen().unwrap();
-	for request in acceptor.incoming() {
+	for request in server {
 		// Spawn a new thread for each connection.
 		thread::spawn(move || {
 			let request = request.unwrap(); // Get the request
@@ -20,7 +16,7 @@ fn main() {
 			
 			let ip = client.get_mut_sender()
 				.get_mut()
-				.peer_name()
+				.peer_addr()
 				.unwrap();
 			
 			println!("Connection from {}", ip);
