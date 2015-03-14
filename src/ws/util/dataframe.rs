@@ -1,7 +1,7 @@
 //! Utility methods for reading and writing data frames.
 
 use std::num::FromPrimitive;
-use std::io::{Read, ReadExt, Write};
+use std::io::{Read, Write};
 
 use dataframe::DataFrame;
 use result::{WebSocketResult, WebSocketError};
