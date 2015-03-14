@@ -60,9 +60,8 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 					));
 				}
 
-				let mut bytes = vec![0; header.len as usize];
-				try!(reader.read(&mut bytes));
-				mask::mask_data(mask, &bytes)
+				let data: Vec<u8> = try!(reader.take(header.len).bytes().collect());
+				mask::mask_data(mask, &data)
 			}
 			None => {
 				if should_be_masked {
@@ -71,9 +70,7 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 					));
 				}
 
-				let mut bytes = vec![0; header.len as usize];
-				try!(reader.read(&mut bytes));
-				bytes
+				try!(reader.take(header.len).bytes().collect())
 			}
 		}
 	})
