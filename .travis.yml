@@ -10,12 +10,12 @@ after_success:
     echo "Running Autobahn TestSuite for client" ; 
     wstest -m fuzzingserver -s ./autobahn/fuzzingserver.json & FUZZINGSERVER_PID=$! ; 
     sleep 10 ; 
-    ./target/examples/autobahn-client ; 
+    ./target/debug/examples/autobahn-client ; 
     kill -9 ${FUZZINGSERVER_PID} ; }
   - >
     [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && { 
     echo "Running Autobahn TestSuite for server" ; 
-    ./target/examples/autobahn-server & WSSERVER_PID=$! ; 
+    ./target/debug/examples/autobahn-server & WSSERVER_PID=$! ; 
     sleep 10 ; 
     wstest -m fuzzingclient -s ./autobahn/fuzzingclient.json ; 
     kill -9 ${WSSERVER_PID} ; }
