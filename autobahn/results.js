@@ -62,7 +62,7 @@ function getResults(from, to) {
 						classname += "unimplemented";
 						unimplemented++;
 						break;
-					case "FAIL":
+					case "FAILED":
 						classname += "failed";
 						failed++;
 						break;
