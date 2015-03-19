@@ -1,6 +1,6 @@
 //! The server-side WebSocket request.
 
-use std::io::{Read, Write};
+use std::io::{Read, Write, BufReader};
 
 use server::Response;
 use result::{WebSocketResult, WebSocketError};
@@ -13,7 +13,7 @@ use hyper::status::StatusCode;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
 use hyper::header::{Upgrade, Protocol};
-use hyper::http::read_request_line;
+use hyper::http::parse_request;
 use hyper::method::Method;
 
 use unicase::UniCase;
@@ -81,21 +81,19 @@ impl<R: Read, W: Write> Request<R, W> {
 	/// This method is used within servers, and returns an inbound WebSocketRequest.
 	/// An error will be returned if the request cannot be read, or is not a valid HTTP request.
 	pub fn read(reader: R, writer: W) -> WebSocketResult<Request<R, W>> {
-		let mut reader = reader;
-		let (method, uri, version) = try!(read_request_line(&mut reader));
+		let mut reader = BufReader::new(reader);
+		let request = try!(parse_request(&mut reader));
 		
-		match method {
+		match request.subject.0 {
 			Method::Get => { },
 			_ => { return Err(WebSocketError::RequestError("Request method must be GET".to_string())); }
 		}
 		
-        let headers = try!(Headers::from_raw(&mut reader));
-		
 		Ok(Request {
-			url: uri,
-			version: version,
-			headers: headers,
-			reader: reader,
+			url: request.subject.1,
+			version: request.version,
+			headers: request.headers,
+			reader: reader.into_inner(),
 			writer: writer,
 		})
 	}

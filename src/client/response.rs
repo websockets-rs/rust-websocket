@@ -1,14 +1,14 @@
 //! Structs for WebSocket responses
 use std::option::Option;
 use std::num::FromPrimitive;
-use std::io::{Read, Write};
+use std::io::{Read, Write, BufReader};
 
 use hyper::status::StatusCode;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
 use hyper::header::{Upgrade, Protocol};
-use hyper::http::read_status_line;
+use hyper::http::parse_response;
 
 use unicase::UniCase;
 
@@ -40,14 +40,15 @@ impl<R: Read, W: Write> Response<R, W> {
 	/// This is called by Request.send(), and does not need to be called by the user.
 	pub fn read(mut request: Request<R, W>) -> WebSocketResult<Response<R, W>> {
 		let (status, version, headers) = {
-			let reader = request.get_mut_reader();
-			let (version, raw_status) = try!(read_status_line(reader));
-			let status = match FromPrimitive::from_u16(raw_status.0) {
+			let mut reader = BufReader::new(request.get_mut_reader());
+			
+			let response = try!(parse_response(&mut reader));
+			
+			let status = match FromPrimitive::from_u16(response.subject.0) {
 				Some(status) => { status }
 				None => { return Err(WebSocketError::ResponseError("Could not get status code".to_string())); }
 			};
-			let headers = try!(Headers::from_raw(reader));
-			(status, version, headers)
+			(status, response.version, response.headers)
 		};
 		
 		Ok(Response {
