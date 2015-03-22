@@ -46,11 +46,11 @@ impl WebSocketStream {
 			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().peer_addr(),
 		}
 	}
-	/// See `TcpStream.socket_addr()`.
-	pub fn socket_addr(&mut self) -> io::Result<SocketAddr> {
+	/// See `TcpStream.local_addr()`.
+	pub fn local_addr(&mut self) -> io::Result<SocketAddr> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.socket_addr(),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().socket_addr(),
+			WebSocketStream::Tcp(ref mut inner) => inner.local_addr(),
+			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().local_addr(),
 		}
 	}
 	/// See `TcpStream.set_nodelay()`.
@@ -67,18 +67,11 @@ impl WebSocketStream {
 			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_keepalive(delay_in_seconds),
 		}
 	}
-	/// See `TcpStream.close_read()`.
-	pub fn close_read(&mut self) -> io::Result<()> {
+	/// See `TcpStream.shutdown()`.
+	pub fn shutdown(&mut self, shutdown: Shutdown) -> io::Result<()> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.shutdown(Shutdown::Read),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().shutdown(Shutdown::Read),
-		}
-	}
-	/// See `TcpStream.close_write()`.
-	pub fn close_write(&mut self) -> io::Result<()> {
-		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.shutdown(Shutdown::Write),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().shutdown(Shutdown::Write),
+			WebSocketStream::Tcp(ref mut inner) => inner.shutdown(shutdown),
+			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().shutdown(shutdown),
 		}
 	}
 	/// See `TcpStream.try_clone()`.

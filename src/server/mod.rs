@@ -1,7 +1,7 @@
 //! Provides an implementation of a WebSocket server
 use std::net::{SocketAddr, ToSocketAddrs, TcpListener};
+use std::io::{Read, Write};
 use std::io;
-
 pub use self::request::Request;
 pub use self::response::Response;
 pub use self::sender::Sender;
@@ -31,10 +31,10 @@ pub mod receiver;
 ///
 ///let server = Server::bind("127.0.0.1:1234").unwrap();
 ///
-///for request in server {
+///for connection in server {
 ///    // Spawn a new thread for each connection.
 ///    Thread::spawn(move || {
-///		   let request = request.unwrap(); // Get the request
+///		   let request = connection.unwrap().read_request().unwrap(); // Get the request
 ///		   let response = request.accept(); // Form a response
 ///		   let mut client = response.send().unwrap(); // Send the response
 ///
@@ -63,10 +63,10 @@ pub mod receiver;
 ///let _ = context.set_private_key_file(&(Path::new("key.pem")), X509FileType::PEM);
 ///let server = Server::bind_secure("127.0.0.1:1234", &context).unwrap();
 ///
-///for request in server {
+///for connection in server {
 ///    // Spawn a new thread for each connection.
 ///    Thread::spawn(move || {
-///		   let request = request.unwrap(); // Get the request
+///		   let request = connection.unwrap().read_request().unwrap(); // Get the request
 ///		   let response = request.accept(); // Form a response
 ///		   let mut client = response.send().unwrap(); // Send the response
 ///
@@ -99,25 +99,21 @@ impl<'a> Server<'a> {
 		})
 	}
 	/// Get the socket address of this server
-	pub fn socket_addr(&mut self) -> io::Result<SocketAddr> {
-		self.inner.socket_addr()
+	pub fn local_addr(&mut self) -> io::Result<SocketAddr> {
+		self.inner.local_addr()
 	}
-
-	/// Prevents blocking on all future accepts after ms milliseconds have elapsed.
-	///
-	/// This function is used to set a deadline after which this acceptor will time out accepting any connections.
-	/// The argument is the relative distance, in milliseconds, to a point in the future after which all accepts will fail.
-	///
-	/// If the argument specified is None, then any previously registered timeout is cleared.
-	///
-	/// A timeout of 0 can be used to "poll" this acceptor to see if it has any pending connections.
-	/// All pending connections will be accepted, regardless of whether the timeout has expired or not (the accept will not block in this case).
-	pub fn set_timeout(&mut self, ms: Option<u64>) {
-		unimplemented!(); //Deadlines not yet implemented in new `TcpStream`
+	
+	/// Create a new independently owned handle to the underlying socket.
+	pub fn try_clone(&self) -> io::Result<Server<'a>> {
+		let inner = try!(self.inner.try_clone());
+		Ok(Server {
+			inner: inner,
+			context: self.context
+		})
 	}
 
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
-	fn accept(&mut self) -> io::Result<Request<WebSocketStream, WebSocketStream>> {
+	pub fn accept(&mut self) -> io::Result<Connection<WebSocketStream, WebSocketStream>> {
 		let stream = try!(self.inner.accept()).0;
 		let wsstream = match self.context {
 			Some(context) => {
@@ -135,8 +131,25 @@ impl<'a> Server<'a> {
 			}
 			None => { WebSocketStream::Tcp(stream) }
 		};
+		Ok(Connection(try!(wsstream.try_clone()), try!(wsstream.try_clone())))
+	}
+}
 
-		match Request::read(try!(wsstream.try_clone()), try!(wsstream.try_clone())) {
+impl<'a> Iterator for Server<'a> {
+	type Item = io::Result<Connection<WebSocketStream, WebSocketStream>>;
+
+	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+		Some(self.accept())
+	}
+}
+
+/// Represents a connection to the server that has not been processed yet.
+pub struct Connection<R: Read, W: Write>(R, W);
+
+impl<R: Read, W: Write> Connection<R, W> {
+	/// Process this connection and read the request.
+	pub fn read_request(self) -> io::Result<Request<R, W>> {
+		match Request::read(self.0, self.1) {
 			Ok(result) => { Ok(result) },
 			Err(err) => {
 				Err(io::Error::new(
@@ -146,13 +159,5 @@ impl<'a> Server<'a> {
 				))
 			}
 		}
-	}
-}
-
-impl<'a> Iterator for Server<'a> {
-	type Item = io::Result<Request<WebSocketStream, WebSocketStream>>;
-
-	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-		Some(self.accept())
 	}
 }

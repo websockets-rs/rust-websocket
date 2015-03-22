@@ -1,5 +1,5 @@
 #![warn(missing_docs)]
-#![feature(io, net, core)]
+#![feature(io, tcp, core)]
 #![unstable]
 
 #![deny(unused_mut)]

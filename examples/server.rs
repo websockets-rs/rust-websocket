@@ -6,10 +6,10 @@ use websocket::{Server, Message, Sender, Receiver};
 fn main() {
 	let server = Server::bind("127.0.0.1:2794").unwrap();
 
-	for request in server {
+	for connection in server {
 		// Spawn a new thread for each connection.
 		thread::spawn(move || {
-			let request = request.unwrap(); // Get the request
+			let request = connection.unwrap().read_request().unwrap(); // Get the request
 			request.validate().unwrap();
 			let response = request.accept(); // Form a response
 			let mut client = response.send().unwrap(); // Send the response

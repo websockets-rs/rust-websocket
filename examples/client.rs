@@ -1,10 +1,8 @@
-#![feature(old_io)]
-
 extern crate websocket;
 
 use std::thread;
 use std::sync::mpsc::channel;
-use std::old_io::stdin;
+use std::io::stdin;
 
 use websocket::{Message, Sender, Receiver};
 use websocket::client::request::Url;
@@ -90,10 +88,9 @@ fn main() {
 	});
 	
 	loop {
-		let input = stdin()
-			.read_line()
-			.ok()
-			.expect("Failed to read line");
+		let mut input = String::new();
+	
+		stdin().read_line(&mut input).unwrap();
 		
 		let trimmed = input.trim();
 		

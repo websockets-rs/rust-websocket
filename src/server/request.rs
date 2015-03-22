@@ -9,7 +9,6 @@ use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensi
 pub use hyper::uri::RequestUri;
 
 use hyper::version::HttpVersion;
-use hyper::status::StatusCode;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
 use hyper::header::{Upgrade, Protocol};
@@ -149,9 +148,6 @@ impl<R: Read, W: Write> Request<R, W> {
 	
 	/// Fail this request by generating a Bad Request response
 	pub fn fail(self) -> Response<R, W> {
-		let mut response = Response::new(self);
-		response.status = StatusCode::BadRequest;
-		response.headers = Headers::new();
-		response
+		Response::bad_request(self)
 	}
 }

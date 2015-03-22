@@ -82,6 +82,15 @@ impl<R: Read, W: Write> Response<R, W> {
 			request: request
 		}
 	}
+	/// Create a Bad Request response
+	pub fn bad_request(request: Request<R, W>) -> Response<R, W> {
+		Response {
+			status: StatusCode::BadRequest,
+			headers: Headers::new(),
+			version: HttpVersion::Http11,
+			request: request
+		}
+	}
 	/// Short-cut to obtain a mutable reference to the WebSocketAccept value
 	/// Note that to add a header that does not already exist, ```WebSocketResponse.headers.set()```
 	/// must be used.

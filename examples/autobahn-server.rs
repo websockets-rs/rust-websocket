@@ -8,9 +8,9 @@ fn main() {
 	
 	let server = Server::bind(&addr[..]).unwrap();
 	
-	for request in server {
+	for connection in server {
 		thread::spawn(move || {
-			let request = request.unwrap();
+			let request = connection.unwrap().read_request().unwrap();
 			request.validate().unwrap();
 			let response = request.accept();
 			let (mut sender, mut receiver) = response.send().unwrap().split();
