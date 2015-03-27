@@ -54,21 +54,21 @@ impl Error for WebSocketError {
 			WebSocketError::ResponseError(_) => "WebSocket response error",
 			WebSocketError::DataFrameError(_) => "WebSocket data frame error",
 			WebSocketError::NoDataAvailable => "No data available",
-            WebSocketError::IoError(_) => "I/O failure",
-            WebSocketError::HttpError(_) => "HTTP failure",
+			WebSocketError::IoError(_) => "I/O failure",
+			WebSocketError::HttpError(_) => "HTTP failure",
 			WebSocketError::UrlError(_) => "URL failure",
-            WebSocketError::SslError(_) => "SSL failure",
+			WebSocketError::SslError(_) => "SSL failure",
 			WebSocketError::Utf8Error(_) => "UTF-8 failure",
         }
     }
 
     fn cause(&self) -> Option<&Error> {
         match *self {
-			WebSocketError::IoError(ref error) => Some(error as &Error),
-            WebSocketError::HttpError(ref error) => Some(error as &Error),
-			WebSocketError::UrlError(ref error) => Some(error as &Error),
-			WebSocketError::SslError(ref error) => Some(error as &Error),
-			WebSocketError::Utf8Error(ref error) => Some(error as &Error),
+			WebSocketError::IoError(ref error) => Some(error),
+			WebSocketError::HttpError(ref error) => Some(error),
+			WebSocketError::UrlError(ref error) => Some(error),
+			WebSocketError::SslError(ref error) => Some(error),
+			WebSocketError::Utf8Error(ref error) => Some(error),
             _ => None,
         }
     }
