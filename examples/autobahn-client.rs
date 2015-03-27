@@ -1,5 +1,5 @@
 extern crate websocket;
-extern crate "rustc-serialize" as serialize;
+extern crate rustc_serialize as serialize;
 
 use websocket::client::request::Url;
 use websocket::{Client, Message, Sender, Receiver};
