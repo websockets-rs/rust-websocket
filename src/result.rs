@@ -47,9 +47,9 @@ impl fmt::Display for WebSocketError {
 }
 
 impl Error for WebSocketError {
-    fn description(&self) -> &str {
-        match *self {
-            WebSocketError::ProtocolError(_) => "WebSocket protocol error",
+	fn description(&self) -> &str {
+		match *self {
+            		WebSocketError::ProtocolError(_) => "WebSocket protocol error",
 			WebSocketError::RequestError(_) => "WebSocket request error",
 			WebSocketError::ResponseError(_) => "WebSocket response error",
 			WebSocketError::DataFrameError(_) => "WebSocket data frame error",
@@ -59,49 +59,49 @@ impl Error for WebSocketError {
 			WebSocketError::UrlError(_) => "URL failure",
 			WebSocketError::SslError(_) => "SSL failure",
 			WebSocketError::Utf8Error(_) => "UTF-8 failure",
-        }
-    }
+		}
+	}
 
-    fn cause(&self) -> Option<&Error> {
-        match *self {
+	fn cause(&self) -> Option<&Error> {
+		match *self {
 			WebSocketError::IoError(ref error) => Some(error),
 			WebSocketError::HttpError(ref error) => Some(error),
 			WebSocketError::UrlError(ref error) => Some(error),
 			WebSocketError::SslError(ref error) => Some(error),
 			WebSocketError::Utf8Error(ref error) => Some(error),
-            _ => None,
-        }
-    }
+			_ => None,
+		}
+	}
 }
 
 impl FromError<io::Error> for WebSocketError {
-    fn from_error(err: io::Error) -> WebSocketError {
-        WebSocketError::IoError(err)
-    }
+	fn from_error(err: io::Error) -> WebSocketError {
+		WebSocketError::IoError(err)
+	}
 }
 
 impl FromError<HttpError> for WebSocketError {
-    fn from_error(err: HttpError) -> WebSocketError {
-        WebSocketError::HttpError(err)
-    }
+	fn from_error(err: HttpError) -> WebSocketError {
+		WebSocketError::HttpError(err)
+	}
 }
 
 impl FromError<ParseError> for WebSocketError {
-    fn from_error(err: ParseError) -> WebSocketError {
-        WebSocketError::UrlError(err)
-    }
+	fn from_error(err: ParseError) -> WebSocketError {
+		WebSocketError::UrlError(err)
+	}
 }
 
 impl FromError<SslError> for WebSocketError {
-    fn from_error(err: SslError) -> WebSocketError {
-        WebSocketError::SslError(err)
-    }
+	fn from_error(err: SslError) -> WebSocketError {
+		WebSocketError::SslError(err)
+	}
 }
 
 impl FromError<Utf8Error> for WebSocketError {
-    fn from_error(err: Utf8Error) -> WebSocketError {
-        WebSocketError::Utf8Error(err)
-    }
+	fn from_error(err: Utf8Error) -> WebSocketError {
+		WebSocketError::Utf8Error(err)
+	}
 }
 
 impl FromError<byteorder::Error> for WebSocketError {
