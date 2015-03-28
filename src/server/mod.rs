@@ -26,14 +26,14 @@ pub mod receiver;
 /// ```no_run
 ///extern crate websocket;
 ///# fn main() {
-///use std::thread::Thread;
+///use std::thread;
 ///use websocket::{Server, Message};
 ///
 ///let server = Server::bind("127.0.0.1:1234").unwrap();
 ///
 ///for connection in server {
 ///    // Spawn a new thread for each connection.
-///    Thread::spawn(move || {
+///    thread::spawn(move || {
 ///		   let request = connection.unwrap().read_request().unwrap(); // Get the request
 ///		   let response = request.accept(); // Form a response
 ///		   let mut client = response.send().unwrap(); // Send the response
@@ -52,7 +52,7 @@ pub mod receiver;
 ///extern crate websocket;
 ///extern crate openssl;
 ///# fn main() {
-///use std::thread::Thread;
+///use std::thread;
 ///use std::path::Path;
 ///use websocket::{Server, Message};
 ///use openssl::ssl::{SslContext, SslMethod};
@@ -65,7 +65,7 @@ pub mod receiver;
 ///
 ///for connection in server {
 ///    // Spawn a new thread for each connection.
-///    Thread::spawn(move || {
+///    thread::spawn(move || {
 ///		   let request = connection.unwrap().read_request().unwrap(); // Get the request
 ///		   let response = request.accept(); // Form a response
 ///		   let mut client = response.send().unwrap(); // Send the response

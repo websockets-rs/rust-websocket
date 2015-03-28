@@ -211,7 +211,7 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///# extern crate websocket;
 	///# fn main() {
 	///use websocket::{Client, Message, Sender, Receiver};
-	///use std::thread::Thread;
+	///use std::thread;
 	///# use websocket::client::request::Url;
 	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
 	///# let request = Client::connect(url).unwrap(); // Connect to the server
@@ -222,7 +222,7 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///
 	///let (mut sender, mut receiver) = client.split();
 	///
-	///Thread::spawn(move || {
+	///thread::spawn(move || {
 	///    for message in receiver.incoming_messages::<Message>() {
 	///        println!("Recv: {:?}", message.unwrap());
 	///    }
