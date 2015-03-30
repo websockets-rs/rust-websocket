@@ -1,8 +1,9 @@
 //! Structs for WebSocket responses
 use std::option::Option;
 use std::num::FromPrimitive;
-use std::io::{Read, Write, BufReader};
+use std::io::{Read, Write};
 
+use hyper::buffer::BufReader;
 use hyper::status::StatusCode;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;

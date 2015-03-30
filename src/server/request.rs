@@ -1,6 +1,6 @@
 //! The server-side WebSocket request.
 
-use std::io::{Read, Write, BufReader};
+use std::io::{Read, Write};
 
 use server::Response;
 use result::{WebSocketResult, WebSocketError};
@@ -8,6 +8,7 @@ use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensi
 
 pub use hyper::uri::RequestUri;
 
+use hyper::buffer::BufReader;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
