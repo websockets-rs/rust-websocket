@@ -30,7 +30,7 @@ impl FromStr for WebSocketKey {
 					));
 				}
 				let mut array = [0u8; 16];
-				copy_memory(&mut array, &vec[..]);
+				copy_memory(&vec[..], &mut array);
 				Ok(WebSocketKey(array))
 			}
 			Err(_) => {

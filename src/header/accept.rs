@@ -32,7 +32,7 @@ impl FromStr for WebSocketAccept {
 					));
 				}
 				let mut array = [0u8; 20];
-				copy_memory(&mut array, &vec[..]);
+				copy_memory(&vec[..], &mut array);
 				Ok(WebSocketAccept(array))
 			}
 			Err(_) => {
@@ -53,7 +53,7 @@ impl WebSocketAccept {
 		concat_key.push_str(MAGIC_GUID);
 		let output = hash(hash::Type::SHA1, concat_key.as_bytes());
 		let mut bytes = [0u8; 20];
-		copy_memory(&mut bytes, &output[..]);
+		copy_memory(&output[..], &mut bytes);
 		WebSocketAccept(bytes)
 	}
 	/// Return the Base64 encoding of this WebSocketAccept
