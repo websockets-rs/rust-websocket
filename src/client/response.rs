@@ -1,6 +1,5 @@
 //! Structs for WebSocket responses
 use std::option::Option;
-use std::num::FromPrimitive;
 use std::io::{Read, Write};
 
 use hyper::buffer::BufReader;
@@ -45,10 +44,7 @@ impl<R: Read, W: Write> Response<R, W> {
 			
 			let response = try!(parse_response(&mut reader));
 			
-			let status = match FromPrimitive::from_u16(response.subject.0) {
-				Some(status) => { status }
-				None => { return Err(WebSocketError::ResponseError("Could not get status code".to_string())); }
-			};
+			let status = StatusCode::from_u16(response.subject.0);
 			(status, response.version, response.headers)
 		};
 		

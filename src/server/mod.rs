@@ -120,11 +120,7 @@ impl<'a> Server<'a> {
 				let sslstream = match SslStream::new_server(context, stream) {
 					Ok(s) => s,
 					Err(err) => {
-						return Err(io::Error::new(
-							io::ErrorKind::Other,
-							"SSL Error",
-							Some(format!("{:?}", err)),
-						));
+						return Err(io::Error::new(io::ErrorKind::Other, err));
 					}
 				};
 				WebSocketStream::Ssl(sslstream)
@@ -152,11 +148,7 @@ impl<R: Read, W: Write> Connection<R, W> {
 		match Request::read(self.0, self.1) {
 			Ok(result) => { Ok(result) },
 			Err(err) => {
-				Err(io::Error::new(
-					io::ErrorKind::InvalidInput,
-					"Failed to read request",
-					Some(format!("{:?}", err)),
-				))
+				Err(io::Error::new(io::ErrorKind::InvalidInput, err))
 			}
 		}
 	}

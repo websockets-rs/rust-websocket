@@ -16,7 +16,7 @@ bitflags! {
 }
 
 /// Represents a data frame header.
-#[derive(Debug, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DataFrameHeader {
 	/// The bit flags for the first byte of the header.
 	pub flags: DataFrameFlags, 

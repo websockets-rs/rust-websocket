@@ -3,7 +3,8 @@
 
 use std::io;
 use std::str::Utf8Error;
-use std::error::{Error, FromError};
+use std::error::Error;
+use std::convert::From;
 use std::fmt;
 use openssl::ssl::error::SslError;
 use hyper::HttpError;
@@ -14,7 +15,7 @@ use byteorder;
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
 
 /// Represents a WebSocket error
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
 pub enum WebSocketError {
 	/// A WebSocket protocol error
 	ProtocolError(String),
@@ -74,41 +75,41 @@ impl Error for WebSocketError {
 	}
 }
 
-impl FromError<io::Error> for WebSocketError {
-	fn from_error(err: io::Error) -> WebSocketError {
+impl From<io::Error> for WebSocketError {
+	fn from(err: io::Error) -> WebSocketError {
 		WebSocketError::IoError(err)
 	}
 }
 
-impl FromError<HttpError> for WebSocketError {
-	fn from_error(err: HttpError) -> WebSocketError {
+impl From<HttpError> for WebSocketError {
+	fn from(err: HttpError) -> WebSocketError {
 		WebSocketError::HttpError(err)
 	}
 }
 
-impl FromError<ParseError> for WebSocketError {
-	fn from_error(err: ParseError) -> WebSocketError {
+impl From<ParseError> for WebSocketError {
+	fn from(err: ParseError) -> WebSocketError {
 		WebSocketError::UrlError(err)
 	}
 }
 
-impl FromError<SslError> for WebSocketError {
-	fn from_error(err: SslError) -> WebSocketError {
+impl From<SslError> for WebSocketError {
+	fn from(err: SslError) -> WebSocketError {
 		WebSocketError::SslError(err)
 	}
 }
 
-impl FromError<Utf8Error> for WebSocketError {
-	fn from_error(err: Utf8Error) -> WebSocketError {
+impl From<Utf8Error> for WebSocketError {
+	fn from(err: Utf8Error) -> WebSocketError {
 		WebSocketError::Utf8Error(err)
 	}
 }
 
-impl FromError<byteorder::Error> for WebSocketError {
-	fn from_error(err: byteorder::Error) -> WebSocketError {
+impl From<byteorder::Error> for WebSocketError {
+	fn from(err: byteorder::Error) -> WebSocketError {
 		match err {
 			byteorder::Error::UnexpectedEOF => WebSocketError::NoDataAvailable,
-			byteorder::Error::Io(err) => FromError::from_error(err)
+			byteorder::Error::Io(err) => From::from(err)
 		}
 	}
 }
