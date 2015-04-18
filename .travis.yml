@@ -1,5 +1,10 @@
 language: rust
 
+script:
+    - cargo build --features nightly
+    - cargo test --features nightly
+    - cargo bench --features nightly
+    
 after_success:
   - >
     [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo pip install autobahntestsuite
