@@ -138,12 +138,9 @@ impl<R: Read, W: Write> Request<R, W> {
 	/// Sends the request to the server and returns a response.
 	pub fn send(mut self) -> WebSocketResult<Response<R, W>> {
 		let mut path = self.url.serialize_path().unwrap();
-		match self.url.query.clone() {
-			Some(query) => {
-				path.push_str("?");
-				path.push_str(&query[..]);
-			}
-			None => (),
+		if let Some(ref query) = self.url.query {
+			path.push_str("?");
+			path.push_str(&query[..]);
 		}
 		try!(write!(&mut self.writer, "GET {} {}\r\n", path, self.version));
 		try!(write!(&mut self.writer, "{}\r\n", self.headers));

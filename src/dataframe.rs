@@ -1,4 +1,3 @@
-#![stable]
 //! Module containing the default implementation of data frames.
 
 /// Represents a WebSocket data frame.

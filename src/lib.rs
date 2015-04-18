@@ -1,7 +1,6 @@
 #![warn(missing_docs)]
 #![feature(core, tcp)]
 #![cfg_attr(test, feature(test, collections))]
-#![unstable]
 
 #![deny(unused_mut)]
 

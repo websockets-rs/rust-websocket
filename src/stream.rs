@@ -1,4 +1,3 @@
-#![stable]
 //! Provides the default stream type for WebSocket connections.
 
 use std::io::{self, Read, Write};

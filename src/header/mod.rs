@@ -1,4 +1,3 @@
-#![stable]
 //! Structs representing headers relevant in a WebSocket context.
 //!
 //! These headers are commonly used in WebSocket requests and responses.

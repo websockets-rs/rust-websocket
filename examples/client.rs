@@ -1,3 +1,5 @@
+#![feature(scoped)]
+
 extern crate websocket;
 
 use std::thread;
@@ -16,6 +18,9 @@ fn main() {
 	let request = Client::connect(url).unwrap(); 
 	
 	let response = request.send().unwrap(); // Send the request and retrieve a response
+	
+	println!("Validating response...");
+	
 	response.validate().unwrap(); // Validate the response
 
 	println!("Successfully connected");
