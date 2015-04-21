@@ -1,6 +1,8 @@
 //! The default implementation of a WebSocket Receiver.
 
 use std::io::Read;
+use hyper::buffer::BufReader;
+
 use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
 use ws::util::dataframe::read_dataframe;
@@ -9,24 +11,24 @@ use ws;
 /// A Receiver that wraps a Reader and provides a default implementation using
 /// DataFrames and Messages.
 pub struct Receiver<R> {
-	inner: R,
+	inner: BufReader<R>,
 	buffer: Vec<DataFrame>
 }
 
 impl<R> Receiver<R> {
 	/// Create a new Receiver using the specified Reader.
-	pub fn new(reader: R) -> Receiver<R> {
+	pub fn new(reader: BufReader<R>) -> Receiver<R> {
 		Receiver {
 			inner: reader,
 			buffer: Vec::new()
 		}
 	}
 	/// Returns a reference to the underlying Reader.
-	pub fn get_ref(&self) -> &R {
+	pub fn get_ref(&self) -> &BufReader<R> {
 		&self.inner
 	}
 	/// Returns a mutable reference to the underlying Reader.
-	pub fn get_mut(&mut self) -> &mut R {
+	pub fn get_mut(&mut self) -> &mut BufReader<R> {
 		&mut self.inner
 	}
 }

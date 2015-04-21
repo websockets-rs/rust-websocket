@@ -2,8 +2,8 @@
 use std::option::Option;
 use std::io::{Read, Write};
 
-use hyper::buffer::BufReader;
 use hyper::status::StatusCode;
+use hyper::buffer::BufReader;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
@@ -20,7 +20,6 @@ use dataframe::DataFrame;
 use ws;
 
 /// Represents a WebSocket response.
-#[derive(Debug)]
 pub struct Response<R: Read, W: Write> {
 	/// The status of the response
 	pub status: StatusCode,
@@ -40,14 +39,14 @@ impl<R: Read, W: Write> Response<R, W> {
 	/// This is called by Request.send(), and does not need to be called by the user.
 	pub fn read(mut request: Request<R, W>) -> WebSocketResult<Response<R, W>> {
 		let (status, version, headers) = {
-			let mut reader = BufReader::new(request.get_mut_reader());
+			let reader = request.get_mut_reader();
 			
-			let response = try!(parse_response(&mut reader));
+			let response = try!(parse_response(reader));
 			
 			let status = StatusCode::from_u16(response.subject.0);
 			(status, response.version, response.headers)
 		};
-		
+
 		Ok(Response {
 			status: status,
 			headers: headers,
@@ -69,7 +68,7 @@ impl<R: Read, W: Write> Response<R, W> {
 		self.headers.get()
 	}
 		/// Returns a reference to the inner Reader.
-	pub fn get_reader(&self) -> &R {
+	pub fn get_reader(&self) -> &BufReader<R> {
 		self.request.get_reader()
 	}
 	/// Returns a reference to the inner Writer.
@@ -77,7 +76,7 @@ impl<R: Read, W: Write> Response<R, W> {
 		self.request.get_writer()
 	}
 	/// Returns a mutable reference to the inner Reader.
-	pub fn get_mut_reader(&mut self) -> &mut R {
+	pub fn get_mut_reader(&mut self) -> &mut BufReader<R> {
 		self.request.get_mut_reader()
 	}
 	/// Returns a mutable reference to the inner Writer.
@@ -89,7 +88,7 @@ impl<R: Read, W: Write> Response<R, W> {
 		&self.request
 	}
 	/// Return the inner Reader and Writer.
-	pub fn into_inner(self) -> (R, W) {
+	pub fn into_inner(self) -> (BufReader<R>, W) {
 		self.request.into_inner()
 	}
 	

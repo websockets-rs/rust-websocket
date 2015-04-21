@@ -4,6 +4,7 @@ use std::io::{Read, Write};
 pub use url::Url;
 
 use hyper::version::HttpVersion;
+use hyper::buffer::BufReader;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
 use hyper::header::{Upgrade, Protocol};
@@ -18,7 +19,6 @@ use ws::util::url::url_to_host;
 /// Represents a WebSocket request.
 ///
 /// Note that nothing is written to the internal Writer until the `send()` method is called.
-#[derive(Debug)]
 pub struct Request<R: Read, W: Write> {
 	/// The target URI for this request.
     pub url: Url,
@@ -27,7 +27,7 @@ pub struct Request<R: Read, W: Write> {
 	/// The headers of this request.
 	pub headers: Headers,
 	
-	reader: R,
+	reader: BufReader<R>,
 	writer: W,
 }
 
@@ -56,7 +56,7 @@ impl<R: Read, W: Write> Request<R, W> {
 			url: url,
 			version: HttpVersion::Http11,
 			headers: headers,
-			reader: reader,
+			reader: BufReader::new(reader),
 			writer: writer
 		})
 	}
@@ -116,7 +116,7 @@ impl<R: Read, W: Write> Request<R, W> {
 		self.headers.get_mut()
 	}
 	/// Returns a reference to the inner Reader.
-	pub fn get_reader(&self) -> &R {
+	pub fn get_reader(&self) -> &BufReader<R> {
 		&self.reader
 	}
 	/// Returns a reference to the inner Writer.
@@ -124,7 +124,7 @@ impl<R: Read, W: Write> Request<R, W> {
 		&self.writer
 	}
 	/// Returns a mutable reference to the inner Reader.
-	pub fn get_mut_reader(&mut self) -> &mut R {
+	pub fn get_mut_reader(&mut self) -> &mut BufReader<R> {
 		&mut self.reader
 	}
 	/// Returns a mutable reference to the inner Writer.
@@ -132,7 +132,7 @@ impl<R: Read, W: Write> Request<R, W> {
 		&mut self.writer
 	}
 	/// Return the inner Reader and Writer.
-	pub fn into_inner(self) -> (R, W) {
+	pub fn into_inner(self) -> (BufReader<R>, W) {
 		(self.reader, self.writer)
 	}
 	/// Sends the request to the server and returns a response.
