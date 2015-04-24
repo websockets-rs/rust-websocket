@@ -1,9 +1,8 @@
 //! Utility methods for reading and writing data frames.
 
-use std::num::FromPrimitive;
 use std::io::{Read, Write};
 
-use dataframe::DataFrame;
+use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
 
 use ws::util::header as dfh;
@@ -51,7 +50,7 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 			header.flags.contains(dfh::RSV2),
 			header.flags.contains(dfh::RSV3)
 		],
-		opcode: FromPrimitive::from_u8(header.opcode).expect("Invalid header opcode!"),
+		opcode: Opcode::new(header.opcode).expect("Invalid header opcode!"),
 		data: match header.mask {
 			Some(mask) => {
 				if !should_be_masked {
