@@ -33,7 +33,7 @@ pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: DataFrame) -> W
 		Some(mask) => try!(writer.write_all(&mask::mask_data(mask, &dataframe.data[..])[..])),
 		None => try!(writer.write_all(&dataframe.data[..])),
 	}
-	
+	try!(writer.flush());
 	Ok(())
 }
 
