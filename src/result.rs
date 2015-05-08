@@ -6,7 +6,7 @@ use std::error::Error;
 use std::convert::From;
 use std::fmt;
 use openssl::ssl::error::SslError;
-use hyper::HttpError;
+use hyper::Error as HttpError;
 use url::ParseError;
 use byteorder;
 

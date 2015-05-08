@@ -7,7 +7,7 @@ use hyper::version::HttpVersion;
 use hyper::buffer::BufReader;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
-use hyper::header::{Upgrade, Protocol};
+use hyper::header::{Upgrade, Protocol, ProtocolName};
 
 use unicase::UniCase;
 
@@ -48,7 +48,10 @@ impl<R: Read, W: Write> Request<R, W> {
 		headers.set(Connection(vec![
 			ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
 		]));
-		headers.set(Upgrade(vec![Protocol::WebSocket]));
+		headers.set(Upgrade(vec![Protocol{
+			name: ProtocolName::WebSocket,
+			version: None
+		}]));
 		headers.set(WebSocketVersion::WebSocket13);
 		headers.set(WebSocketKey::new());
 		
