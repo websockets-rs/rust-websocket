@@ -5,7 +5,7 @@ use hyper::status::StatusCode;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
-use hyper::header::{Upgrade, Protocol};
+use hyper::header::{Upgrade, Protocol, ProtocolName};
 
 use unicase::UniCase;
 
@@ -74,7 +74,7 @@ impl<R: Read, W: Write> Response<R, W> {
 		headers.set(Connection(vec![
 			ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
 		]));
-		headers.set(Upgrade(vec![Protocol::WebSocket]));
+		headers.set(Upgrade(vec![Protocol::new(ProtocolName::WebSocket, None)]));
 		Response {
 			status: StatusCode::SwitchingProtocols,
 			headers: headers,

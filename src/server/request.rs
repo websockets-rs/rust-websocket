@@ -12,7 +12,7 @@ use hyper::buffer::BufReader;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
-use hyper::header::{Upgrade, Protocol};
+use hyper::header::{Upgrade, ProtocolName};
 use hyper::http::parse_request;
 use hyper::method::Method;
 
@@ -116,7 +116,13 @@ impl<R: Read, W: Write> Request<R, W> {
 		
 		match self.headers.get() {
 			Some(&Upgrade(ref upgrade)) => {
-				if !upgrade.contains(&(Protocol::WebSocket)) {
+				let mut correct_upgrade = false;
+				for u in upgrade {
+					if u.name == ProtocolName::WebSocket {
+						correct_upgrade = true;
+					}
+				}
+				if !correct_upgrade {
 					return Err(WebSocketError::RequestError("Invalid Upgrade WebSocket header".to_string()));
 				}
 			}
