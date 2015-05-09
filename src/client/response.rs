@@ -7,7 +7,7 @@ use hyper::buffer::BufReader;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
-use hyper::header::{Upgrade, Protocol};
+use hyper::header::{Upgrade, Protocol, ProtocolName};
 use hyper::http::parse_response;
 
 use unicase::UniCase;
@@ -103,7 +103,10 @@ impl<R: Read, W: Write> Response<R, W> {
 		if self.accept() != Some(&(WebSocketAccept::new(key))) {
 			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid".to_string()));
 		}
-		if self.headers.get() != Some(&(Upgrade(vec![Protocol::WebSocket]))) {
+		if self.headers.get() != Some(&(Upgrade(vec![Protocol{
+			name: ProtocolName::WebSocket,
+			version: None
+		}]))) {
 			return Err(WebSocketError::ResponseError("Upgrade field must be WebSocket".to_string()));
 		}
 		if self.headers.get() != Some(&(Connection(vec![ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))]))) {
