@@ -1,5 +1,5 @@
 #![warn(missing_docs)]
-#![feature(core, tcp)]
+#![feature(core, tcp, collections)]
 #![cfg_attr(test, feature(test, collections))]
 
 #![deny(unused_mut)]
