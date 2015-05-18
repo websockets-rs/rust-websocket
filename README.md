@@ -10,7 +10,7 @@ Rust-WebSocket provides a framework for dealing with WebSocket connections (both
 To add a library release version from [crates.io](https://crates.io/crates/websocket) to a Cargo project, add this to the 'dependencies' section of your Cargo.toml:
 
 ```INI
-websocket = "~0.11.10"
+websocket = "~0.11.11"
 ```
 
 To add the library's Git repository to a Cargo project, add this to your Cargo.toml:
@@ -24,6 +24,8 @@ git = "https://github.com/cyderize/rust-websocket.git"
 And add ```extern crate websocket;``` to your project.
 
 ## Usage
+
+The library can be compiled with tests and benches and some extra capabilities on Rust nightly. To enable the nightly features, use `cargo --features nightly ...`.
 
 See the documentation for the latest release of the library [here](http://cyderize.github.io/rust-websocket/doc/websocket), and also the examples, which are located in `/examples` and can be run with:
 
