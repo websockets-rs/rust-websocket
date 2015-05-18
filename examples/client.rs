@@ -1,16 +1,22 @@
-#![feature(scoped)]
+#![cfg_attr(feature = "nightly", feature(scoped))]
 
 extern crate websocket;
 
-use std::thread;
-use std::sync::mpsc::channel;
-use std::io::stdin;
-
-use websocket::{Message, Sender, Receiver};
-use websocket::client::request::Url;
-use websocket::Client;
-
+#[cfg(not(feature = "nightly"))]
 fn main() {
+	println!("This example is not available on stable rust");
+}
+
+#[cfg(feature = "nightly")]
+fn main() {
+	use std::thread;
+	use std::sync::mpsc::channel;
+	use std::io::stdin;
+
+	use websocket::{Message, Sender, Receiver};
+	use websocket::client::request::Url;
+	use websocket::Client;
+
 	let url = Url::parse("ws://127.0.0.1:2794").unwrap();
 	
 	println!("Connecting to {}", url);

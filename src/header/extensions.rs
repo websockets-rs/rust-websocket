@@ -119,7 +119,7 @@ impl HeaderFormat for WebSocketExtensions {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
 	use hyper::header::{Header, HeaderFormatter};

@@ -53,6 +53,7 @@ impl WebSocketStream {
 		}
 	}
 	/// See `TcpStream.set_nodelay()`.
+	#[cfg(feature = "nightly")]
 	pub fn set_nodelay(&mut self, nodelay: bool) -> io::Result<()> {
 		match *self {
 			WebSocketStream::Tcp(ref mut inner) => inner.set_nodelay(nodelay),
@@ -60,6 +61,7 @@ impl WebSocketStream {
 		}
 	}
 	/// See `TcpStream.set_keepalive()`.
+	#[cfg(feature = "nightly")]
 	pub fn set_keepalive(&mut self, delay_in_seconds: Option<u32>) -> io::Result<()> {
 		match *self {
 			WebSocketStream::Tcp(ref mut inner) => inner.set_keepalive(delay_in_seconds),

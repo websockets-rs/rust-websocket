@@ -138,7 +138,7 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 	})
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
 	use test;

@@ -75,7 +75,7 @@ pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketRes
 	})
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
 	use dataframe::{DataFrame, Opcode};
@@ -84,7 +84,9 @@ mod tests {
 	fn test_read_dataframe() {
 		let data = b"The quick brown fox jumps over the lazy dog";
 		let mut dataframe = vec![0x81, 0x2B];
-		dataframe.push_all(data);
+		for i in data.iter() {
+			dataframe.push(*i);
+		}
 		let obtained = read_dataframe(&mut &dataframe[..], false).unwrap();
 		let expected = DataFrame {
 			finished: true, 
@@ -98,7 +100,9 @@ mod tests {
 	fn test_write_dataframe() {
 		let data = b"The quick brown fox jumps over the lazy dog";
 		let mut expected = vec![0x81, 0x2B];
-		expected.push_all(data);
+		for i in data.iter() {
+			expected.push(*i);
+		}
 		let dataframe = DataFrame {
 			finished: true, 
 			reserved: [false; 3], 
@@ -114,7 +118,9 @@ mod tests {
 	fn bench_read_dataframe(b: &mut test::Bencher) {
 		let data = b"The quick brown fox jumps over the lazy dog";
 		let mut dataframe = vec![0x81, 0x2B];
-		dataframe.push_all(data);
+		for i in data.iter() {
+			dataframe.push(*i);
+		}
 		b.iter(|| {
 			read_dataframe(&mut &dataframe[..], false).unwrap();
 		});

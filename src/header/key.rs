@@ -4,7 +4,6 @@ use std::fmt::{self, Debug};
 use rand;
 use std::mem;
 use std::str::FromStr;
-use std::slice::bytes::copy_memory;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
 use result::{WebSocketResult, WebSocketError};
 
@@ -30,7 +29,11 @@ impl FromStr for WebSocketKey {
 					));
 				}
 				let mut array = [0u8; 16];
-				copy_memory(&vec[..], &mut array);
+				let mut iter = vec.into_iter();
+				for i in array.iter_mut() {
+					*i = iter.next().unwrap();
+				}
+				
 				Ok(WebSocketKey(array))
 			}
 			Err(_) => {
@@ -76,7 +79,7 @@ impl HeaderFormat for WebSocketKey {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
 	use hyper::header::{Header, HeaderFormatter};

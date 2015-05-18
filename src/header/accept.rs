@@ -2,7 +2,6 @@ use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
 use std::fmt::{self, Debug};
 use std::str::FromStr;
-use std::slice::bytes::copy_memory;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
 use header::WebSocketKey;
 use openssl::crypto::hash::{self, hash};
@@ -32,7 +31,10 @@ impl FromStr for WebSocketAccept {
 					));
 				}
 				let mut array = [0u8; 20];
-				copy_memory(&vec[..], &mut array);
+				let mut iter = vec.into_iter();
+				for i in array.iter_mut() {
+					*i = iter.next().unwrap();
+				}
 				Ok(WebSocketAccept(array))
 			}
 			Err(_) => {
@@ -52,8 +54,11 @@ impl WebSocketAccept {
 		concat_key.push_str(&serialized[..]);
 		concat_key.push_str(MAGIC_GUID);
 		let output = hash(hash::Type::SHA1, concat_key.as_bytes());
+		let mut iter = output.into_iter();
 		let mut bytes = [0u8; 20];
-		copy_memory(&output[..], &mut bytes);
+		for i in bytes.iter_mut() {
+			*i = iter.next().unwrap();
+		}
 		WebSocketAccept(bytes)
 	}
 	/// Return the Base64 encoding of this WebSocketAccept
@@ -79,7 +84,7 @@ impl HeaderFormat for WebSocketAccept {
 	}
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
 	use test;

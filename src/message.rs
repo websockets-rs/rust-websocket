@@ -56,7 +56,9 @@ impl ws::Message<DataFrame> for Message {
 					"Unsupported reserved bits received".to_string()
 				));
 			}
-			data.push_all(&dataframe.data[..]);
+			for i in dataframe.data.iter() {
+				data.push(*i);
+			}
 		}
 		
 		message_from_data(first.opcode, data)
@@ -103,7 +105,9 @@ impl CloseData {
 	pub fn into_bytes(self) -> io::Result<Vec<u8>> {
 		let mut buf = Vec::new();
 		try!(buf.write_u16::<BigEndian>(self.status_code));
-		buf.push_all(self.reason.as_bytes());
+		for i in self.reason.as_bytes().iter() {
+			buf.push(*i);
+		}
 		Ok(buf)
 	}
 }

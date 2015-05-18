@@ -1,6 +1,6 @@
 #![warn(missing_docs)]
-#![feature(core, tcp, collections)]
-#![cfg_attr(test, feature(test, collections))]
+#![cfg_attr(feature = "nightly", feature(tcp))]
+#![cfg_attr(all(test, feature = "nightly"), feature(test))]
 
 #![deny(unused_mut)]
 
@@ -48,7 +48,7 @@ extern crate byteorder;
 #[macro_use]
 extern crate bitflags;
 
-#[cfg(test)]
+#[cfg(all(feature = "nightly", test))]
 extern crate test;
 
 pub use self::client::Client;

@@ -18,7 +18,7 @@ pub fn gen_mask() -> [u8; 4] {
 	unsafe { mem::transmute(rand::random::<u32>()) }
 }
 
-#[cfg(test)]
+#[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
 	use test;
