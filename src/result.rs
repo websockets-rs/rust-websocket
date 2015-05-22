@@ -32,6 +32,8 @@ pub enum WebSocketError {
 	HttpError(HttpError),
 	/// A URL parsing error
 	UrlError(ParseError),
+    /// A WebSocket URL error
+    WebSocketUrlError(WSUrlErrorKind),
 	/// An SSL error
 	SslError(SslError),
 	/// A UTF-8 error
@@ -49,7 +51,7 @@ impl fmt::Display for WebSocketError {
 impl Error for WebSocketError {
 	fn description(&self) -> &str {
 		match *self {
-            		WebSocketError::ProtocolError(_) => "WebSocket protocol error",
+            WebSocketError::ProtocolError(_) => "WebSocket protocol error",
 			WebSocketError::RequestError(_) => "WebSocket request error",
 			WebSocketError::ResponseError(_) => "WebSocket response error",
 			WebSocketError::DataFrameError(_) => "WebSocket data frame error",
@@ -59,6 +61,7 @@ impl Error for WebSocketError {
 			WebSocketError::UrlError(_) => "URL failure",
 			WebSocketError::SslError(_) => "SSL failure",
 			WebSocketError::Utf8Error(_) => "UTF-8 failure",
+            WebSocketError::WebSocketUrlError(_) => "WebSocket URL failure",
 		}
 	}
 
@@ -69,6 +72,7 @@ impl Error for WebSocketError {
 			WebSocketError::UrlError(ref error) => Some(error),
 			WebSocketError::SslError(ref error) => Some(error),
 			WebSocketError::Utf8Error(ref error) => Some(error),
+            WebSocketError::WebSocketUrlError(ref error) => Some(error),
 			_ => None,
 		}
 	}
@@ -111,4 +115,36 @@ impl From<byteorder::Error> for WebSocketError {
 			byteorder::Error::Io(err) => From::from(err)
 		}
 	}
+}
+
+impl From<WSUrlErrorKind> for WebSocketError {
+    fn from(err: WSUrlErrorKind) -> WebSocketError {
+        WebSocketError::WebSocketUrlError(err)
+    }
+}
+
+/// Represents a WebSocket URL error
+#[derive(Debug)]
+pub enum WSUrlErrorKind {
+    /// Fragments are not valid in a WebSocket URL
+    CannotSetFragment,
+    /// The scheme provided is invalid for a WebSocket
+    InvalidScheme,
+}
+
+impl fmt::Display for WSUrlErrorKind {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        try!(fmt.write_str("WebSocket Url Error: "));
+        try!(fmt.write_str(self.description()));
+        Ok(())
+    }
+}
+
+impl Error for WSUrlErrorKind {
+    fn description(&self) -> &str {
+        match *self {
+            WSUrlErrorKind::CannotSetFragment => "WebSocket URL cannot set fragment",
+            WSUrlErrorKind::InvalidScheme => "WebSocket URL invalid scheme"
+        }
+    }
 }
