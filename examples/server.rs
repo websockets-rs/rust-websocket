@@ -2,6 +2,7 @@ extern crate websocket;
 
 use std::thread;
 use websocket::{Server, Message, Sender, Receiver};
+use websocket::header::WebSocketProtocol;
 
 fn main() {
 	let server = Server::bind("127.0.0.1:2794").unwrap();
@@ -10,8 +11,19 @@ fn main() {
 		// Spawn a new thread for each connection.
 		thread::spawn(move || {
 			let request = connection.unwrap().read_request().unwrap(); // Get the request
-			request.validate().unwrap();
-			let response = request.accept(); // Form a response
+			let headers = request.headers.clone(); // Keep the headers so we can check them
+			
+			request.validate().unwrap(); // Validate the request
+			
+			let mut response = request.accept(); // Form a response
+			
+			if let Some(&WebSocketProtocol(ref protocols)) = headers.get() {
+				if protocols.contains(&("rust-websocket".to_string())) {
+					// We have a protocol we want to use
+					response.headers.set(WebSocketProtocol(vec!["rust-websocket".to_string()]));
+				}
+			}
+			
 			let mut client = response.send().unwrap(); // Send the response
 			
 			let ip = client.get_mut_sender()
