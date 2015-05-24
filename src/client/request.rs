@@ -12,21 +12,20 @@ use hyper::header::{Upgrade, Protocol, ProtocolName};
 use unicase::UniCase;
 
 use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensions, Origin};
-use result::{WebSocketResult, WebSocketError};
+use result::WebSocketResult;
 use client::response::Response;
-use ws::util::url::url_to_host;
+use ws::util::url::ToWebSocketUrlComponents;
 
 /// Represents a WebSocket request.
 ///
 /// Note that nothing is written to the internal Writer until the `send()` method is called.
 pub struct Request<R: Read, W: Write> {
-	/// The target URI for this request.
-    pub url: Url,
     /// The HTTP version of this request.
     pub version: HttpVersion,
 	/// The headers of this request.
 	pub headers: Headers,
 	
+    resource_name: String,
 	reader: BufReader<R>,
 	writer: W,
 }
@@ -39,11 +38,9 @@ impl<R: Read, W: Write> Request<R, W> {
 	/// In general `Client::connect()` should be used for connecting to servers.
 	/// However, if the request is to be written to a different Writer, this function
 	/// may be used.
-	pub fn new(url: Url, reader: R, writer: W) -> WebSocketResult<Request<R, W>> {
+	pub fn new<T: ToWebSocketUrlComponents>(components: T, reader: R, writer: W) -> WebSocketResult<Request<R, W>> {
 		let mut headers = Headers::new();
-		let host = try!(url_to_host(&url).ok_or(
-			WebSocketError::RequestError("Could not get hostname and port from URL".to_string())
-		));
+		let (host, resource_name, _) = try!(components.to_components());
 		headers.set(host);
 		headers.set(Connection(vec![
 			ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
@@ -56,9 +53,9 @@ impl<R: Read, W: Write> Request<R, W> {
 		headers.set(WebSocketKey::new());
 		
 		Ok(Request {
-			url: url,
 			version: HttpVersion::Http11,
 			headers: headers,
+			resource_name: resource_name,
 			reader: BufReader::new(reader),
 			writer: writer
 		})
@@ -140,12 +137,7 @@ impl<R: Read, W: Write> Request<R, W> {
 	}
 	/// Sends the request to the server and returns a response.
 	pub fn send(mut self) -> WebSocketResult<Response<R, W>> {
-		let mut path = self.url.serialize_path().unwrap();
-		if let Some(ref query) = self.url.query {
-			path.push_str("?");
-			path.push_str(&query[..]);
-		}
-		try!(write!(&mut self.writer, "GET {} {}\r\n", path, self.version));
+		try!(write!(&mut self.writer, "GET {} {}\r\n", self.resource_name, self.version));
 		try!(write!(&mut self.writer, "{}\r\n", self.headers));
 		Response::read(self)
 	}

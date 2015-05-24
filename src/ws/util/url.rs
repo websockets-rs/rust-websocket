@@ -1,23 +1,88 @@
 //! Utility functions for dealing with URLs
 
 use url::Url;
+use url::Host as UrlHost;
 use hyper::header::Host;
 use result::{WebSocketResult, WebSocketError, WSUrlErrorKind};
 
-/// Gets a Host header representation from a URL
-pub fn url_to_host(url: &Url) -> Option<Host> {
-    let host = match url.serialize_host() {
-        Some(host) => host,
-        None => { return None; }
-    };
-    let port = match url.port_or_default() {
-        Some(port) => port,
-        None => { return None; }
-    };
-    Some(Host {
-		hostname: host,
-		port: Some(port)
-	})
+/// Trait that gets required WebSocket URL components
+pub trait ToWebSocketUrlComponents {
+	/// Retrieve the required WebSocket URL components from this
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)>;
+}
+
+impl ToWebSocketUrlComponents for str {
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		parse_url_str(&self)
+	}
+}
+
+impl ToWebSocketUrlComponents for Url {
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		parse_url(&self)
+	}
+}
+
+impl ToWebSocketUrlComponents for (Host, String, bool) {
+	/// Convert a Host, resource name and secure flag to WebSocket URL components.
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		let (mut host, mut resource_name, secure) = self.clone();
+		host.port = Some(match host.port {
+			Some(port) => port,
+			None => if secure { 443 } else { 80 },
+		});
+		if resource_name.is_empty() {
+			resource_name = "/".to_owned();
+		}
+		Ok((host, resource_name, secure))
+	}
+}
+
+impl<'a> ToWebSocketUrlComponents for (Host, &'a str, bool) {
+	/// Convert a Host, resource name and secure flag to WebSocket URL components.
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		(self.0.clone(), self.1.to_owned(), self.2).to_components()
+	}
+}
+
+impl<'a> ToWebSocketUrlComponents for (Host, &'a str) {
+	/// Convert a Host and resource name to WebSocket URL components, assuming an insecure connection.
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		(self.0.clone(), self.1.to_owned(), false).to_components()
+	}
+}
+
+impl ToWebSocketUrlComponents for (Host, String) {
+	/// Convert a Host and resource name to WebSocket URL components, assuming an insecure connection.
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		(self.0.clone(), self.1.clone(), false).to_components()
+	}
+}
+
+impl ToWebSocketUrlComponents for (UrlHost, u16, String, bool) {
+	/// Convert a Host, port, resource name and secure flag to WebSocket URL components.
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		(Host {
+			hostname: self.0.serialize(),
+			port: Some(self.1)
+		}, self.2.clone(), self.3).to_components()
+	}
+}
+
+impl<'a> ToWebSocketUrlComponents for (UrlHost, u16, &'a str, bool) {
+	/// Convert a Host, port, resource name and secure flag to WebSocket URL components.
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		(Host {
+			hostname: self.0.serialize(),
+			port: Some(self.1)
+		}, self.2, self.3).to_components()
+	}
+}
+
+impl<'a, T: ToWebSocketUrlComponents> ToWebSocketUrlComponents for &'a T {
+	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
+		(**self).to_components()
+	}
 }
 
 /// Gets the host, port, resource and secure from the string representation of a url

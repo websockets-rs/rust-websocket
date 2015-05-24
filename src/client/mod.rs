@@ -4,13 +4,11 @@ use std::net::TcpStream;
 use std::marker::PhantomData;
 
 use ws;
-use ws::util::url::url_to_host;
+use ws::util::url::ToWebSocketUrlComponents;
 use ws::receiver::{DataFrameIterator, MessageIterator};
-use result::{WebSocketResult, WebSocketError};
+use result::WebSocketResult;
 use stream::WebSocketStream;
 use dataframe::DataFrame;
-
-use url::Url;
 
 use openssl::ssl::{SslContext, SslMethod, SslStream};
 
@@ -69,9 +67,9 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 	///
 	/// A connection is established, however the request is not sent to
 	/// the server until a call to ```send()```.
-	pub fn connect(url: Url) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
+	pub fn connect<T: ToWebSocketUrlComponents>(components: T) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
 		let context = try!(SslContext::new(SslMethod::Tlsv1));
-		Client::connect_ssl_context(url, &context)
+		Client::connect_ssl_context(components, &context)
 	}
 	/// Connects to the specified wss:// URL using the given SSL context.
 	///
@@ -80,28 +78,22 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 	///
 	/// A connection is established, however the request is not sent to
 	/// the server until a call to ```send()```.
-	pub fn connect_ssl_context(url: Url, context: &SslContext) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
-		let host = try!(url_to_host(&url).ok_or(
-			WebSocketError::RequestError("Could not get socket address from URL".to_string())
+	pub fn connect_ssl_context<T: ToWebSocketUrlComponents>(components: T, context: &SslContext) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
+		let (host, resource_name, secure) = try!(components.to_components());
+		
+		let connection = try!(TcpStream::connect(
+			(&host.hostname[..], host.port.unwrap_or(if secure { 443 } else { 80 }))
 		));
 		
-		let connection = try!(TcpStream::connect(&(
-			host.hostname + ":" + 
-			&host.port.unwrap().to_string()
-		)[..]));
-		
-		let stream = match &url.scheme[..] {
-			"ws" => {
-				WebSocketStream::Tcp(connection)
-			}
-			"wss" => {
-				let sslstream = try!(SslStream::new(context, connection));
-				WebSocketStream::Ssl(sslstream)
-			}
-			_ => { return Err(WebSocketError::RequestError("URI scheme not supported".to_string())); }
+		let stream = if secure {
+			let sslstream = try!(SslStream::new(context, connection));
+			WebSocketStream::Ssl(sslstream)
+		}
+		else {
+			WebSocketStream::Tcp(connection)
 		};
 		
-		Request::new(url, try!(stream.try_clone()), stream)
+		Request::new((host, resource_name, secure), try!(stream.try_clone()), stream)
 	}
 }
 
