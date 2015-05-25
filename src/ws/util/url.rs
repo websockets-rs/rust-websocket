@@ -3,7 +3,7 @@
 use url::Url;
 use url::Host as UrlHost;
 use hyper::header::Host;
-use result::{WebSocketResult, WebSocketError, WSUrlErrorKind};
+use result::{WebSocketResult, WSUrlErrorKind};
 
 /// Trait that gets required WebSocket URL components
 pub trait ToWebSocketUrlComponents {
@@ -89,7 +89,7 @@ impl<'a, T: ToWebSocketUrlComponents> ToWebSocketUrlComponents for &'a T {
 pub fn parse_url_str(url_str: &str) -> WebSocketResult<(Host, String, bool)> {
     // https://html.spec.whatwg.org/multipage/#parse-a-websocket-url's-components
     // Steps 1 and 2
-    let parsed_url = try!(Url::parse(url_str).map_err(WebSocketError::UrlError));
+    let parsed_url = try!(Url::parse(url_str));
     parse_url(&parsed_url)
 }
 
@@ -99,7 +99,7 @@ pub fn parse_url(url: &Url) -> WebSocketResult<(Host, String, bool)> {
 
     // Step 4
     if url.fragment != None {
-        return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::CannotSetFragment));
+        return Err(From::from(WSUrlErrorKind::CannotSetFragment));
     }
 
     let secure = match url.scheme.as_ref() {
@@ -107,7 +107,7 @@ pub fn parse_url(url: &Url) -> WebSocketResult<(Host, String, bool)> {
         "ws" => false,
         "wss" => true,
         // step 3
-        _ => return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::InvalidScheme)),
+        _ => return Err(From::from(WSUrlErrorKind::InvalidScheme)),
     };
 
     let host = url.host().unwrap().serialize(); // Step 6
