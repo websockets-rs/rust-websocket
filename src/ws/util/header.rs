@@ -6,7 +6,6 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 bitflags! {
 	/// Flags relevant to a WebSocket data frame.
-	#[derive(Debug)]
 	flags DataFrameFlags: u8 {
 		const FIN = 0x80,
 		const RSV1 = 0x40,
