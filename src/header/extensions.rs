@@ -2,6 +2,7 @@
 
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::{from_comma_delimited, fmt_comma_delimited};
+use hyper;
 use std::fmt;
 use std::str::FromStr;
 use std::ops::Deref;
@@ -107,7 +108,7 @@ impl Header for WebSocketExtensions {
 		"Sec-WebSocket-Extensions"
 	}
 
-	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketExtensions> {
+	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketExtensions> {
 		from_comma_delimited(raw).map(|vec| WebSocketExtensions(vec))
 	}
 }

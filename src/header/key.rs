@@ -1,5 +1,6 @@
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
+use hyper;
 use std::fmt::{self, Debug};
 use rand;
 use std::mem;
@@ -68,7 +69,7 @@ impl Header for WebSocketKey {
 		"Sec-WebSocket-Key"
 	}
 
-	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketKey> {
+	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketKey> {
 		from_one_raw_str(raw)
 	}
 }

@@ -1,5 +1,6 @@
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
+use hyper;
 use std::fmt::{self, Debug};
 
 /// Represents a Sec-WebSocket-Version header
@@ -29,7 +30,7 @@ impl Header for WebSocketVersion {
 		"Sec-WebSocket-Version"
 	}
 
-	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketVersion> {
+	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketVersion> {
 		from_one_raw_str(raw).map(|s : String|
 			match &s[..] {
 				"13" => { WebSocketVersion::WebSocket13 }

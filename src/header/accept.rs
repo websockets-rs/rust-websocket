@@ -1,5 +1,6 @@
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
+use hyper;
 use std::fmt::{self, Debug};
 use std::str::FromStr;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
@@ -73,7 +74,7 @@ impl Header for WebSocketAccept {
 		"Sec-WebSocket-Accept"
 	}
 
-	fn parse_header(raw: &[Vec<u8>]) -> Option<WebSocketAccept> {
+	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketAccept> {
 		from_one_raw_str(raw)
 	}
 }

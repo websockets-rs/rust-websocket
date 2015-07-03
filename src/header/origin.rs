@@ -1,5 +1,6 @@
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
+use hyper;
 use std::fmt;
 use std::ops::Deref;
 
@@ -19,7 +20,7 @@ impl Header for Origin {
 		"Origin"
 	}
 
-	fn parse_header(raw: &[Vec<u8>]) -> Option<Origin> {
+	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<Origin> {
 		from_one_raw_str(raw).map(|s| Origin(s))
 	}
 }

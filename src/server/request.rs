@@ -13,7 +13,7 @@ use hyper::version::HttpVersion;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
 use hyper::header::{Upgrade, ProtocolName};
-use hyper::http::parse_request;
+use hyper::http::h1::parse_request;
 use hyper::method::Method;
 
 use unicase::UniCase;

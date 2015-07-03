@@ -8,7 +8,7 @@ use hyper::version::HttpVersion;
 use hyper::header::Headers;
 use hyper::header::{Connection, ConnectionOption};
 use hyper::header::{Upgrade, Protocol, ProtocolName};
-use hyper::http::parse_response;
+use hyper::http::h1::parse_response;
 
 use unicase::UniCase;
 
