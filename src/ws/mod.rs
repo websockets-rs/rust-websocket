@@ -13,7 +13,7 @@
 //!
 //! A WebSocket message type must implement `Message<D>` where `D` is the type of data frame
 //! that the message can be converted to/from.
-//! 
+//!
 //! When sending a message, the message is converted into an iterator with its `into_iter()`
 //! method, which allows the message to output data frames forming a fragmented message
 //! where each data frame is sent immediately to be reassembled a the remote endpoint.
@@ -31,7 +31,7 @@
 //! various pieces of data to a Writer. These are found within the `util` module.
 //!
 //! A Receiver<D> receives data frames of type D and messages of type Receiver::Message,
-//! typically wrapping an underlying Reader, by implementing the `recv_dataframe()` and 
+//! typically wrapping an underlying Reader, by implementing the `recv_dataframe()` and
 //! `recv_message_dataframes()` methods. The `recv_message_dataframes()` method has to
 //! form a `Vec` of data frames which comprise one whole, single message.
 //!
@@ -46,3 +46,4 @@ pub mod message;
 pub mod sender;
 pub mod receiver;
 pub mod util;
+pub mod dataframe;

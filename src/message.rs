@@ -8,43 +8,95 @@ use byteorder::{WriteBytesExt, BigEndian};
 use ws::util::message::message_from_data;
 use ws;
 
+use std::borrow::Cow;
+
 /// Represents a WebSocket message.
 #[derive(PartialEq, Clone, Debug)]
-pub enum Message {
-	/// A message containing UTF-8 text data
-	Text(String),
-	/// A message containing binary data
-	Binary(Vec<u8>),
-	/// A message which indicates closure of the WebSocket connection.
-	/// This message may or may not contain data.
-	Close(Option<CloseData>),
-	/// A ping message - should be responded to with a pong message.
-	/// Usually the pong message will be sent with the same data as the
-	/// received ping message.
-	Ping(Vec<u8>),
-	/// A pong message, sent in response to a Ping message, usually
-	/// containing the same data as the received ping message.
-	Pong(Vec<u8>),
+pub struct Message<'a> {
+	opcode: Opcode,
+	cd_status_code: Option<u16>,
+	payload: Cow<'a, [u8]>,
 }
 
-impl ws::Message<DataFrame> for Message {
+impl<'a> Message<'a> {
+	pub fn string<S>(data: S) -> Self
+	where S: Into<Cow<'a, str>> {
+		Message {
+			opcode: Opcode::Text,
+			cd_status_code: None,
+			payload: match data.into() {
+				Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+				Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+			},
+		}
+	}
+
+	pub fn binary<B>(data: B) -> Self
+	where B: Into<Cow<'a, [u8]>> {
+		Message {
+			opcode: Opcode::Binary,
+			cd_status_code: None,
+			payload: data.into(),
+		}
+	}
+
+	pub fn close() -> Self {
+		Message {
+			opcode: Opcode::Close,
+			cd_status_code: None,
+			payload: Cow::Borrowed(&[0 as u8; 0]),
+		}
+	}
+
+	pub fn close_because<S>(code: u16, reason: S) -> Self
+	where S: Into<Cow<'a, str>> {
+		Message {
+			opcode: Opcode::Close,
+			cd_status_code: Some(code),
+			payload: match reason.into() {
+				Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+				Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+			},
+		}
+	}
+
+	pub fn ping<P>(data: P) -> Self
+	where P: Into<Cow<'a, [u8]>> {
+		Message {
+			opcode: Opcode::Ping,
+			cd_status_code: None,
+			payload: data.into(),
+		}
+	}
+
+	pub fn pong<P>(data: P) -> Self
+	where P: Into<Cow<'a, [u8]>> {
+		Message {
+			opcode: Opcode::Pong,
+			cd_status_code: None,
+			payload: data.into(),
+		}
+	}
+}
+
+impl<'a> ws::Message<DataFrame> for Message<'a> {
 	type DataFrameIterator = Take<Repeat<DataFrame>>;
 	/// Attempt to form a message from a series of data frames
 	fn from_dataframes(frames: Vec<DataFrame>) -> WebSocketResult<Message> {
 		let mut iter = frames.iter();
-		
+
 		let first = try!(iter.next().ok_or(WebSocketError::ProtocolError(
 			"No dataframes provided".to_string()
 		)));
-		
+
 		let mut data = first.data.clone();
-		
+
 		if first.reserved != [false; 3] {
 			return Err(WebSocketError::ProtocolError(
 				"Unsupported reserved bits received".to_string()
 			));
 		}
-		
+
 		for dataframe in iter {
 			if dataframe.opcode != Opcode::Continuation {
 				return Err(WebSocketError::ProtocolError(
@@ -60,7 +112,7 @@ impl ws::Message<DataFrame> for Message {
 				data.push(*i);
 			}
 		}
-		
+
 		message_from_data(first.opcode, data)
 	}
 	/// Turns this message into an iterator over data frames
@@ -74,7 +126,7 @@ impl ws::Message<DataFrame> for Message {
 					match payload {
 						Some(payload) => { payload.into_bytes().unwrap() }
 						None => { Vec::new() }
-					} 
+					}
 			),
 			Message::Ping(payload) => (Opcode::Ping, payload),
 			Message::Pong(payload) => (Opcode::Pong, payload),

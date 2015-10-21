@@ -1,4 +1,7 @@
 //! Module containing the default implementation of data frames.
+use std::io::Write;
+use std::io::Result as IoResult;
+use ws;
 
 /// Represents a WebSocket data frame.
 ///
@@ -25,6 +28,51 @@ impl DataFrame {
 			opcode: opcode,
 			data: data,
 		}
+	}
+}
+
+impl ws::dataframe::DataFrame for DataFrame {
+    fn is_last(&self) -> bool {
+		self.finished
+	}
+
+    fn opcode(&self) -> Opcode {
+		self.opcode
+	}
+
+    fn reserved<'a>(&'a self) -> &'a [bool; 3] {
+		&self.reserved
+	}
+
+    fn data<W>(&self, socket: W) -> IoResult<()>
+    where W: Write {
+		unimplemented!();
+	}
+}
+
+pub struct DataFrameRef<'a> {
+	pub finished: bool,
+	pub reserved: [bool; 3],
+	pub opcode: Opcode,
+	pub data: &'a [u8],
+}
+
+impl<'a> ws::dataframe::DataFrame for DataFrameRef<'a> {
+    fn is_last(&self) -> bool {
+		self.finished
+	}
+
+    fn opcode(&self) -> Opcode {
+		self.opcode
+	}
+
+    fn reserved<'b>(&'b self) -> &'b [bool; 3] {
+		&self.reserved
+	}
+
+    fn data<W>(&self, socket: W) -> IoResult<()>
+    where W: Write {
+		unimplemented!();
 	}
 }
 
