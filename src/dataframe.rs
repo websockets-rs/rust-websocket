@@ -44,7 +44,7 @@ impl ws::dataframe::DataFrame for DataFrame {
 		&self.reserved
 	}
 
-    fn data<W>(&self, socket: W) -> IoResult<()>
+    fn write_payload<W>(&self, socket: W) -> IoResult<()>
     where W: Write {
 		unimplemented!();
 	}
@@ -70,7 +70,7 @@ impl<'a> ws::dataframe::DataFrame for DataFrameRef<'a> {
 		&self.reserved
 	}
 
-    fn data<W>(&self, socket: W) -> IoResult<()>
+    fn write_payload<W>(&self, socket: W) -> IoResult<()>
     where W: Write {
 		unimplemented!();
 	}

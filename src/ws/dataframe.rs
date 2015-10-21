@@ -6,6 +6,6 @@ pub trait DataFrame {
     fn is_last(&self) -> bool;
     fn opcode(&self) -> Opcode;
     fn reserved<'a>(&'a self) -> &'a [bool; 3];
-    fn data<W>(&self, socket: W) -> IoResult<()>
+    fn write_payload<W>(&self, socket: W) -> IoResult<()>
     where W: Write;
 }

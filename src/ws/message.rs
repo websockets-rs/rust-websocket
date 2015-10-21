@@ -3,18 +3,14 @@
 //! See the `ws` module documentation for more information.
 
 use result::WebSocketResult;
-use dataframe::DataFrame;
+use ws::dataframe::DataFrame;
 
 /// A trait for WebSocket messages
-pub trait Message<D>: Sized {
-	/// An iterator over data frames.
-	type DataFrameIntoIterator: Iterator<Item = D>;
-
-	type DataFrameIterator: Iterator<Item: DataFrame>;
+pub trait Message<I, F>: Sized
+where I: Iterator<Item = F>, F: DataFrame {
 	/// Attempt to form a message from a slice of data frames.
-	fn from_dataframes(frames: Vec<D>) -> WebSocketResult<Self>;
+	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
+    where D: DataFrame;
 	/// Turns this message into an iterator over data frames
-	fn into_iter(self) -> Self::DataFrameIntoIterator;
-
-	fn iter(&self) -> Self::DataFrameIterator;
+	fn dataframes<'a>(&'a self) -> I;
 }
