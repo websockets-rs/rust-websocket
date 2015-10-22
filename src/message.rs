@@ -12,6 +12,8 @@ use ws;
 
 use std::borrow::Cow;
 
+const FALSE_RESERVED_BITS: &'static [bool; 3] = &[false; 3];
+
 /// Represents a WebSocket message.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Message<'a> {
@@ -91,10 +93,10 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
     }
 
     fn reserved<'b>(&'b self) -> &'b [bool; 3] {
-		&[false; 3]
+		FALSE_RESERVED_BITS
     }
 
-    fn write_payload<W>(&self, socket: W) -> IoResult<()>
+    fn write_payload<W>(&self, socket: &mut W) -> IoResult<()>
     where W: Write {
 		if let Some(reason) = self.cd_status_code {
 			try!(socket.write_u16::<BigEndian>(reason));
