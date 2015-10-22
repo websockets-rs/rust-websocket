@@ -44,6 +44,10 @@ impl ws::dataframe::DataFrame for DataFrame {
 		&self.reserved
 	}
 
+	fn payload<'a>(&'a self) -> &'a [u8] {
+		&self.data
+	}
+
     fn write_payload<W>(&self, socket: &mut W) -> IoResult<()>
     where W: Write {
 		unimplemented!();
@@ -68,6 +72,10 @@ impl<'a> ws::dataframe::DataFrame for DataFrameRef<'a> {
 
     fn reserved<'b>(&'b self) -> &'b [bool; 3] {
 		&self.reserved
+	}
+
+	fn payload<'b>(&'b self) -> &'b [u8] {
+		&self.data
 	}
 
     fn write_payload<W>(&self, socket: &mut W) -> IoResult<()>

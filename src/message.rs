@@ -6,8 +6,8 @@ use std::io::Write;
 use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
 use dataframe::{DataFrame, Opcode, DataFrameRef};
-use byteorder::{WriteBytesExt, BigEndian};
-use ws::util::message::message_from_data;
+use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
+use ws::util::message::bytes_to_string;
 use ws;
 
 use std::borrow::Cow;
@@ -80,6 +80,10 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 		FALSE_RESERVED_BITS
     }
 
+	fn payload<'b>(&'b self) -> &'b [u8] {
+		unimplemented!();
+	}
+
     fn write_payload<W>(&self, socket: &mut W) -> IoResult<()>
     where W: Write {
 		if let Some(reason) = self.cd_status_code {
@@ -93,67 +97,50 @@ impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
 
 	type DataFrameIterator = Take<Repeat<Message<'b>>>;
 
-	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
-    where D: ws::dataframe::DataFrame {
-        unimplemented!();
-    }
-
 	fn dataframes(&'b self) -> Self::DataFrameIterator {
 		repeat(self.clone()).take(1)
     }
 
-	// /// Attempt to form a message from a series of data frames
-	// fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
-    // where D: ws::dataframe::DataFrame {
-	// 	let mut iter = frames.iter();
-    //
-	// 	let first = try!(iter.next().ok_or(WebSocketError::ProtocolError(
-	// 		"No dataframes provided".to_string()
-	// 	)));
-    //
-	// 	let mut data = first.data.clone();
-    //
-	// 	if first.reserved != [false; 3] {
-	// 		return Err(WebSocketError::ProtocolError(
-	// 			"Unsupported reserved bits received".to_string()
-	// 		));
-	// 	}
-    //
-	// 	for dataframe in iter {
-	// 		if dataframe.opcode != Opcode::Continuation {
-	// 			return Err(WebSocketError::ProtocolError(
-	// 				"Unexpected non-continuation data frame".to_string()
-	// 			));
-	// 		}
-	// 		if dataframe.reserved != [false; 3] {
-	// 			return Err(WebSocketError::ProtocolError(
-	// 				"Unsupported reserved bits received".to_string()
-	// 			));
-	// 		}
-	// 		for i in dataframe.data.iter() {
-	// 			data.push(*i);
-	// 		}
-	// 	}
-    //
-	// 	message_from_data(first.opcode, data)
-	// }
-	// /// Turns this message into an iterator over data frames
-	// fn into_iter(self) -> Take<Repeat<DataFrame>> {
-	// 	// Just return a single data frame representing this message.
-	// 	let (opcode, data) = match self {
-	// 		Message::Text(payload) => (Opcode::Text, payload.into_bytes()),
-	// 		Message::Binary(payload) => (Opcode::Binary, payload),
-	// 		Message::Close(payload) => (
-	// 				Opcode::Close,
-	// 				match payload {
-	// 					Some(payload) => { payload.into_bytes().unwrap() }
-	// 					None => { Vec::new() }
-	// 				}
-	// 		),
-	// 		Message::Ping(payload) => (Opcode::Ping, payload),
-	// 		Message::Pong(payload) => (Opcode::Pong, payload),
-	// 	};
-	// 	let dataframe = DataFrame::new(true, opcode, data);
-	// 	repeat(dataframe).take(1)
-	// }
+	/// Attempt to form a message from a series of data frames
+	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
+    where D: ws::dataframe::DataFrame {
+		let opcode = try!(frames.first().ok_or(WebSocketError::ProtocolError(
+			"No dataframes provided".to_string()
+		)).map(|d| d.opcode()));
+
+		let mut data = Vec::new();
+
+		for dataframe in frames.iter() {
+			if dataframe.opcode() != Opcode::Continuation {
+				return Err(WebSocketError::ProtocolError(
+					"Unexpected non-continuation data frame".to_string()
+				));
+			}
+			if *dataframe.reserved() != [false; 3] {
+				return Err(WebSocketError::ProtocolError(
+					"Unsupported reserved bits received".to_string()
+				));
+			}
+			data.extend(dataframe.payload().iter().cloned());
+		}
+
+		Ok(match opcode {
+			Opcode::Text => Message::text(try!(bytes_to_string(&data[..]))),
+			Opcode::Binary => Message::binary(data),
+			Opcode::Close => {
+				if data.len() > 0 {
+					let status_code = try!((&data[..]).read_u16::<BigEndian>());
+					let reason = try!(bytes_to_string(&data[2..]));
+					Message::close_because(status_code, reason)
+				} else {
+					Message::close()
+				}
+			}
+			Opcode::Ping => Message::ping(data),
+			Opcode::Pong => Message::pong(data),
+			_ => return Err(WebSocketError::ProtocolError(
+				"Unsupported opcode received".to_string()
+			)),
+		})
+	}
 }
