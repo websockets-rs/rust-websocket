@@ -91,24 +91,29 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
     }
 
     fn reserved<'b>(&'b self) -> &'b [bool; 3] {
-        self.reserved
+		&[false; 3]
     }
 
     fn write_payload<W>(&self, socket: W) -> IoResult<()>
     where W: Write {
-        unimplemented!();
+		if let Some(reason) = self.cd_status_code {
+			try!(socket.write_u16::<BigEndian>(reason));
+		}
+		try!(socket.write_all(&*self.payload))
     }
 }
 
-impl<'a, 'b> ws::Message<Take<Repeat<DataFrameRef<'b>>>> for Message<'a> {
+impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
+
+	type DataFrameIterator = Take<Repeat<Message<'b>>>;
 
 	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
     where D: ws::dataframe::DataFrame {
         unimplemented!();
     }
 
-	fn dataframes(&'b self) -> Take<Repeat<DataFrameRef<'b>>> {
-        unimplemented!();
+	fn dataframes(&'b self) -> Self::DataFrameIterator {
+		repeat(self.clone()).take(1)
     }
 
 	// /// Attempt to form a message from a series of data frames
@@ -165,32 +170,4 @@ impl<'a, 'b> ws::Message<Take<Repeat<DataFrameRef<'b>>>> for Message<'a> {
 	// 	let dataframe = DataFrame::new(true, opcode, data);
 	// 	repeat(dataframe).take(1)
 	// }
-}
-
-/// Represents data contained in a Close message
-#[derive(PartialEq, Clone, Debug)]
-pub struct CloseData {
-	/// The status-code of the CloseData
-	pub status_code: u16,
-	/// The reason-phrase of the CloseData
-	pub reason: String,
-}
-
-impl CloseData {
-	/// Create a new CloseData object
-	pub fn new(status_code: u16, reason: String) -> CloseData {
-		CloseData {
-			status_code: status_code,
-			reason: reason,
-		}
-	}
-	/// Convert this into a vector of bytes
-	pub fn into_bytes(self) -> io::Result<Vec<u8>> {
-		let mut buf = Vec::new();
-		try!(buf.write_u16::<BigEndian>(self.status_code));
-		for i in self.reason.as_bytes().iter() {
-			buf.push(*i);
-		}
-		Ok(buf)
-	}
 }

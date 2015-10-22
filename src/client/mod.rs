@@ -80,11 +80,11 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 	/// the server until a call to ```send()```.
 	pub fn connect_ssl_context<T: ToWebSocketUrlComponents>(components: T, context: &SslContext) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
 		let (host, resource_name, secure) = try!(components.to_components());
-		
+
 		let connection = try!(TcpStream::connect(
 			(&host.hostname[..], host.port.unwrap_or(if secure { 443 } else { 80 }))
 		));
-		
+
 		let stream = if secure {
 			let sslstream = try!(SslStream::new(context, connection));
 			WebSocketStream::Ssl(sslstream)
@@ -92,7 +92,7 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 		else {
 			WebSocketStream::Tcp(connection)
 		};
-		
+
 		Request::new((host, resource_name, secure), try!(stream.try_clone()), stream)
 	}
 }
@@ -113,9 +113,8 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 		self.sender.send_dataframe(dataframe)
 	}
 	/// Sends a single message to the remote endpoint.
-	pub fn send_message<M>(&mut self, message: M) -> WebSocketResult<()> 
-		where M: ws::Message<D> {
-		
+	pub fn send_message<'m, M>(&mut self, message: M) -> WebSocketResult<()>
+	where M: ws::Message<'m, D> {
 		self.sender.send_message(message)
 	}
 	/// Reads a single data frame from the remote endpoint.
@@ -127,9 +126,8 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 		self.receiver.incoming_dataframes()
 	}
 	/// Reads a single message from this receiver.
-	pub fn recv_message<M, I>(&mut self) -> WebSocketResult<M>
-		where M: ws::Message<D, DataFrameIterator = I>, I: Iterator<Item = D> {
-		
+	pub fn recv_message<'m, M, I>(&mut self) -> WebSocketResult<M>
+	where M: ws::Message<'m, D, DataFrameIterator = I>, I: Iterator<Item = D> {
 		self.receiver.recv_message()
 	}
 	/// Returns an iterator over incoming messages.
@@ -175,8 +173,7 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///# }
 	///```
 	pub fn incoming_messages<'a, M>(&'a mut self) -> MessageIterator<'a, R, D, M>
-		where M: ws::Message<D> {
-		
+	where M: ws::Message<'a, D> {
 		self.receiver.incoming_messages()
 	}
 	/// Returns a reference to the underlying Sender.

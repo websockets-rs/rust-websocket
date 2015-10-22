@@ -8,4 +8,6 @@ pub trait DataFrame {
     fn reserved<'a>(&'a self) -> &'a [bool; 3];
     fn write_payload<W>(&self, socket: W) -> IoResult<()>
     where W: Write;
+
+    // TODO: Move util write dataframe fn's here as premade methods
 }

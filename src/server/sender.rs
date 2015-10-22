@@ -30,7 +30,7 @@ impl<W> Sender<W> {
 }
 
 impl<W: Write> ws::Sender<DataFrame> for Sender<W> {
-	fn send_dataframe(&mut self, dataframe: DataFrame) -> WebSocketResult<()> {
+	fn send_dataframe(&mut self, dataframe: &DataFrame) -> WebSocketResult<()> {
 		write_dataframe(&mut self.inner, false, dataframe)
 	}
 }

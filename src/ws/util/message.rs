@@ -1,6 +1,6 @@
 //! Utility functions for converting to Message.
 
-use message::{Message, CloseData};
+use message::Message;
 use dataframe::Opcode;
 use result::{WebSocketResult, WebSocketError};
 use std::str::from_utf8;
