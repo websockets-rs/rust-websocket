@@ -23,67 +23,47 @@ pub struct Message<'a> {
 }
 
 impl<'a> Message<'a> {
+	fn new(code: Opcode, status: Option<u16>, payload: Cow<'a, [u8]>) -> Self {
+		Message {
+			opcode: code,
+			cd_status_code: status,
+			payload: payload,
+		}
+	}
+
 	pub fn text<S>(data: S) -> Self
 	where S: Into<Cow<'a, str>> {
-		Message {
-			opcode: Opcode::Text,
-			cd_status_code: None,
-			payload: match data.into() {
-				Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
-				Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
-			},
-		}
+		Message::new(Opcode::Text, None, match data.into() {
+			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+		})
 	}
 
 	pub fn binary<B>(data: B) -> Self
 	where B: Into<Cow<'a, [u8]>> {
-		Message {
-			opcode: Opcode::Binary,
-			cd_status_code: None,
-			payload: data.into(),
-		}
+		Message::new(Opcode::Binary, None, data.into())
 	}
 
 	pub fn close() -> Self {
-		Message {
-			opcode: Opcode::Close,
-			cd_status_code: None,
-			payload: Cow::Borrowed(&[0 as u8; 0]),
-		}
+		Message::new(Opcode::Close, None, Cow::Borrowed(&[0 as u8; 0]))
 	}
 
 	pub fn close_because<S>(code: u16, reason: S) -> Self
 	where S: Into<Cow<'a, str>> {
-		Message {
-			opcode: Opcode::Close,
-			cd_status_code: Some(code),
-			payload: match reason.into() {
-				Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
-				Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
-			},
-		}
+		Message::new(Opcode::Close, Some(code), match reason.into() {
+			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+		})
 	}
 
 	pub fn ping<P>(data: P) -> Self
 	where P: Into<Cow<'a, [u8]>> {
-		Message {
-			opcode: Opcode::Ping,
-			cd_status_code: None,
-			payload: data.into(),
-		}
+		Message::new(Opcode::Ping, None, data.into())
 	}
 
 	pub fn pong<P>(data: P) -> Self
 	where P: Into<Cow<'a, [u8]>> {
-		Message {
-			opcode: Opcode::Pong,
-			cd_status_code: None,
-			payload: data.into(),
-		}
-	}
-
-	pub fn op(&self) -> Opcode {
-		self.opcode
+		Message::new(Opcode::Pong, None, data.into())
 	}
 }
 

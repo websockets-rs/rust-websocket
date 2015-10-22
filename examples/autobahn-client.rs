@@ -135,19 +135,19 @@ fn update_reports(addr: String, agent: &str) {
 			Ok(message) => message,
 			Err(e) => {
 				println!("Error: {:?}", e);
-				let _ = sender.send_message(Message::close());
+				let _ = sender.send_message(&Message::close());
 				return;
 			}
 		};
 		match message.opcode {
 			Opcode::Close => {
-				let _ = sender.send_message(Message::close());
+				let _ = sender.send_message(&Message::close());
 				println!("Reports updated.");
 				println!("Test suite finished!");
 				return;
 			}
 			Opcode::Ping => {
-				sender.send_message(Message::pong(message.payload)).unwrap();
+				sender.send_message(&Message::pong(message.payload)).unwrap();
 			}
 			_ => (),
 		}

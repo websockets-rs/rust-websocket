@@ -2,6 +2,7 @@ extern crate websocket;
 
 use std::thread;
 use websocket::{Server, Message, Sender, Receiver};
+use websocket::dataframe::Opcode;
 
 fn main() {
 	let addr = "127.0.0.1:9002".to_string();
@@ -25,16 +26,16 @@ fn main() {
 					}
 				};
 
-				match message {
-					Message::Text(data) => sender.send_message(Message::Text(data)).unwrap(),
-					Message::Binary(data) => sender.send_message(Message::Binary(data)).unwrap(),
-					Message::Close(_) => {
-						let _ = sender.send_message( Message::Close(None));
+				match message.opcode {
+					Opcode::Text => sender.send_message(&Message::text(message.data)).unwrap(),
+					Opcode::Binary => sender.send_message(&Message::binary(message.data)).unwrap(),
+					Opcode::Close => {
+						let _ = sender.send_message(&Message::close());
 						return;
 					}
-					Message::Ping(data) => {
-						let message = Message::Pong(data);
-						sender.send_message(message).unwrap();
+					Opcode::Ping => {
+						let message = Message::pong(message.data);
+						sender.send_message(&message).unwrap();
 					}
 					_ => (),
 				}
