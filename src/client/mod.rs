@@ -9,6 +9,7 @@ use ws::receiver::{DataFrameIterator, MessageIterator};
 use result::WebSocketResult;
 use stream::WebSocketStream;
 use dataframe::DataFrame;
+use ws::dataframe::DataFrame as DataFrameTrait;
 
 use openssl::ssl::{SslContext, SslMethod, SslStream};
 
@@ -97,7 +98,7 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 	}
 }
 
-impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
+impl<D: DataFrameTrait, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	/// Creates a Client from the given Sender and Receiver.
 	///
 	/// Essentially the opposite of `Client.split()`.
@@ -109,11 +110,11 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 		}
 	}
 	/// Sends a single data frame to the remote endpoint.
-	pub fn send_dataframe(&mut self, dataframe: D) -> WebSocketResult<()> {
+	pub fn send_dataframe(&mut self, dataframe: &D) -> WebSocketResult<()> {
 		self.sender.send_dataframe(dataframe)
 	}
 	/// Sends a single message to the remote endpoint.
-	pub fn send_message<'m, M>(&mut self, message: M) -> WebSocketResult<()>
+	pub fn send_message<'m, M>(&mut self, message: &M) -> WebSocketResult<()>
 	where M: ws::Message<'m, D> {
 		self.sender.send_message(message)
 	}

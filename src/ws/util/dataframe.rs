@@ -9,26 +9,26 @@ use ws::util::header as dfh;
 use ws::util::mask;
 
 /// Writes a DataFrame to a Writer.
-pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: DataFrame) -> WebSocketResult<()>
+pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: &DataFrame) -> WebSocketResult<()>
 	where W: Write {
-	
+
 	let mut flags = dfh::DataFrameFlags::empty();
 	if dataframe.finished { flags.insert(dfh::FIN); }
 	if dataframe.reserved[0] { flags.insert(dfh::RSV1); }
 	if dataframe.reserved[1] { flags.insert(dfh::RSV2); }
 	if dataframe.reserved[2] { flags.insert(dfh::RSV3); }
-	
+
 	let masking_key = if mask { Some(mask::gen_mask()) } else { None };
-	
+
 	let header = dfh::DataFrameHeader {
 		flags: flags,
 		opcode: dataframe.opcode as u8,
 		mask: masking_key,
 		len: dataframe.data.len() as u64,
 	};
-	
+
 	try!(dfh::write_header(writer, header));
-	
+
 	match masking_key {
 		Some(mask) => try!(writer.write_all(&mask::mask_data(mask, &dataframe.data[..])[..])),
 		None => try!(writer.write_all(&dataframe.data[..])),
@@ -38,11 +38,11 @@ pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: DataFrame) -> W
 }
 
 /// Reads a DataFrame from a Reader.
-pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<DataFrame> 
+pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<DataFrame>
 	where R: Read {
 
 	let header = try!(dfh::read_header(reader));
-	
+
 	Ok(DataFrame {
 		finished: header.flags.contains(dfh::FIN),
 		reserved: [
@@ -89,9 +89,9 @@ mod tests {
 		}
 		let obtained = read_dataframe(&mut &dataframe[..], false).unwrap();
 		let expected = DataFrame {
-			finished: true, 
-			reserved: [false; 3], 
-			opcode: Opcode::Text, 
+			finished: true,
+			reserved: [false; 3],
+			opcode: Opcode::Text,
 			data: data.to_vec()
 		};
 		assert_eq!(obtained, expected);
@@ -104,14 +104,14 @@ mod tests {
 			expected.push(*i);
 		}
 		let dataframe = DataFrame {
-			finished: true, 
-			reserved: [false; 3], 
-			opcode: Opcode::Text, 
+			finished: true,
+			reserved: [false; 3],
+			opcode: Opcode::Text,
 			data: data.to_vec()
 		};
 		let mut obtained = Vec::new();
 		write_dataframe(&mut obtained, false, dataframe).unwrap();
-		
+
 		assert_eq!(&obtained[..], &expected[..]);
 	}
 	#[bench]
@@ -129,9 +129,9 @@ mod tests {
 	fn bench_write_dataframe(b: &mut test::Bencher) {
 		let data = b"The quick brown fox jumps over the lazy dog";
 		let dataframe = DataFrame {
-			finished: true, 
-			reserved: [false; 3], 
-			opcode: Opcode::Text, 
+			finished: true,
+			reserved: [false; 3],
+			opcode: Opcode::Text,
 			data: data.to_vec()
 		};
 		let mut writer = Vec::with_capacity(45);

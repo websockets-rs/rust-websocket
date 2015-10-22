@@ -17,6 +17,7 @@ use header::{WebSocketAccept, WebSocketProtocol, WebSocketExtensions};
 use client::{Client, Request, Sender, Receiver};
 use result::{WebSocketResult, WebSocketError};
 use dataframe::DataFrame;
+use ws::dataframe::DataFrame as DataFrameTrait;
 use ws;
 
 /// Represents a WebSocket response.
@@ -27,7 +28,7 @@ pub struct Response<R: Read, W: Write> {
 	pub headers: Headers,
 	/// The HTTP version of this response
 	pub version: HttpVersion,
-	
+
 	request: Request<R, W>
 }
 
@@ -40,9 +41,9 @@ impl<R: Read, W: Write> Response<R, W> {
 	pub fn read(mut request: Request<R, W>) -> WebSocketResult<Response<R, W>> {
 		let (status, version, headers) = {
 			let reader = request.get_mut_reader();
-			
+
 			let response = try!(parse_response(reader));
-			
+
 			let status = StatusCode::from_u16(response.subject.0);
 			(status, response.version, response.headers)
 		};
@@ -54,7 +55,7 @@ impl<R: Read, W: Write> Response<R, W> {
 			request: request
 		})
 	}
-	
+
 	/// Short-cut to obtain the WebSocketAccept value.
 	pub fn accept(&self) -> Option<&WebSocketAccept> {
 		self.headers.get()
@@ -91,7 +92,7 @@ impl<R: Read, W: Write> Response<R, W> {
 	pub fn into_inner(self) -> (BufReader<R>, W) {
 		self.request.into_inner()
 	}
-	
+
 	/// Check if this response constitutes a successful handshake.
 	pub fn validate(&self) -> WebSocketResult<()> {
 		if self.status != StatusCode::SwitchingProtocols {
@@ -114,13 +115,13 @@ impl<R: Read, W: Write> Response<R, W> {
 		}
 		Ok(())
 	}
-	
+
 	/// Consume this response and return a Client ready to transmit/receive data frames
 	/// using the data frame type D, Sender B and Receiver C.
 	///
 	/// Does not check if the response was valid. Use `validate()` to ensure that the response constitutes a successful handshake.
-	pub fn begin_with<D, B, C>(self, sender: B, receiver: C) -> Client<D, B, C> 
-		where B: ws::Sender<D>, C: ws::Receiver<D> {
+	pub fn begin_with<D, B, C>(self, sender: B, receiver: C) -> Client<D, B, C>
+	where B: ws::Sender<D>, C: ws::Receiver<D>, D: DataFrameTrait {
 		Client::new(sender, receiver)
 	}
 	/// Consume this response and return a Client ready to transmit/receive data frames.

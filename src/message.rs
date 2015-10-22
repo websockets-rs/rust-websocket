@@ -99,7 +99,7 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 		if let Some(reason) = self.cd_status_code {
 			try!(socket.write_u16::<BigEndian>(reason));
 		}
-		try!(socket.write_all(&*self.payload))
+		socket.write_all(&*self.payload)
     }
 }
 

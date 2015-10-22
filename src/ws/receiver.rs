@@ -5,10 +5,12 @@
 
 use std::marker::PhantomData;
 use ws::Message;
+use ws::dataframe::DataFrame;
 use result::WebSocketResult;
 
 /// A trait for receiving data frames and messages.
-pub trait Receiver<D>: Sized {
+pub trait Receiver<D>: Sized
+where D: DataFrame {
 	/// Reads a single data frame from this receiver.
 	fn recv_dataframe(&mut self) -> WebSocketResult<D>;
 	/// Returns the data frames that constitute one message.
@@ -41,14 +43,13 @@ pub trait Receiver<D>: Sized {
 
 /// An iterator over data frames from a Receiver.
 pub struct DataFrameIterator<'a, R, D>
-	where R: 'a + Receiver<D> {
-
+where R: 'a + Receiver<D>, D: DataFrame {
 	inner: &'a mut R,
 	_dataframe: PhantomData<D>
 }
 
 impl<'a, R, D> Iterator for DataFrameIterator<'a, R, D>
-	where R: 'a + Receiver<D> {
+where R: 'a + Receiver<D>, D: DataFrame {
 
 	type Item = WebSocketResult<D>;
 
@@ -60,15 +61,17 @@ impl<'a, R, D> Iterator for DataFrameIterator<'a, R, D>
 
 /// An iterator over messages from a Receiver.
 pub struct MessageIterator<'a, R, D, M>
-where R: 'a + Receiver<D>, M: Message<'a, D> {
+where R: 'a + Receiver<D>, M: Message<'a, D>, D: DataFrame {
 	inner: &'a mut R,
 	_dataframe: PhantomData<D>,
 	_message: PhantomData<M>
 }
 
 impl<'a, R, D, M, I> Iterator for MessageIterator<'a, R, D, M>
-where R: 'a + Receiver<D>, M: Message<'a, D, DataFrameIterator = I>, I: Iterator<Item = D> {
-
+where R: 'a + Receiver<D>,
+      M: Message<'a, D, DataFrameIterator = I>,
+	  I: Iterator<Item = D>,
+	  D: DataFrame {
 	type Item = WebSocketResult<M>;
 
 	/// Get the next message from the receiver. Always returns `Some`.

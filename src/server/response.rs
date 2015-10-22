@@ -14,6 +14,7 @@ use server::{Request, Sender, Receiver};
 use client::Client;
 use result::WebSocketResult;
 use dataframe::DataFrame;
+use ws::dataframe::DataFrame as DataFrameTrait;
 use ws;
 
 /// Represents a server-side (outgoing) response.
@@ -24,7 +25,7 @@ pub struct Response<R: Read, W: Write> {
 	pub headers: Headers,
 	/// The HTTP version of this response
 	pub version: HttpVersion,
-	
+
 	request: Request<R, W>
 }
 
@@ -109,10 +110,10 @@ impl<R: Read, W: Write> Response<R, W> {
 	pub fn extensions_mut(&mut self) -> Option<&mut WebSocketExtensions> {
 		self.headers.get_mut()
 	}
-	
+
 	/// Send this response with the given data frame type D, Sender B and Receiver C.
-	pub fn send_with<D, B, C>(mut self, sender: B, receiver: C) -> WebSocketResult<Client<D, B, C>> 
-		where B: ws::Sender<D>, C: ws::Receiver<D> {
+	pub fn send_with<D, B, C>(mut self, sender: B, receiver: C) -> WebSocketResult<Client<D, B, C>>
+	where B: ws::Sender<D>, C: ws::Receiver<D>, D: DataFrameTrait {
 		let version = self.version;
 		let status = self.status;
 		let headers = self.headers.clone();
@@ -120,7 +121,7 @@ impl<R: Read, W: Write> Response<R, W> {
 		try!(write!(self.get_mut_writer(), "{}\r\n", headers));
 		Ok(Client::new(sender, receiver))
 	 }
-	
+
 	/// Send this response, retrieving the inner Reader and Writer
 	pub fn send_into_inner(mut self) -> WebSocketResult<(R, W)> {
 		let version = self.version;
@@ -130,7 +131,7 @@ impl<R: Read, W: Write> Response<R, W> {
 		try!(write!(self.get_mut_writer(), "{}\r\n", headers));
 		Ok(self.into_inner())
 	}
-	
+
 	/// Send this response, returning a Client ready to transmit/receive data frames
 	pub fn send(mut self) -> WebSocketResult<Client<DataFrame, Sender<W>, Receiver<R>>> {
 		let version = self.version;
