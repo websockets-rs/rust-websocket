@@ -17,13 +17,13 @@ const FALSE_RESERVED_BITS: &'static [bool; 3] = &[false; 3];
 /// Represents a WebSocket message.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Message<'a> {
-	opcode: Opcode,
-	cd_status_code: Option<u16>,
-	payload: Cow<'a, [u8]>,
+	pub opcode: Opcode,
+	pub cd_status_code: Option<u16>,
+	pub payload: Cow<'a, [u8]>,
 }
 
 impl<'a> Message<'a> {
-	pub fn string<S>(data: S) -> Self
+	pub fn text<S>(data: S) -> Self
 	where S: Into<Cow<'a, str>> {
 		Message {
 			opcode: Opcode::Text,
@@ -80,6 +80,10 @@ impl<'a> Message<'a> {
 			cd_status_code: None,
 			payload: data.into(),
 		}
+	}
+
+	pub fn op(&self) -> Opcode {
+		self.opcode
 	}
 }
 
