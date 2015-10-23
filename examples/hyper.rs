@@ -5,7 +5,7 @@ use std::thread;
 use std::io::Write;
 use websocket::{Server, Message, Sender, Receiver};
 use websocket::header::WebSocketProtocol;
-use websocket::dataframe::Opcode;
+use websocket::message::Type;
 use hyper::Server as HttpServer;
 use hyper::server::Handler;
 use hyper::net::Fresh;
@@ -65,13 +65,13 @@ fn main() {
 				let message: Message = message.unwrap();
 
 				match message.opcode {
-					Opcode::Close => {
+					Type::Close => {
 						let message = Message::close();
 						sender.send_message(&message).unwrap();
 						println!("Client {} disconnected", ip);
 						return;
 					},
-					Opcode::Ping => {
+					Type::Ping => {
 						let message = Message::pong(message.payload);
 						sender.send_message(&message).unwrap();
 					},

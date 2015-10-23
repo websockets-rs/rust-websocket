@@ -1,7 +1,9 @@
-use std::io::{Read, Write};
-use std::io::Result as IoResult;
-use dataframe::Opcode;
-use result::{WebSocketResult, WebSocketError};
+//! Describes the generic DataFrame, defining a trait
+//! that all dataframes should share. This is so one can
+//! optomize the memory footprint of a dataframe for their
+//! own needs, and be able to use custom dataframes quickly
+use std::io::Write;
+use result::WebSocketResult;
 use ws::util::header as dfh;
 use ws::util::mask;
 
@@ -10,16 +12,27 @@ use ws::util::mask;
 // reads a buffer into D. This is good because it
 // also avoids more things called `DataFrame`
 // TODO: Remove references to DataFrameTrait
+/// A generic DataFrame. Every dataframe should be able to
+/// provide these methods. (If the payload is not known in advance then
+/// rewrite the write_payload method)
 pub trait DataFrame {
+    /// Is this dataframe the final dataframe of the message?
     fn is_last(&self) -> bool;
-    fn opcode(&self) -> Opcode;
+    /// What type of data does this dataframe contain?
+    fn opcode(&self) -> u8;
+    /// Reserved bits of this dataframe
     fn reserved<'a>(&'a self) -> &'a [bool; 3];
+    /// Entire payload of the dataframe. If not known then implement
+    /// write_payload as that is the actual method used when sending the
+    /// dataframe over the wire.
     fn payload<'a>(&'a self) -> &'a [u8];
 
+    /// How long (in bytes) is this dataframe's payload
     fn size(&self) -> usize {
         self.payload().len()
     }
 
+    /// Write the payload to a writer
     fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
     where W: Write {
         try!(socket.write_all(self.payload()));

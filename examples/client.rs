@@ -15,6 +15,7 @@ fn main() {
 
 	use websocket::{Message, Sender, Receiver};
 	use websocket::dataframe::Opcode;
+    use websocket::message::Type;
 	use websocket::client::request::Url;
 	use websocket::Client;
 
@@ -49,7 +50,7 @@ fn main() {
 				}
 			};
 			match message.opcode {
-				Opcode::Close => {
+				Type::Close => {
 					let _ = sender.send_message(&message);
 					// If it's a close message, just send it and then return.
 					return;

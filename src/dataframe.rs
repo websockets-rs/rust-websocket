@@ -1,6 +1,8 @@
 //! Module containing the default implementation of data frames.
-use std::io::Write;
-use std::io::Result as IoResult;
+use std::io::Read;
+use result::{WebSocketResult, WebSocketError};
+use ws::util::header as dfh;
+use ws::util::mask;
 use ws;
 
 /// Represents a WebSocket data frame.
@@ -29,6 +31,43 @@ impl DataFrame {
 			data: data,
 		}
 	}
+
+    /// Reads a DataFrame from a Reader.
+    pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<Self>
+	where R: Read {
+    	let header = try!(dfh::read_header(reader));
+
+    	Ok(DataFrame {
+    		finished: header.flags.contains(dfh::FIN),
+    		reserved: [
+    			header.flags.contains(dfh::RSV1),
+    			header.flags.contains(dfh::RSV2),
+    			header.flags.contains(dfh::RSV3)
+    		],
+    		opcode: Opcode::new(header.opcode).expect("Invalid header opcode!"),
+    		data: match header.mask {
+    			Some(mask) => {
+    				if !should_be_masked {
+    					return Err(WebSocketError::DataFrameError(
+    						"Expected unmasked data frame".to_string()
+    					));
+    				}
+
+    				let data: Vec<u8> = try!(reader.take(header.len).bytes().collect());
+    				mask::mask_data(mask, &data)
+    			}
+    			None => {
+    				if should_be_masked {
+    					return Err(WebSocketError::DataFrameError(
+    						"Expected masked data frame".to_string()
+    					));
+    				}
+
+    				try!(reader.take(header.len).bytes().collect())
+    			}
+    		}
+    	})
+    }
 }
 
 impl ws::dataframe::DataFrame for DataFrame {
@@ -36,8 +75,8 @@ impl ws::dataframe::DataFrame for DataFrame {
 		self.finished
 	}
 
-    fn opcode(&self) -> Opcode {
-		self.opcode
+    fn opcode(&self) -> u8 {
+		self.opcode as u8
 	}
 
     fn reserved<'a>(&'a self) -> &'a [bool; 3] {
@@ -45,31 +84,6 @@ impl ws::dataframe::DataFrame for DataFrame {
 	}
 
 	fn payload<'a>(&'a self) -> &'a [u8] {
-		&self.data
-	}
-}
-
-pub struct DataFrameRef<'a> {
-	pub finished: bool,
-	pub reserved: [bool; 3],
-	pub opcode: Opcode,
-	pub data: &'a [u8],
-}
-
-impl<'a> ws::dataframe::DataFrame for DataFrameRef<'a> {
-    fn is_last(&self) -> bool {
-		self.finished
-	}
-
-    fn opcode(&self) -> Opcode {
-		self.opcode
-	}
-
-    fn reserved<'b>(&'b self) -> &'b [bool; 3] {
-		&self.reserved
-	}
-
-	fn payload<'b>(&'b self) -> &'b [u8] {
 		&self.data
 	}
 }
@@ -135,5 +149,73 @@ impl Opcode {
 			15 => Opcode::Control5,
 			_ => return None,
 		})
+	}
+}
+
+#[cfg(all(feature = "nightly", test))]
+mod tests {
+    use super::*;
+    use test::Bencher;
+
+    #[test]
+    fn test_read_dataframe() {
+        let data = b"The quick brown fox jumps over the lazy dog";
+        let mut dataframe = vec![0x81, 0x2B];
+        for i in data.iter() {
+            dataframe.push(*i);
+        }
+        let obtained = DataFrame::read_dataframe(&mut &dataframe[..], false).unwrap();
+        let expected = DataFrame {
+            finished: true,
+            reserved: [false; 3],
+            opcode: Opcode::Text,
+            data: data.to_vec()
+        };
+        assert_eq!(obtained, expected);
+    }
+    #[bench]
+	fn bench_read_dataframe(b: &mut Bencher) {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let mut dataframe = vec![0x81, 0x2B];
+		for i in data.iter() {
+			dataframe.push(*i);
+		}
+		b.iter(|| {
+			DataFrame::read_dataframe(&mut &dataframe[..], false).unwrap();
+		});
+	}
+
+    #[test]
+	fn test_write_dataframe() {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let mut expected = vec![0x81, 0x2B];
+		for i in data.iter() {
+			expected.push(*i);
+		}
+		let dataframe = DataFrame {
+			finished: true,
+			reserved: [false; 3],
+			opcode: Opcode::Text,
+			data: data.to_vec()
+		};
+		let mut obtained = Vec::new();
+        dataframe.write_to(&mut obtained, false).unwrap();
+
+		assert_eq!(&obtained[..], &expected[..]);
+	}
+
+	#[bench]
+	fn bench_write_dataframe(b: &mut test::Bencher) {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let dataframe = DataFrame {
+			finished: true,
+			reserved: [false; 3],
+			opcode: Opcode::Text,
+			data: data.to_vec()
+		};
+		let mut writer = Vec::with_capacity(45);
+		b.iter(|| {
+			dataframe.write_to(&mut writer, false).unwrap();
+		});
 	}
 }

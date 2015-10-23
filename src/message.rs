@@ -1,11 +1,8 @@
 //! Module containing the default implementation for messages.
-
-use std::io;
-use std::io::Result as IoResult;
 use std::io::Write;
 use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
-use dataframe::{DataFrame, Opcode, DataFrameRef};
+use dataframe::{DataFrame, Opcode};
 use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
 use ws::util::bytes_to_string;
 use ws;
@@ -15,24 +12,35 @@ use std::borrow::Cow;
 const FALSE_RESERVED_BITS: &'static [bool; 3] = &[false; 3];
 
 // TODO: Integrate with Message
-pub enum MsgType {
-	Text,
-	Binary,
-	Ping,
-	Pong,
-	Close,
+/// Valid types of messages (in the default implementation)
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Type {
+    /// Message with UTF8 test
+	Text = 1,
+    /// Message containing binary data
+	Binary = 2,
+    /// Ping message with data
+	Ping = 9,
+    /// Pong message with data
+	Pong = 10,
+    /// Close connection message with optional reason
+	Close = 8,
 }
 
 /// Represents a WebSocket message.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Message<'a> {
-	pub opcode: Opcode,
+    /// Type of WebSocket message
+	pub opcode: Type,
+    /// Optional status code to send when closing a connection.
+    /// (only used if this message is of Type::Close)
 	pub cd_status_code: Option<u16>,
+    /// Main payload
 	pub payload: Cow<'a, [u8]>,
 }
 
 impl<'a> Message<'a> {
-	fn new(code: Opcode, status: Option<u16>, payload: Cow<'a, [u8]>) -> Self {
+	fn new(code: Type, status: Option<u16>, payload: Cow<'a, [u8]>) -> Self {
 		Message {
 			opcode: code,
 			cd_status_code: status,
@@ -40,40 +48,62 @@ impl<'a> Message<'a> {
 		}
 	}
 
+    /// Create a new WebSocket message with text data
 	pub fn text<S>(data: S) -> Self
 	where S: Into<Cow<'a, str>> {
-		Message::new(Opcode::Text, None, match data.into() {
+		Message::new(Type::Text, None, match data.into() {
 			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
 			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
 		})
 	}
 
+    /// Create a new WebSocket message with binary data
 	pub fn binary<B>(data: B) -> Self
 	where B: IntoCowBytes<'a> {
-		Message::new(Opcode::Binary, None, data.into())
+		Message::new(Type::Binary, None, data.into())
 	}
 
+    /// Create a new WebSocket message that signals the end of a WebSocket
+    /// connection, although messages can still be sent after sending this
 	pub fn close() -> Self {
-		Message::new(Opcode::Close, None, Cow::Borrowed(&[0 as u8; 0]))
+		Message::new(Type::Close, None, Cow::Borrowed(&[0 as u8; 0]))
 	}
 
+    /// Create a new WebSocket message that signals the end of a WebSocket
+    /// connection and provide a text reason and a status code for why.
+    /// Messages can still be sent after sending this message.
 	pub fn close_because<S>(code: u16, reason: S) -> Self
 	where S: Into<Cow<'a, str>> {
-		Message::new(Opcode::Close, Some(code), match reason.into() {
+		Message::new(Type::Close, Some(code), match reason.into() {
 			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
 			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
 		})
 	}
 
+    /// Create a ping WebSocket message, a pong is usually sent back
+    /// after sending this with the same data
 	pub fn ping<P>(data: P) -> Self
 	where P: IntoCowBytes<'a> {
-		Message::new(Opcode::Ping, None, data.into())
+		Message::new(Type::Ping, None, data.into())
 	}
 
+    /// Create a pong WebSocket message, usually a response to a
+    /// ping message
 	pub fn pong<P>(data: P) -> Self
 	where P: IntoCowBytes<'a> {
-		Message::new(Opcode::Pong, None, data.into())
+		Message::new(Type::Pong, None, data.into())
 	}
+
+    /// Convert a ping message to a pong, keeping the data.
+    /// This will fail if the original message is not a ping.
+    pub fn into_pong(&mut self) -> Result<(), ()> {
+        if self.opcode == Type::Ping {
+            self.opcode = Type::Pong;
+            Ok(())
+        } else {
+            Err(())
+        }
+    }
 }
 
 impl<'a> ws::dataframe::DataFrame for Message<'a> {
@@ -81,8 +111,8 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
         true
     }
 
-    fn opcode(&self) -> Opcode {
-        self.opcode
+    fn opcode(&self) -> u8 {
+        self.opcode as u8
     }
 
     fn reserved<'b>(&'b self) -> &'b [bool; 3] {
@@ -129,7 +159,7 @@ impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
 		let mut data = Vec::new();
 
 		for dataframe in frames.iter() {
-			if dataframe.opcode() != Opcode::Continuation {
+			if dataframe.opcode() != Opcode::Continuation as u8 {
 				return Err(WebSocketError::ProtocolError(
 					"Unexpected non-continuation data frame".to_string()
 				));
@@ -142,10 +172,10 @@ impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
 			data.extend(dataframe.payload().iter().cloned());
 		}
 
-		Ok(match opcode {
-			Opcode::Text => Message::text(try!(bytes_to_string(&data[..]))),
-			Opcode::Binary => Message::binary(data),
-			Opcode::Close => {
+		Ok(match Opcode::new(opcode) {
+			Some(Opcode::Text) => Message::text(try!(bytes_to_string(&data[..]))),
+			Some(Opcode::Binary) => Message::binary(data),
+			Some(Opcode::Close) => {
 				if data.len() > 0 {
 					let status_code = try!((&data[..]).read_u16::<BigEndian>());
 					let reason = try!(bytes_to_string(&data[2..]));
@@ -154,8 +184,8 @@ impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
 					Message::close()
 				}
 			}
-			Opcode::Ping => Message::ping(data),
-			Opcode::Pong => Message::pong(data),
+			Some(Opcode::Ping) => Message::ping(data),
+			Some(Opcode::Pong) => Message::pong(data),
 			_ => return Err(WebSocketError::ProtocolError(
 				"Unsupported opcode received".to_string()
 			)),
@@ -178,7 +208,10 @@ impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
 // 	}
 // }
 
+/// Trait representing the ability to convert
+/// self to a `Cow<'a, [u8]>`
 pub trait IntoCowBytes<'a> {
+    /// Consume `self` and produce a `Cow<'a, [u8]>`
 	fn into(self) -> Cow<'a, [u8]>;
 }
 

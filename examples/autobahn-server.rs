@@ -3,7 +3,7 @@ extern crate websocket;
 use std::thread;
 use std::str::from_utf8;
 use websocket::{Server, Message, Sender, Receiver};
-use websocket::dataframe::Opcode;
+use websocket::message::Type;
 
 fn main() {
 	let addr = "127.0.0.1:9002".to_string();
@@ -28,16 +28,16 @@ fn main() {
 				};
 
 				match message.opcode {
-					Opcode::Text => {
+					Type::Text => {
                         let response = Message::text(from_utf8(&*message.payload).unwrap());
                         sender.send_message(&response).unwrap()
                     },
-					Opcode::Binary => sender.send_message(&Message::binary(message.payload)).unwrap(),
-					Opcode::Close => {
+					Type::Binary => sender.send_message(&Message::binary(message.payload)).unwrap(),
+					Type::Close => {
 						let _ = sender.send_message(&Message::close());
 						return;
 					}
-					Opcode::Ping => {
+					Type::Ping => {
 						let message = Message::pong(message.payload);
 						sender.send_message(&message).unwrap();
 					}

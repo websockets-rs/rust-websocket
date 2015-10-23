@@ -2,7 +2,7 @@ extern crate websocket;
 
 use std::thread;
 use websocket::{Server, Message, Sender, Receiver};
-use websocket::dataframe::Opcode;
+use websocket::message::Type;
 use websocket::header::WebSocketProtocol;
 
 fn main() {
@@ -43,13 +43,13 @@ fn main() {
 				let message: Message = message.unwrap();
 
 				match message.opcode {
-					Opcode::Close => {
+					Type::Close => {
 						let message = Message::close();
 						sender.send_message(&message).unwrap();
 						println!("Client {} disconnected", ip);
 						return;
 					},
-					Opcode::Ping => {
+					Type::Ping => {
 						let message = Message::pong(message.payload);
 						sender.send_message(&message).unwrap();
 					}

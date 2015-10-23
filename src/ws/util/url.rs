@@ -114,7 +114,7 @@ pub fn parse_url(url: &Url) -> WebSocketResult<(Host, String, bool)> {
     let port = url.port_or_default(); // Steps 7 and 8
 
     let mut resource = "/".to_owned(); // step 10
-    resource.push_str(url.path().unwrap().connect("/").as_ref()); // step 9
+    resource.push_str(url.path().unwrap().join("/").as_ref()); // step 9
 
     // Step 11
     if let Some(ref query) = url.query {

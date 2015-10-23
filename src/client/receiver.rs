@@ -5,7 +5,6 @@ use hyper::buffer::BufReader;
 
 use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
-use ws::util::dataframe::read_dataframe;
 use ws;
 
 /// A Receiver that wraps a Reader and provides a default implementation using
@@ -36,19 +35,19 @@ impl<R> Receiver<R> {
 impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
 	/// Reads a single data frame from the remote endpoint.
 	fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
-		read_dataframe(&mut self.inner, false)
+		DataFrame::read_dataframe(&mut self.inner, false)
 	}
 	/// Returns the data frames that constitute one message.
 	fn recv_message_dataframes(&mut self) -> WebSocketResult<Vec<DataFrame>> {
 		let mut finished = if self.buffer.is_empty() {
 			let first = try!(self.recv_dataframe());
-			
+
 			if first.opcode == Opcode::Continuation {
 				return Err(WebSocketError::ProtocolError(
 					"Unexpected continuation data frame opcode".to_string()
 				));
 			}
-			
+
 			let finished = first.finished;
 			self.buffer.push(first);
 			finished
@@ -56,11 +55,11 @@ impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
 		else {
 			false
 		};
-		
+
 		while !finished {
 			let next = try!(self.recv_dataframe());
 			finished = next.finished;
-			
+
 			match next.opcode as u8 {
 				// Continuation opcode
 				0 => self.buffer.push(next),
@@ -77,7 +76,7 @@ impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
 
 		let buffer = self.buffer.clone();
 		self.buffer.clear();
-		
+
 		Ok(buffer)
 	}
 }
