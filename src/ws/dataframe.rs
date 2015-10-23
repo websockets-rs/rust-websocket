@@ -15,7 +15,7 @@ pub trait DataFrame {
     fn reserved<'a>(&'a self) -> &'a [bool; 3];
     fn payload<'a>(&'a self) -> &'a [u8];
 
-    fn payload_len(&self) -> usize {
+    fn size(&self) -> usize {
         self.payload().len()
     }
 
@@ -55,7 +55,7 @@ pub trait DataFrame {
     		flags: flags,
     		opcode: self.opcode() as u8,
     		mask: masking_key,
-    		len: self.payload_len() as u64,
+    		len: self.size() as u64,
     	};
 
     	try!(dfh::write_header(writer, header));

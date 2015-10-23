@@ -84,7 +84,7 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 		unimplemented!();
 	}
 
-	fn payload_len(&self) -> usize {
+	fn size(&self) -> usize {
 		self.payload.len() + if self.cd_status_code.is_some() {
 			2
 		} else {
