@@ -9,6 +9,7 @@ use ws::util::mask;
 // and make another ReadableDataFrame<D> which
 // reads a buffer into D. This is good because it
 // also avoids more things called `DataFrame`
+// TODO: Remove references to DataFrameTrait
 pub trait DataFrame {
     fn is_last(&self) -> bool;
     fn opcode(&self) -> Opcode;

@@ -131,7 +131,7 @@ fn update_reports(addr: String, agent: &str) {
 	println!("Updating reports...");
 
 	for message in receiver.incoming_messages() {
-		let message = match message {
+		let message: Message = match message {
 			Ok(message) => message,
 			Err(e) => {
 				println!("Error: {:?}", e);

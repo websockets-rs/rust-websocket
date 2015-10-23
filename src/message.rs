@@ -14,6 +14,15 @@ use std::borrow::Cow;
 
 const FALSE_RESERVED_BITS: &'static [bool; 3] = &[false; 3];
 
+// TODO: Integrate with Message
+pub enum MsgType {
+	Text,
+	Binary,
+	Ping,
+	Pong,
+	Close,
+}
+
 /// Represents a WebSocket message.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Message<'a> {
@@ -167,5 +176,11 @@ impl<'a> IntoCowBytes<'a> for Vec<u8> {
 impl<'a> IntoCowBytes<'a> for &'a [u8] {
 	fn into(self) -> Cow<'a, [u8]> {
 		Cow::Borrowed(self)
+	}
+}
+
+impl<'a> IntoCowBytes<'a> for Cow<'a, [u8]> {
+	fn into(self) -> Cow<'a, [u8]> {
+		self
 	}
 }

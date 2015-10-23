@@ -17,7 +17,7 @@ fn main() {
 			let (mut sender, mut receiver) = response.send().unwrap().split();
 
 			for message in receiver.incoming_messages() {
-				let message = match message {
+				let message: Message = match message {
 					Ok(message) => message,
 					Err(e) => {
 						println!("{:?}", e);
