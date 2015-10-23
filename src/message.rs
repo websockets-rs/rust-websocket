@@ -163,20 +163,20 @@ impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
 	}
 }
 
-// TODO: Weight ugly API that this produces
-impl<'a, 'b> ws::Message<'b, DataFrame> for Message<'a> {
-	type DataFrameIterator = Take<Repeat<DataFrame>>;
-
-	fn dataframes(&'b self) -> Self::DataFrameIterator {
-		unimplemented!();
-	}
-
-	/// Attempt to form a message from a series of data frames
-	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
-	where D: ws::dataframe::DataFrame {
-		unimplemented!();
-	}
-}
+// // TODO: Weight ugly API that this produces
+// impl<'a, 'b> ws::Message<'b, DataFrame> for Message<'a> {
+// 	type DataFrameIterator = Take<Repeat<DataFrame>>;
+//
+// 	fn dataframes(&'b self) -> Self::DataFrameIterator {
+// 		unimplemented!();
+// 	}
+//
+// 	/// Attempt to form a message from a series of data frames
+// 	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
+// 	where D: ws::dataframe::DataFrame {
+// 		unimplemented!();
+// 	}
+// }
 
 pub trait IntoCowBytes<'a> {
 	fn into(self) -> Cow<'a, [u8]>;

@@ -174,8 +174,10 @@ impl<F: DataFrameTrait, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a, M>(&'a mut self) -> MessageIterator<'a, R, F, M>
-	where M: ws::Message<'a, F> {
+	pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, R, D, F, M>
+	where M: ws::Message<'a, D>,
+          D: DataFrameTrait
+    {
 		self.receiver.incoming_messages()
 	}
 	/// Returns a reference to the underlying Sender.
