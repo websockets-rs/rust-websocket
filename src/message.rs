@@ -84,12 +84,21 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 		unimplemented!();
 	}
 
-    fn write_payload<W>(&self, socket: &mut W) -> IoResult<()>
+	fn payload_len(&self) -> usize {
+		self.payload.len() + if self.cd_status_code.is_some() {
+			2
+		} else {
+			0
+		}
+	}
+
+    fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
     where W: Write {
 		if let Some(reason) = self.cd_status_code {
 			try!(socket.write_u16::<BigEndian>(reason));
 		}
-		socket.write_all(&*self.payload)
+		try!(socket.write_all(&*self.payload));
+		Ok(())
     }
 }
 

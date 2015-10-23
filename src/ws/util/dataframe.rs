@@ -8,34 +8,6 @@ use result::{WebSocketResult, WebSocketError};
 use ws::util::header as dfh;
 use ws::util::mask;
 
-/// Writes a DataFrame to a Writer.
-pub fn write_dataframe<W>(writer: &mut W, mask: bool, dataframe: &DataFrame) -> WebSocketResult<()>
-	where W: Write {
-
-	let mut flags = dfh::DataFrameFlags::empty();
-	if dataframe.finished { flags.insert(dfh::FIN); }
-	if dataframe.reserved[0] { flags.insert(dfh::RSV1); }
-	if dataframe.reserved[1] { flags.insert(dfh::RSV2); }
-	if dataframe.reserved[2] { flags.insert(dfh::RSV3); }
-
-	let masking_key = if mask { Some(mask::gen_mask()) } else { None };
-
-	let header = dfh::DataFrameHeader {
-		flags: flags,
-		opcode: dataframe.opcode as u8,
-		mask: masking_key,
-		len: dataframe.data.len() as u64,
-	};
-
-	try!(dfh::write_header(writer, header));
-
-	match masking_key {
-		Some(mask) => try!(writer.write_all(&mask::mask_data(mask, &dataframe.data[..])[..])),
-		None => try!(writer.write_all(&dataframe.data[..])),
-	}
-	try!(writer.flush());
-	Ok(())
-}
 
 /// Reads a DataFrame from a Reader.
 pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<DataFrame>

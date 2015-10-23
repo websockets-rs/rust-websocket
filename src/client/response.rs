@@ -121,7 +121,7 @@ impl<R: Read, W: Write> Response<R, W> {
 	///
 	/// Does not check if the response was valid. Use `validate()` to ensure that the response constitutes a successful handshake.
 	pub fn begin_with<D, B, C>(self, sender: B, receiver: C) -> Client<D, B, C>
-	where B: ws::Sender<D>, C: ws::Receiver<D>, D: DataFrameTrait {
+	where B: ws::Sender, C: ws::Receiver<D>, D: DataFrameTrait {
 		Client::new(sender, receiver)
 	}
 	/// Consume this response and return a Client ready to transmit/receive data frames.

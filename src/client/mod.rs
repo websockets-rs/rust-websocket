@@ -98,7 +98,7 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 	}
 }
 
-impl<D: DataFrameTrait, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
+impl<D: DataFrameTrait, S: ws::Sender, R: ws::Receiver<D>> Client<D, S, R> {
 	/// Creates a Client from the given Sender and Receiver.
 	///
 	/// Essentially the opposite of `Client.split()`.

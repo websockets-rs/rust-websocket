@@ -113,7 +113,7 @@ impl<R: Read, W: Write> Response<R, W> {
 
 	/// Send this response with the given data frame type D, Sender B and Receiver C.
 	pub fn send_with<D, B, C>(mut self, sender: B, receiver: C) -> WebSocketResult<Client<D, B, C>>
-	where B: ws::Sender<D>, C: ws::Receiver<D>, D: DataFrameTrait {
+	where B: ws::Sender, C: ws::Receiver<D>, D: DataFrameTrait {
 		let version = self.version;
 		let status = self.status;
 		let headers = self.headers.clone();

@@ -1,9 +1,8 @@
 //! The default implementation of a WebSocket Sender.
 
 use std::io::Write;
-use dataframe::DataFrame;
 use result::WebSocketResult;
-use ws::util::dataframe::write_dataframe;
+use ws::dataframe::DataFrame;
 use ws;
 
 /// A Sender that wraps a Writer and provides a default implementation using
@@ -29,9 +28,10 @@ impl<W> Sender<W> {
 	}
 }
 
-impl<W: Write> ws::Sender<DataFrame> for Sender<W> {
+impl<W: Write> ws::Sender for Sender<W> {
 	/// Sends a single data frame to the remote endpoint.
-	fn send_dataframe(&mut self, dataframe: &DataFrame) -> WebSocketResult<()> {
-		write_dataframe(&mut self.inner, true, dataframe)
+	fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
+	where D: DataFrame {
+		dataframe.write_to(&mut self.inner, true)
 	}
 }
