@@ -7,7 +7,7 @@ use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
 use dataframe::{DataFrame, Opcode, DataFrameRef};
 use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
-use ws::util::message::bytes_to_string;
+use ws::util::bytes_to_string;
 use ws;
 
 use std::borrow::Cow;
@@ -40,7 +40,7 @@ impl<'a> Message<'a> {
 	}
 
 	pub fn binary<B>(data: B) -> Self
-	where B: Into<Cow<'a, [u8]>> {
+	where B: IntoCowBytes<'a> {
 		Message::new(Opcode::Binary, None, data.into())
 	}
 
@@ -57,12 +57,12 @@ impl<'a> Message<'a> {
 	}
 
 	pub fn ping<P>(data: P) -> Self
-	where P: Into<Cow<'a, [u8]>> {
+	where P: IntoCowBytes<'a> {
 		Message::new(Opcode::Ping, None, data.into())
 	}
 
 	pub fn pong<P>(data: P) -> Self
-	where P: Into<Cow<'a, [u8]>> {
+	where P: IntoCowBytes<'a> {
 		Message::new(Opcode::Pong, None, data.into())
 	}
 }
@@ -142,5 +142,21 @@ impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
 				"Unsupported opcode received".to_string()
 			)),
 		})
+	}
+}
+
+pub trait IntoCowBytes<'a> {
+	fn into(self) -> Cow<'a, [u8]>;
+}
+
+impl<'a> IntoCowBytes<'a> for Vec<u8> {
+	fn into(self) -> Cow<'a, [u8]> {
+		Cow::Owned(self)
+	}
+}
+
+impl<'a> IntoCowBytes<'a> for &'a [u8] {
+	fn into(self) -> Cow<'a, [u8]> {
+		Cow::Borrowed(self)
 	}
 }
