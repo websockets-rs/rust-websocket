@@ -53,8 +53,8 @@ pub mod response;
 ///
 ///let mut client = response.begin(); // Get a Client
 ///
-///let message = Message::Text("Hello, World!".to_string());
-///client.send_message(message).unwrap(); // Send message
+///let message = Message::text("Hello, World!");
+///client.send_message(&message).unwrap(); // Send message
 ///# }
 ///```
 pub struct Client<F, S, R> {
@@ -146,8 +146,9 @@ impl<F: DataFrameTrait, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	///
 	///let mut client = response.begin(); // Get a Client
 	///
-	///for message in client.incoming_messages::<Message>() {
-	///    println!("Recv: {:?}", message.unwrap());
+	///for message in client.incoming_messages() {
+    ///    let message: Message = message.unwrap();
+	///    println!("Recv: {:?}", message);
 	///}
 	///# }
 	///```
@@ -168,9 +169,10 @@ impl<F: DataFrameTrait, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	///
 	///let client = response.begin(); // Get a Client
 	///let (mut sender, mut receiver) = client.split(); // Split the Client
-	///for message in receiver.incoming_messages::<Message>() {
+	///for message in receiver.incoming_messages() {
+    ///    let message: Message = message.unwrap();
 	///    // Echo the message back
-	///    sender.send_message(message.unwrap()).unwrap();
+	///    sender.send_message(&message).unwrap();
 	///}
 	///# }
 	///```
@@ -216,13 +218,14 @@ impl<F: DataFrameTrait, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	///let (mut sender, mut receiver) = client.split();
 	///
 	///thread::spawn(move || {
-	///    for message in receiver.incoming_messages::<Message>() {
-	///        println!("Recv: {:?}", message.unwrap());
+	///    for message in receiver.incoming_messages() {
+    ///        let message: Message = message.unwrap();
+	///        println!("Recv: {:?}", message);
 	///    }
 	///});
 	///
-	///let message = Message::Text("Hello, World!".to_string());
-	///sender.send_message(message).unwrap();
+	///let message = Message::text("Hello, World!");
+	///sender.send_message(&message).unwrap();
 	///# }
 	///```
 	pub fn split(self) -> (S, R) {

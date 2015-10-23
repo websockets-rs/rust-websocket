@@ -38,8 +38,8 @@ pub mod receiver;
 ///		   let response = request.accept(); // Form a response
 ///		   let mut client = response.send().unwrap(); // Send the response
 ///
-///		   let message = Message::Text("Hello, client!".to_string());
-///		   let _ = client.send_message(message);
+///		   let message = Message::text("Hello, client!");
+///		   let _ = client.send_message(&message);
 ///
 ///		   // ...
 ///    });
@@ -70,8 +70,8 @@ pub mod receiver;
 ///		   let response = request.accept(); // Form a response
 ///		   let mut client = response.send().unwrap(); // Send the response
 ///
-///		   let message = Message::Text("Hello, client!".to_string());
-///		   let _ = client.send_message(message);
+///		   let message = Message::text("Hello, client!");
+///		   let _ = client.send_message(&message);
 ///
 ///		   // ...
 ///    });
@@ -102,7 +102,7 @@ impl<'a> Server<'a> {
 	pub fn local_addr(&mut self) -> io::Result<SocketAddr> {
 		self.inner.local_addr()
 	}
-	
+
 	/// Create a new independently owned handle to the underlying socket.
 	pub fn try_clone(&self) -> io::Result<Server<'a>> {
 		let inner = try!(self.inner.try_clone());
