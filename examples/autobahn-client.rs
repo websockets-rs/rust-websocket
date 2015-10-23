@@ -1,6 +1,7 @@
 extern crate websocket;
 extern crate rustc_serialize as serialize;
 
+use std::str::from_utf8;
 use websocket::client::request::Url;
 use websocket::{Client, Message, Sender, Receiver};
 use websocket::dataframe::Opcode;
@@ -48,7 +49,8 @@ fn main() {
 
 			match message.opcode {
 				Opcode::Text => {
-					sender.send_message(&Message::text(message.payload)).unwrap();
+                    let response = Message::text(from_utf8(&*message.payload).unwrap());
+					sender.send_message(&response).unwrap();
 				}
 				Opcode::Binary => {
 					sender.send_message(&Message::binary(message.payload)).unwrap();
@@ -97,7 +99,7 @@ fn get_case_count(addr: String) -> usize {
 		};
 		match message.opcode {
 			Opcode::Text => {
-				count = json::decode(&message.payload[..]).unwrap();
+				count = json::decode(from_utf8(&*message.payload).unwrap()).unwrap();
 				println!("Will run {} cases...", count);
 			}
 			Opcode::Close => {
