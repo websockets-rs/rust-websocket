@@ -5,7 +5,6 @@ use std::str::from_utf8;
 use websocket::client::request::Url;
 use websocket::{Client, Message, Sender, Receiver};
 use websocket::message::Type;
-use websocket::dataframe::Opcode;
 use serialize::json;
 
 fn main() {

@@ -5,6 +5,7 @@
 use std::io::Write;
 use result::WebSocketResult;
 use ws::util::header as dfh;
+use ws::util::mask::Masker;
 use ws::util::mask;
 
 // TODO: Maybe make this a WritableDataFrame
@@ -75,8 +76,10 @@ pub trait DataFrame {
     	try!(dfh::write_header(writer, header));
 
     	match masking_key {
-            // TODO Optomize this bit
-    		Some(mask) => try!(writer.write_all(&mask::mask_data(mask, self.payload())[..])),
+    		Some(mask) => {
+                let mut masker = Masker::new(mask, writer);
+                try!(self.write_payload(&mut masker))
+            },
     		None => try!(self.write_payload(writer)),
     	};
     	try!(writer.flush());
