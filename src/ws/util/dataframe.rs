@@ -10,6 +10,7 @@ use ws::util::mask;
 
 
 /// Reads a DataFrame from a Reader.
+// TODO: Move into websocket::dataframe::DataFrame impl
 pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<DataFrame>
 	where R: Read {
 

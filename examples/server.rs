@@ -40,7 +40,7 @@ fn main() {
 			let (mut sender, mut receiver) = client.split();
 
 			for message in receiver.incoming_messages() {
-				let message = message.unwrap();
+				let message: Message = message.unwrap();
 
 				match message.opcode {
 					Opcode::Close => {

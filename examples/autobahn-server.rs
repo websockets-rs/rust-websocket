@@ -27,14 +27,14 @@ fn main() {
 				};
 
 				match message.opcode {
-					Opcode::Text => sender.send_message(&Message::text(message.data)).unwrap(),
-					Opcode::Binary => sender.send_message(&Message::binary(message.data)).unwrap(),
+					Opcode::Text => sender.send_message(&Message::text(message.payload)).unwrap(),
+					Opcode::Binary => sender.send_message(&Message::binary(message.payload)).unwrap(),
 					Opcode::Close => {
 						let _ = sender.send_message(&Message::close());
 						return;
 					}
 					Opcode::Ping => {
-						let message = Message::pong(message.data);
+						let message = Message::pong(message.payload);
 						sender.send_message(&message).unwrap();
 					}
 					_ => (),

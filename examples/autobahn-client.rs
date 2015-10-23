@@ -37,7 +37,7 @@ fn main() {
 		println!("Executing test case: {}/{}", current_case_id, case_count);
 
 		for message in receiver.incoming_messages() {
-			let message = match message {
+			let message: Message = match message {
 				Ok(message) => message,
 				Err(e) => {
 					println!("Error: {:?}", e);
@@ -87,7 +87,7 @@ fn get_case_count(addr: String) -> usize {
 	let mut count = 0;
 
 	for message in receiver.incoming_messages() {
-		let message = match message {
+		let message: Message = match message {
 			Ok(message) => message,
 			Err(e) => {
 				println!("Error: {:?}", e);
