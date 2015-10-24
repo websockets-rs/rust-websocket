@@ -1,13 +1,12 @@
 //! Module containing the default implementation for messages.
 use std::io::Write;
+use std::borrow::Cow;
 use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
 use dataframe::{DataFrame, Opcode};
 use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
 use ws::util::bytes_to_string;
 use ws;
-
-use std::borrow::Cow;
 
 const FALSE_RESERVED_BITS: &'static [bool; 3] = &[false; 3];
 
@@ -27,6 +26,13 @@ pub enum Type {
 }
 
 /// Represents a WebSocket message.
+///
+/// This message also has the ability to not own its payload, and stores its entire payload in
+/// chunks that get written in order when the message gets sent. This makes the `write_payload`
+/// allocate less memory than the `payload` method (which creates a new buffer every time).
+///
+/// Incidentally this (the default implementation of Message) implements the DataFrame trait
+/// because this message just gets sent as one single DataFrame.
 #[derive(PartialEq, Clone, Debug)]
 pub struct Message<'a> {
     /// Type of WebSocket message
@@ -118,8 +124,10 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 		FALSE_RESERVED_BITS
     }
 
-	fn payload<'b>(&'b self) -> &'b [u8] {
-		unimplemented!();
+	fn payload<'b>(&'b self) -> Cow<'b, [u8]> {
+		let mut buf = Vec::with_capacity(self.size());
+		self.write_payload(&mut buf).ok();
+		Cow::Owned(buf)
 	}
 
 	fn size(&self) -> usize {

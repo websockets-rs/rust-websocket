@@ -1,5 +1,6 @@
 //! Module containing the default implementation of data frames.
 use std::io::Read;
+use std::borrow::Cow;
 use result::{WebSocketResult, WebSocketError};
 use ws::util::header as dfh;
 use ws::util::mask;
@@ -9,6 +10,10 @@ use ws;
 ///
 /// The data held in a DataFrame is never masked.
 /// Masking/unmasking is done when sending and receiving the data frame,
+///
+/// This DataFrame, unlike the standard Message implementation (which also
+/// implements the DataFrame trait), owns its entire payload. This means that calls to `payload`
+/// don't allocate extra memory (again unlike the default Message implementation).
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrame {
 	/// Whether or no this constitutes the end of a message
@@ -83,8 +88,8 @@ impl ws::dataframe::DataFrame for DataFrame {
 		&self.reserved
 	}
 
-	fn payload<'a>(&'a self) -> &'a [u8] {
-		&self.data
+	fn payload<'a>(&'a self) -> Cow<'a, [u8]> {
+		Cow::Borrowed(&self.data)
 	}
 }
 

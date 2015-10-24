@@ -3,6 +3,7 @@
 //! optomize the memory footprint of a dataframe for their
 //! own needs, and be able to use custom dataframes quickly
 use std::io::Write;
+use std::borrow::Cow;
 use result::WebSocketResult;
 use ws::util::header as dfh;
 use ws::util::mask::Masker;
@@ -26,7 +27,7 @@ pub trait DataFrame {
     /// Entire payload of the dataframe. If not known then implement
     /// write_payload as that is the actual method used when sending the
     /// dataframe over the wire.
-    fn payload<'a>(&'a self) -> &'a [u8];
+    fn payload<'a>(&'a self) -> Cow<'a, [u8]>;
 
     /// How long (in bytes) is this dataframe's payload
     fn size(&self) -> usize {
@@ -36,7 +37,7 @@ pub trait DataFrame {
     /// Write the payload to a writer
     fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
     where W: Write {
-        try!(socket.write_all(self.payload()));
+        try!(socket.write_all(&*self.payload()));
         Ok(())
     }
 
