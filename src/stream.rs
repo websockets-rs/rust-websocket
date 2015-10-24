@@ -1,7 +1,9 @@
 //! Provides the default stream type for WebSocket connections.
+extern crate net2;
 
 use std::io::{self, Read, Write};
 use std::net::{SocketAddr, Shutdown, TcpStream};
+use self::net2::TcpStreamExt;
 use openssl::ssl::SslStream;
 
 /// A useful stream type for carrying WebSocket connections.
@@ -53,7 +55,6 @@ impl WebSocketStream {
 		}
 	}
 	/// See `TcpStream.set_nodelay()`.
-	#[cfg(feature = "nightly")]
 	pub fn set_nodelay(&mut self, nodelay: bool) -> io::Result<()> {
 		match *self {
 			WebSocketStream::Tcp(ref mut inner) => inner.set_nodelay(nodelay),
@@ -61,11 +62,10 @@ impl WebSocketStream {
 		}
 	}
 	/// See `TcpStream.set_keepalive()`.
-	#[cfg(feature = "nightly")]
-	pub fn set_keepalive(&mut self, delay_in_seconds: Option<u32>) -> io::Result<()> {
+	pub fn set_keepalive(&mut self, delay_in_ms: Option<u32>) -> io::Result<()> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.set_keepalive(delay_in_seconds),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_keepalive(delay_in_seconds),
+			WebSocketStream::Tcp(ref mut inner) => inner.set_keepalive_ms(delay_in_ms),
+			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_keepalive_ms(delay_in_ms),
 		}
 	}
 	/// See `TcpStream.shutdown()`.

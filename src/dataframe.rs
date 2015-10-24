@@ -2,9 +2,9 @@
 use std::io::Read;
 use std::borrow::Cow;
 use result::{WebSocketResult, WebSocketError};
+use ws::dataframe::DataFrame as DataFrameable;
 use ws::util::header as dfh;
 use ws::util::mask;
-use ws;
 
 /// Represents a WebSocket data frame.
 ///
@@ -75,7 +75,7 @@ impl DataFrame {
     }
 }
 
-impl ws::dataframe::DataFrame for DataFrame {
+impl DataFrameable for DataFrame {
 	#[inline(always)]
     fn is_last(&self) -> bool {
 		self.finished
@@ -164,6 +164,7 @@ impl Opcode {
 #[cfg(all(feature = "nightly", test))]
 mod tests {
     use super::*;
+	use ws::dataframe::DataFrame as DataFrameable;
     use test::Bencher;
 
     #[test]
@@ -214,7 +215,7 @@ mod tests {
 	}
 
 	#[bench]
-	fn bench_write_dataframe(b: &mut test::Bencher) {
+	fn bench_write_dataframe(b: &mut Bencher) {
 		let data = b"The quick brown fox jumps over the lazy dog";
 		let dataframe = DataFrame {
 			finished: true,

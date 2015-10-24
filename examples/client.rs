@@ -1,5 +1,3 @@
-#![cfg_attr(feature = "nightly", feature(scoped))]
-
 extern crate websocket;
 
 #[cfg(not(feature = "nightly"))]
@@ -14,7 +12,6 @@ fn main() {
 	use std::io::stdin;
 
 	use websocket::{Message, Sender, Receiver};
-	use websocket::dataframe::Opcode;
     use websocket::message::Type;
 	use websocket::client::request::Url;
 	use websocket::Client;
@@ -39,7 +36,7 @@ fn main() {
 
 	let tx_1 = tx.clone();
 
-	let send_loop = thread::scoped(move || {
+	let send_loop = thread::spawn(move || {
 		loop {
 			// Send loop
 			let message: Message = match rx.recv() {
@@ -69,24 +66,24 @@ fn main() {
 		}
 	});
 
-	let receive_loop = thread::scoped(move || {
+	let receive_loop = thread::spawn(move || {
 		// Receive loop
 		for message in receiver.incoming_messages() {
-			let message = match message {
+			let message: Message = match message {
 				Ok(m) => m,
 				Err(e) => {
 					println!("Receive Loop: {:?}", e);
-					let _ = tx_1.send(&Message::close());
+					let _ = tx_1.send(Message::close());
 					return;
 				}
 			};
-			match message {
-				Message::Close(_) => {
+			match message.opcode {
+				Type::Close => {
 					// Got a close message, so send a close message and return
-					let _ = tx_1.send(&Message::close());
+					let _ = tx_1.send(Message::close());
 					return;
 				}
-				Message::Ping(data) => match tx_1.send(&Message::pong(data)) {
+				Type::Ping => match tx_1.send(Message::pong(message.payload)) {
 					// Send a pong in response
 					Ok(()) => (),
 					Err(e) => {
@@ -110,7 +107,7 @@ fn main() {
 		let message = match trimmed {
 			"/close" => {
 				// Close the connection
-				let _ = tx.send(&Message::close());
+				let _ = tx.send(Message::close());
 				break;
 			}
 			// Send a ping

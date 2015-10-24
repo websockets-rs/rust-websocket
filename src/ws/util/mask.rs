@@ -79,7 +79,7 @@ mod tests {
 		let buffer = b"The quick brown fox jumps over the lazy dog";
 		let key = gen_mask();
 		b.iter(|| {
-			let mut output = Masker::mask(key, buffer);
+			let mut output = mask_data(key, buffer);
 			test::black_box(&mut output);
 		});
 	}

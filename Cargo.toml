@@ -25,6 +25,7 @@ rustc-serialize = "*"
 bitflags = "*"
 rand = "*"
 byteorder = "*"
+net2 = "*"
 
 [features]
 nightly = ["hyper/nightly"]
