@@ -82,3 +82,43 @@ pub trait DataFrame {
         Ok(())
     }
 }
+
+impl<'a, D> DataFrame for &'a D
+where D: DataFrame {
+    #[inline(always)]
+    fn is_last(&self) -> bool {
+        D::is_last(self)
+    }
+
+    #[inline(always)]
+    fn opcode(&self) -> u8 {
+        D::opcode(self)
+    }
+
+    #[inline(always)]
+    fn reserved<'b>(&'b self) -> &'b [bool; 3] {
+        D::reserved(self)
+    }
+
+    #[inline(always)]
+    fn payload<'b>(&'b self) -> Cow<'b, [u8]> {
+        D::payload(self)
+    }
+
+    #[inline(always)]
+    fn size(&self) -> usize {
+        D::size(self)
+    }
+
+    #[inline(always)]
+    fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
+    where W: Write {
+        D::write_payload(self, socket)
+    }
+
+    #[inline(always)]
+    fn write_to<W>(&self, writer: &mut W, mask: bool) -> WebSocketResult<()>
+	where W: Write {
+        D::write_to(self, writer, mask)
+    }
+}

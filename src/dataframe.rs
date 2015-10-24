@@ -76,18 +76,22 @@ impl DataFrame {
 }
 
 impl ws::dataframe::DataFrame for DataFrame {
+	#[inline(always)]
     fn is_last(&self) -> bool {
 		self.finished
 	}
 
+	#[inline(always)]
     fn opcode(&self) -> u8 {
 		self.opcode as u8
 	}
 
+	#[inline(always)]
     fn reserved<'a>(&'a self) -> &'a [bool; 3] {
 		&self.reserved
 	}
 
+	#[inline(always)]
 	fn payload<'a>(&'a self) -> Cow<'a, [u8]> {
 		Cow::Borrowed(&self.data)
 	}

@@ -112,14 +112,17 @@ impl<'a> Message<'a> {
 }
 
 impl<'a> ws::dataframe::DataFrame for Message<'a> {
+	#[inline(always)]
     fn is_last(&self) -> bool {
         true
     }
 
+	#[inline(always)]
     fn opcode(&self) -> u8 {
         self.opcode as u8
     }
 
+	#[inline(always)]
     fn reserved<'b>(&'b self) -> &'b [bool; 3] {
 		FALSE_RESERVED_BITS
     }
@@ -148,12 +151,12 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
     }
 }
 
-impl<'a, 'b> ws::Message<'b, Message<'b>> for Message<'a> {
+impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 
-	type DataFrameIterator = Take<Repeat<Message<'b>>>;
+	type DataFrameIterator = Take<Repeat<&'b Message<'a>>>;
 
 	fn dataframes(&'b self) -> Self::DataFrameIterator {
-		repeat(self.clone()).take(1)
+		repeat(self).take(1)
     }
 
 	/// Attempt to form a message from a series of data frames
