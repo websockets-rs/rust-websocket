@@ -9,11 +9,6 @@ use ws::util::header as dfh;
 use ws::util::mask::Masker;
 use ws::util::mask;
 
-// TODO: Maybe make this a WritableDataFrame
-// and make another ReadableDataFrame<D> which
-// reads a buffer into D. This is good because it
-// also avoids more things called `DataFrame`
-// TODO: Remove references to DataFrameTrait
 /// A generic DataFrame. Every dataframe should be able to
 /// provide these methods. (If the payload is not known in advance then
 /// rewrite the write_payload method)

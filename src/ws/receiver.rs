@@ -63,7 +63,6 @@ where R: 'a + Receiver<D>, D: DataFrame {
 	}
 }
 
-// TODO: This has tons of phantom data, maybe unecessary?
 /// An iterator over messages from a Receiver.
 pub struct MessageIterator<'a, R, D, F, M>
 where R: 'a + Receiver<F>,

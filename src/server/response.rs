@@ -14,7 +14,7 @@ use server::{Request, Sender, Receiver};
 use client::Client;
 use result::WebSocketResult;
 use dataframe::DataFrame;
-use ws::dataframe::DataFrame as DataFrameTrait;
+use ws::dataframe::DataFrame as DataFrameable;
 use ws;
 
 /// Represents a server-side (outgoing) response.
@@ -113,7 +113,7 @@ impl<R: Read, W: Write> Response<R, W> {
 
 	/// Send this response with the given data frame type D, Sender B and Receiver C.
 	pub fn send_with<D, B, C>(mut self, sender: B, receiver: C) -> WebSocketResult<Client<D, B, C>>
-	where B: ws::Sender, C: ws::Receiver<D>, D: DataFrameTrait {
+	where B: ws::Sender, C: ws::Receiver<D>, D: DataFrameable {
 		let version = self.version;
 		let status = self.status;
 		let headers = self.headers.clone();
