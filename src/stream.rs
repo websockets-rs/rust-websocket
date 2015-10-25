@@ -2,9 +2,10 @@
 extern crate net2;
 
 use std::io::{self, Read, Write};
-use std::net::{SocketAddr, Shutdown, TcpStream};
 use self::net2::TcpStreamExt;
 use openssl::ssl::SslStream;
+
+pub use std::net::{SocketAddr, Shutdown, TcpStream};
 
 /// A useful stream type for carrying WebSocket connections.
 pub enum WebSocketStream {
