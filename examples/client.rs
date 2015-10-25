@@ -1,11 +1,5 @@
 extern crate websocket;
 
-#[cfg(not(feature = "nightly"))]
-fn main() {
-	println!("This example is not available on stable rust");
-}
-
-#[cfg(feature = "nightly")]
 fn main() {
 	use std::thread;
 	use std::sync::mpsc::channel;
