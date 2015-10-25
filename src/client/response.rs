@@ -98,9 +98,9 @@ impl<R: Read, W: Write> Response<R, W> {
 		if self.status != StatusCode::SwitchingProtocols {
 			return Err(WebSocketError::ResponseError("Status code must be Switching Protocols".to_string()));
 		}
-		let key = try!(self.request.key().ok_or(
+		let key = try!(self.request.key().ok_or_else(|| {
 			WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid".to_string())
-		));
+		}));
 		if self.accept() != Some(&(WebSocketAccept::new(key))) {
 			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid".to_string()));
 		}

@@ -162,9 +162,9 @@ impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 	/// Attempt to form a message from a series of data frames
 	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
     where D: ws::dataframe::DataFrame {
-		let opcode = try!(frames.first().ok_or(WebSocketError::ProtocolError(
-			"No dataframes provided".to_string()
-		)).map(|d| d.opcode()));
+		let opcode = try!(frames.first().ok_or_else(|| {
+			WebSocketError::ProtocolError("No dataframes provided".to_string())
+		}).map(|d| d.opcode()));
 
 		let mut data = Vec::new();
 
