@@ -1,5 +1,6 @@
 //! Provides an implementation of a WebSocket server
 use std::net::{SocketAddr, ToSocketAddrs, TcpListener};
+use std::net::Shutdown;
 use std::io::{Read, Write};
 use std::io;
 pub use self::request::Request;
@@ -152,4 +153,13 @@ impl<R: Read, W: Write> Connection<R, W> {
 			}
 		}
 	}
+}
+
+impl Connection<WebSocketStream, WebSocketStream> {
+    /// Shuts down the currennt connection in the specified way.
+    /// All future IO calls to this connection will return immediately with an appropriate
+    /// return value.
+    pub fn shutdown(&mut self, how: Shutdown) -> io::Result<()> {
+        self.0.shutdown(how)
+    }
 }
