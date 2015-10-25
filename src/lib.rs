@@ -1,5 +1,4 @@
 #![warn(missing_docs)]
-#![cfg_attr(feature = "nightly", feature(tcp))]
 #![cfg_attr(all(test, feature = "nightly"), feature(test))]
 
 #![deny(unused_mut)]
@@ -30,7 +29,7 @@
 //! be examined (e.g. the Host header and/or the Origin header). A call to `accept()`
 //! or `fail()` will generate a `Response` which either accepts the connection, or
 //! denies it respectively.
-//! 
+//!
 //! A `Response` can then be altered if necessary, and is sent with the 'send()`
 //! method, returning a `Client` ready to send and receive data frames or messages.
 //!
@@ -59,6 +58,7 @@ pub use self::stream::WebSocketStream;
 pub use self::ws::Sender;
 pub use self::ws::Receiver;
 
+pub mod ws;
 pub mod client;
 pub mod server;
 pub mod dataframe;
@@ -66,5 +66,3 @@ pub mod message;
 pub mod result;
 pub mod stream;
 pub mod header;
-
-pub mod ws;

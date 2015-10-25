@@ -1,9 +1,19 @@
 //! Module containing the default implementation of data frames.
+use std::io::Read;
+use std::borrow::Cow;
+use result::{WebSocketResult, WebSocketError};
+use ws::dataframe::DataFrame as DataFrameable;
+use ws::util::header as dfh;
+use ws::util::mask;
 
 /// Represents a WebSocket data frame.
 ///
 /// The data held in a DataFrame is never masked.
 /// Masking/unmasking is done when sending and receiving the data frame,
+///
+/// This DataFrame, unlike the standard Message implementation (which also
+/// implements the DataFrame trait), owns its entire payload. This means that calls to `payload`
+/// don't allocate extra memory (again unlike the default Message implementation).
 #[derive(Debug, Clone, PartialEq)]
 pub struct DataFrame {
 	/// Whether or no this constitutes the end of a message
@@ -25,6 +35,65 @@ impl DataFrame {
 			opcode: opcode,
 			data: data,
 		}
+	}
+
+    /// Reads a DataFrame from a Reader.
+    pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<Self>
+	where R: Read {
+    	let header = try!(dfh::read_header(reader));
+
+    	Ok(DataFrame {
+    		finished: header.flags.contains(dfh::FIN),
+    		reserved: [
+    			header.flags.contains(dfh::RSV1),
+    			header.flags.contains(dfh::RSV2),
+    			header.flags.contains(dfh::RSV3)
+    		],
+    		opcode: Opcode::new(header.opcode).expect("Invalid header opcode!"),
+    		data: match header.mask {
+    			Some(mask) => {
+    				if !should_be_masked {
+    					return Err(WebSocketError::DataFrameError(
+    						"Expected unmasked data frame".to_string()
+    					));
+    				}
+
+    				let data: Vec<u8> = try!(reader.take(header.len).bytes().collect());
+    				mask::mask_data(mask, &data)
+    			}
+    			None => {
+    				if should_be_masked {
+    					return Err(WebSocketError::DataFrameError(
+    						"Expected masked data frame".to_string()
+    					));
+    				}
+
+    				try!(reader.take(header.len).bytes().collect())
+    			}
+    		}
+    	})
+    }
+}
+
+impl DataFrameable for DataFrame {
+	#[inline(always)]
+    fn is_last(&self) -> bool {
+		self.finished
+	}
+
+	#[inline(always)]
+    fn opcode(&self) -> u8 {
+		self.opcode as u8
+	}
+
+	#[inline(always)]
+    fn reserved<'a>(&'a self) -> &'a [bool; 3] {
+		&self.reserved
+	}
+
+	#[inline(always)]
+	fn payload<'a>(&'a self) -> Cow<'a, [u8]> {
+		Cow::Borrowed(&self.data)
 	}
 }
 
@@ -89,5 +158,74 @@ impl Opcode {
 			15 => Opcode::Control5,
 			_ => return None,
 		})
+	}
+}
+
+#[cfg(all(feature = "nightly", test))]
+mod tests {
+    use super::*;
+	use ws::dataframe::DataFrame as DataFrameable;
+    use test::Bencher;
+
+    #[test]
+    fn test_read_dataframe() {
+        let data = b"The quick brown fox jumps over the lazy dog";
+        let mut dataframe = vec![0x81, 0x2B];
+        for i in data.iter() {
+            dataframe.push(*i);
+        }
+        let obtained = DataFrame::read_dataframe(&mut &dataframe[..], false).unwrap();
+        let expected = DataFrame {
+            finished: true,
+            reserved: [false; 3],
+            opcode: Opcode::Text,
+            data: data.to_vec()
+        };
+        assert_eq!(obtained, expected);
+    }
+    #[bench]
+	fn bench_read_dataframe(b: &mut Bencher) {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let mut dataframe = vec![0x81, 0x2B];
+		for i in data.iter() {
+			dataframe.push(*i);
+		}
+		b.iter(|| {
+			DataFrame::read_dataframe(&mut &dataframe[..], false).unwrap();
+		});
+	}
+
+    #[test]
+	fn test_write_dataframe() {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let mut expected = vec![0x81, 0x2B];
+		for i in data.iter() {
+			expected.push(*i);
+		}
+		let dataframe = DataFrame {
+			finished: true,
+			reserved: [false; 3],
+			opcode: Opcode::Text,
+			data: data.to_vec()
+		};
+		let mut obtained = Vec::new();
+        dataframe.write_to(&mut obtained, false).unwrap();
+
+		assert_eq!(&obtained[..], &expected[..]);
+	}
+
+	#[bench]
+	fn bench_write_dataframe(b: &mut Bencher) {
+		let data = b"The quick brown fox jumps over the lazy dog";
+		let dataframe = DataFrame {
+			finished: true,
+			reserved: [false; 3],
+			opcode: Opcode::Text,
+			data: data.to_vec()
+		};
+		let mut writer = Vec::with_capacity(45);
+		b.iter(|| {
+			dataframe.write_to(&mut writer, false).unwrap();
+		});
 	}
 }

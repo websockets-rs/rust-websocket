@@ -9,6 +9,7 @@ use ws::receiver::{DataFrameIterator, MessageIterator};
 use result::WebSocketResult;
 use stream::WebSocketStream;
 use dataframe::DataFrame;
+use ws::dataframe::DataFrame as DataFrameable;
 
 use openssl::ssl::{SslContext, SslMethod, SslStream};
 
@@ -52,14 +53,14 @@ pub mod response;
 ///
 ///let mut client = response.begin(); // Get a Client
 ///
-///let message = Message::Text("Hello, World!".to_string());
-///client.send_message(message).unwrap(); // Send message
+///let message = Message::text("Hello, World!");
+///client.send_message(&message).unwrap(); // Send message
 ///# }
 ///```
-pub struct Client<D, S, R> {
+pub struct Client<F, S, R> {
 	sender: S,
 	receiver: R,
-	_dataframe: PhantomData<D>
+	_dataframe: PhantomData<fn(F)>
 }
 
 impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
@@ -80,11 +81,11 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 	/// the server until a call to ```send()```.
 	pub fn connect_ssl_context<T: ToWebSocketUrlComponents>(components: T, context: &SslContext) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
 		let (host, resource_name, secure) = try!(components.to_components());
-		
+
 		let connection = try!(TcpStream::connect(
 			(&host.hostname[..], host.port.unwrap_or(if secure { 443 } else { 80 }))
 		));
-		
+
 		let stream = if secure {
 			let sslstream = try!(SslStream::new(context, connection));
 			WebSocketStream::Ssl(sslstream)
@@ -92,16 +93,16 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 		else {
 			WebSocketStream::Tcp(connection)
 		};
-		
+
 		Request::new((host, resource_name, secure), try!(stream.try_clone()), stream)
 	}
 }
 
-impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
+impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	/// Creates a Client from the given Sender and Receiver.
 	///
 	/// Essentially the opposite of `Client.split()`.
-	pub fn new(sender: S, receiver: R) -> Client<D, S, R> {
+	pub fn new(sender: S, receiver: R) -> Client<F, S, R> {
 		Client {
 			sender: sender,
 			receiver: receiver,
@@ -109,27 +110,26 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 		}
 	}
 	/// Sends a single data frame to the remote endpoint.
-	pub fn send_dataframe(&mut self, dataframe: D) -> WebSocketResult<()> {
+	pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
+	where D: DataFrameable {
 		self.sender.send_dataframe(dataframe)
 	}
 	/// Sends a single message to the remote endpoint.
-	pub fn send_message<M>(&mut self, message: M) -> WebSocketResult<()> 
-		where M: ws::Message<D> {
-		
+	pub fn send_message<'m, M, D>(&mut self, message: &'m M) -> WebSocketResult<()>
+	where M: ws::Message<'m, D>, D: DataFrameable {
 		self.sender.send_message(message)
 	}
 	/// Reads a single data frame from the remote endpoint.
-	pub fn recv_dataframe(&mut self) -> WebSocketResult<D> {
+	pub fn recv_dataframe(&mut self) -> WebSocketResult<F> {
 		self.receiver.recv_dataframe()
 	}
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, R, D> {
+	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, R, F> {
 		self.receiver.incoming_dataframes()
 	}
 	/// Reads a single message from this receiver.
-	pub fn recv_message<M, I>(&mut self) -> WebSocketResult<M>
-		where M: ws::Message<D, DataFrameIterator = I>, I: Iterator<Item = D> {
-		
+	pub fn recv_message<'m, M, I>(&mut self) -> WebSocketResult<M>
+	where M: ws::Message<'m, F, DataFrameIterator = I>, I: Iterator<Item = F> {
 		self.receiver.recv_message()
 	}
 	/// Returns an iterator over incoming messages.
@@ -146,8 +146,9 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///
 	///let mut client = response.begin(); // Get a Client
 	///
-	///for message in client.incoming_messages::<Message>() {
-	///    println!("Recv: {:?}", message.unwrap());
+	///for message in client.incoming_messages() {
+    ///    let message: Message = message.unwrap();
+	///    println!("Recv: {:?}", message);
 	///}
 	///# }
 	///```
@@ -168,15 +169,17 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///
 	///let client = response.begin(); // Get a Client
 	///let (mut sender, mut receiver) = client.split(); // Split the Client
-	///for message in receiver.incoming_messages::<Message>() {
+	///for message in receiver.incoming_messages() {
+    ///    let message: Message = message.unwrap();
 	///    // Echo the message back
-	///    sender.send_message(message.unwrap()).unwrap();
+	///    sender.send_message(&message).unwrap();
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a, M>(&'a mut self) -> MessageIterator<'a, R, D, M>
-		where M: ws::Message<D> {
-		
+	pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, R, D, F, M>
+	where M: ws::Message<'a, D>,
+          D: DataFrameable
+    {
 		self.receiver.incoming_messages()
 	}
 	/// Returns a reference to the underlying Sender.
@@ -215,13 +218,14 @@ impl<D, S: ws::Sender<D>, R: ws::Receiver<D>> Client<D, S, R> {
 	///let (mut sender, mut receiver) = client.split();
 	///
 	///thread::spawn(move || {
-	///    for message in receiver.incoming_messages::<Message>() {
-	///        println!("Recv: {:?}", message.unwrap());
+	///    for message in receiver.incoming_messages() {
+    ///        let message: Message = message.unwrap();
+	///        println!("Recv: {:?}", message);
 	///    }
 	///});
 	///
-	///let message = Message::Text("Hello, World!".to_string());
-	///sender.send_message(message).unwrap();
+	///let message = Message::text("Hello, World!");
+	///sender.send_message(&message).unwrap();
 	///# }
 	///```
 	pub fn split(self) -> (S, R) {

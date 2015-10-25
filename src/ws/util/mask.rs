@@ -1,21 +1,61 @@
 //! Utility functions for masking data frame payload data
 use rand;
+use std::io::Write;
+use std::io::Result as IoResult;
 use std::mem;
 
-/// Masks data to send to a server
-pub fn mask_data(key: [u8; 4], buf: &[u8]) -> Vec<u8> {
-	let mut out = Vec::with_capacity(buf.len());
-	let zip_iter = buf.iter().zip(key.iter().cycle());
-	for (&buf_item, &key_item) in zip_iter {
-		out.push(buf_item ^ key_item);
-	}
-	out
+/// Struct to pipe data into another writer,
+/// while masking the data being written
+pub struct Masker<'w, W>
+where W: Write + 'w {
+    key: [u8; 4],
+    pos: usize,
+    end: &'w mut W,
+}
+
+impl<'w, W> Masker<'w, W>
+where W: Write + 'w {
+    /// Create a new Masker with the key and the endpoint
+    /// to be writter to.
+    pub fn new(key: [u8; 4], endpoint: &'w mut W) -> Self {
+        Masker {
+            key: key,
+            pos: 0,
+            end: endpoint,
+        }
+    }
+}
+
+impl<'w, W> Write for Masker<'w, W>
+where W: Write + 'w {
+    fn write(&mut self, data: &[u8]) -> IoResult<usize> {
+        let mut buf = Vec::with_capacity(data.len());
+        for &byte in data.iter() {
+            buf.push(byte ^ self.key[self.pos]);
+            self.pos = (self.pos + 1) % self.key.len();
+        }
+        self.end.write(&buf)
+    }
+
+    fn flush(&mut self) -> IoResult<()> {
+        self.end.flush()
+    }
 }
 
 /// Generates a random masking key
 pub fn gen_mask() -> [u8; 4] {
 	// Faster than just calling random() many times
 	unsafe { mem::transmute(rand::random::<u32>()) }
+}
+
+/// Masks data to send to a server and writes
+pub fn mask_data(mask: [u8; 4], data: &[u8]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(data.len());
+    let zip_iter = data.iter().zip(mask.iter().cycle());
+    for (&buf_item, &key_item) in zip_iter {
+        out.push(buf_item ^ key_item);
+    }
+    out
 }
 
 #[cfg(all(feature = "nightly", test))]
@@ -29,11 +69,11 @@ mod tests {
 		let expected = vec![11u8, 9u8, 15u8, 9u8, 15u8, 13u8, 19u8, 21u8];
 		let obtained = mask_data(key, &original[..]);
 		let reversed = mask_data(key, &obtained[..]);
-		
+
 		assert_eq!(original, reversed);
 		assert_eq!(obtained, expected);
 	}
-	
+
 	#[bench]
 	fn bench_mask_data(b: &mut test::Bencher) {
 		let buffer = b"The quick brown fox jumps over the lazy dog";
