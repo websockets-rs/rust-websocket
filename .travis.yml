@@ -8,7 +8,7 @@ script:
 
 after_success:
   - >
-    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo pip install autobahntestsuite
+    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo apt-get install python-unittest2 && sudo pip install autobahntestsuite
   - >
     [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo pip install ghp-import
   - >
@@ -28,7 +28,7 @@ after_success:
   - >
     [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && {
     echo "Building docs and gh-pages" ; 
-    PROJECT_VERSION=$(cargo doc --features nightly | grep "Compiling websocket v" | sed 's/.*Compiling websocket v\(.*\) .*/\1/') ; 
+    PROJECT_VERSION=$(cargo doc --features nightly | grep "Documenting websocket v" | sed 's/.*Documenting websocket v\(.*\) .*/\1/') ; 
     curl -sL https://github.com/${TRAVIS_REPO_SLUG}/archive/html.tar.gz | tar xz ; 
     cd ./rust-websocket-html && 
     find . -type f | xargs sed -i 's/<!--VERSION-->/'"${PROJECT_VERSION}"'/g' ; 
