@@ -57,15 +57,15 @@ impl WebSocketStream {
 	/// See `TcpStream.set_nodelay()`.
 	pub fn set_nodelay(&mut self, nodelay: bool) -> io::Result<()> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.set_nodelay(nodelay),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_nodelay(nodelay),
+			WebSocketStream::Tcp(ref mut inner) => TcpStreamExt::set_nodelay(inner, nodelay),
+			WebSocketStream::Ssl(ref mut inner) => TcpStreamExt::set_nodelay(inner.get_mut(), nodelay),
 		}
 	}
 	/// See `TcpStream.set_keepalive()`.
 	pub fn set_keepalive(&mut self, delay_in_ms: Option<u32>) -> io::Result<()> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.set_keepalive_ms(delay_in_ms),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().set_keepalive_ms(delay_in_ms),
+			WebSocketStream::Tcp(ref mut inner) => TcpStreamExt::set_keepalive_ms(inner, delay_in_ms),
+			WebSocketStream::Ssl(ref mut inner) => TcpStreamExt::set_keepalive_ms(inner.get_mut(), delay_in_ms),
 		}
 	}
 	/// See `TcpStream.shutdown()`.
