@@ -48,7 +48,7 @@ impl FromStr for Extension {
 			name: match ext.next() {
 				Some(x) => x.to_string(),
 				None => return Err(WebSocketError::ProtocolError(
-					"Invalid Sec-WebSocket-Extensions extension name".to_string()
+					"Invalid Sec-WebSocket-Extensions extension name"
 				)),
 			},
 			params: ext.map(|x| {

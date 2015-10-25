@@ -17,13 +17,13 @@ pub type WebSocketResult<T> = Result<T, WebSocketError>;
 #[derive(Debug)]
 pub enum WebSocketError {
 	/// A WebSocket protocol error
-	ProtocolError(String),
+	ProtocolError(&'static str),
 	/// Invalid WebSocket request error
-	RequestError(String),
+	RequestError(&'static str),
 	/// Invalid WebSocket response error
-	ResponseError(String),
+	ResponseError(&'static str),
 	/// Invalid WebSocket data frame error
-	DataFrameError(String),
+	DataFrameError(&'static str),
 	/// No data available
 	NoDataAvailable,
 	/// An input/output error

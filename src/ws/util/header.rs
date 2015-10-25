@@ -37,12 +37,12 @@ pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResu
 
 	if header.opcode > 0xF {
 		return Err(WebSocketError::DataFrameError(
-			"Invalid data frame opcode".to_string()
+			"Invalid data frame opcode"
 		));
 	}
 	if header.opcode >= 8 && header.len >= 126 {
 		return Err(WebSocketError::DataFrameError(
-			"Control frame length too long".to_string()
+			"Control frame length too long"
 		));
 	}
 
@@ -91,7 +91,7 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 			let len = try!(reader.read_u16::<BigEndian>()) as u64;
 			if len <= 125 {
 				return Err(WebSocketError::DataFrameError(
-					"Invalid data frame length".to_string()
+					"Invalid data frame length"
 				));
 			}
 			len
@@ -100,7 +100,7 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 			let len = try!(reader.read_u64::<BigEndian>());
 			if len <= 65535 {
 				return Err(WebSocketError::DataFrameError(
-					"Invalid data frame length".to_string()
+					"Invalid data frame length"
 				));
 			}
 			len
@@ -111,12 +111,12 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 	if opcode >= 8 {
 		if len >= 126 {
 			return Err(WebSocketError::DataFrameError(
-				"Control frame length too long".to_string()
+				"Control frame length too long"
 			));
 		}
 		if !flags.contains(FIN) {
 			return Err(WebSocketError::ProtocolError(
-				"Illegal fragmented control frame".to_string()
+				"Illegal fragmented control frame"
 			));
 		}
 	}

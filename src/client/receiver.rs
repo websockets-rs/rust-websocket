@@ -44,7 +44,7 @@ impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
 
 			if first.opcode == Opcode::Continuation {
 				return Err(WebSocketError::ProtocolError(
-					"Unexpected continuation data frame opcode".to_string()
+					"Unexpected continuation data frame opcode"
 				));
 			}
 
@@ -69,7 +69,7 @@ impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
 				}
 				// Others
 				_ => return Err(WebSocketError::ProtocolError(
-					"Unexpected data frame opcode".to_string()
+					"Unexpected data frame opcode"
 				)),
 			}
 		}

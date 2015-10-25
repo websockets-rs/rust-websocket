@@ -28,7 +28,7 @@ impl FromStr for WebSocketAccept {
 			Ok(vec) => {
 				if vec.len() != 20 {
 					return Err(WebSocketError::ProtocolError(
-						"Sec-WebSocket-Accept must be 20 bytes".to_string()
+						"Sec-WebSocket-Accept must be 20 bytes"
 					));
 				}
 				let mut array = [0u8; 20];
@@ -40,7 +40,7 @@ impl FromStr for WebSocketAccept {
 			}
 			Err(_) => {
 				return Err(WebSocketError::ProtocolError(
-					"Invalid Sec-WebSocket-Accept ".to_string()
+					"Invalid Sec-WebSocket-Accept "
 				));
 			}
 		}

@@ -96,22 +96,22 @@ impl<R: Read, W: Write> Response<R, W> {
 	/// Check if this response constitutes a successful handshake.
 	pub fn validate(&self) -> WebSocketResult<()> {
 		if self.status != StatusCode::SwitchingProtocols {
-			return Err(WebSocketError::ResponseError("Status code must be Switching Protocols".to_string()));
+			return Err(WebSocketError::ResponseError("Status code must be Switching Protocols"));
 		}
-		let key = try!(self.request.key().ok_or_else(|| {
-			WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid".to_string())
-		}));
+		let key = try!(self.request.key().ok_or(
+			WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid")
+		));
 		if self.accept() != Some(&(WebSocketAccept::new(key))) {
-			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid".to_string()));
+			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
 		}
 		if self.headers.get() != Some(&(Upgrade(vec![Protocol{
 			name: ProtocolName::WebSocket,
 			version: None
 		}]))) {
-			return Err(WebSocketError::ResponseError("Upgrade field must be WebSocket".to_string()));
+			return Err(WebSocketError::ResponseError("Upgrade field must be WebSocket"));
 		}
 		if self.headers.get() != Some(&(Connection(vec![ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))]))) {
-			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'".to_string()));
+			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'"));
 		}
 		Ok(())
 	}

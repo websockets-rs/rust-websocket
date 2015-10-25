@@ -26,7 +26,7 @@ impl FromStr for WebSocketKey {
 			Ok(vec) => {
 				if vec.len() != 16 {
 					return Err(WebSocketError::ProtocolError(
-						"Sec-WebSocket-Key must be 16 bytes".to_string()
+						"Sec-WebSocket-Key must be 16 bytes"
 					));
 				}
 				let mut array = [0u8; 16];
@@ -39,7 +39,7 @@ impl FromStr for WebSocketKey {
 			}
 			Err(_) => {
 				return Err(WebSocketError::ProtocolError(
-					"Invalid Sec-WebSocket-Accept".to_string()
+					"Invalid Sec-WebSocket-Accept"
 				));
 			}
 		}

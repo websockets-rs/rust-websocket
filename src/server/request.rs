@@ -107,19 +107,19 @@ impl<R: Read, W: Write> Request<R, W> {
     /// handling requests in a custom way.
 	pub fn validate(&self) -> WebSocketResult<()> {
 		if self.method != Method::Get {
-			return Err(WebSocketError::RequestError("Request method must be GET".to_string()));
+			return Err(WebSocketError::RequestError("Request method must be GET"));
 		}
 
 		if self.version == HttpVersion::Http09 || self.version == HttpVersion::Http10 {
-			return Err(WebSocketError::RequestError("Unsupported request HTTP version".to_string()));
+			return Err(WebSocketError::RequestError("Unsupported request HTTP version"));
 		}
 		
 		if self.version() != Some(&(WebSocketVersion::WebSocket13)) {
-			return Err(WebSocketError::RequestError("Unsupported WebSocket version".to_string()));
+			return Err(WebSocketError::RequestError("Unsupported WebSocket version"));
 		}
 		
 		if self.key().is_none() {
-			return Err(WebSocketError::RequestError("Missing Sec-WebSocket-Key header".to_string()));
+			return Err(WebSocketError::RequestError("Missing Sec-WebSocket-Key header"));
 		}
 		
 		match self.headers.get() {
@@ -131,19 +131,19 @@ impl<R: Read, W: Write> Request<R, W> {
 					}
 				}
 				if !correct_upgrade {
-					return Err(WebSocketError::RequestError("Invalid Upgrade WebSocket header".to_string()));
+					return Err(WebSocketError::RequestError("Invalid Upgrade WebSocket header"));
 				}
 			}
-			None => { return Err(WebSocketError::RequestError("Missing Upgrade WebSocket header".to_string())); }
+			None => { return Err(WebSocketError::RequestError("Missing Upgrade WebSocket header")); }
 		}
 		
 		match self.headers.get() {
 			Some(&Connection(ref connection)) => {
 				if !connection.contains(&(ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string())))) {
-					return Err(WebSocketError::RequestError("Invalid Connection WebSocket header".to_string()));
+					return Err(WebSocketError::RequestError("Invalid Connection WebSocket header"));
 				}
 			}
-			None => { return Err(WebSocketError::RequestError("Missing Connection WebSocket header".to_string())); }
+			None => { return Err(WebSocketError::RequestError("Missing Connection WebSocket header")); }
 		}
 		
 		Ok(())

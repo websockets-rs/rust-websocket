@@ -54,7 +54,7 @@ impl DataFrame {
     			Some(mask) => {
     				if !should_be_masked {
     					return Err(WebSocketError::DataFrameError(
-    						"Expected unmasked data frame".to_string()
+    						"Expected unmasked data frame"
     					));
     				}
 
@@ -64,7 +64,7 @@ impl DataFrame {
     			None => {
     				if should_be_masked {
     					return Err(WebSocketError::DataFrameError(
-    						"Expected masked data frame".to_string()
+    						"Expected masked data frame"
     					));
     				}
 

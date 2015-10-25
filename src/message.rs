@@ -162,21 +162,21 @@ impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 	/// Attempt to form a message from a series of data frames
 	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
     where D: ws::dataframe::DataFrame {
-		let opcode = try!(frames.first().ok_or_else(|| {
-			WebSocketError::ProtocolError("No dataframes provided".to_string())
-		}).map(|d| d.opcode()));
+		let opcode = try!(frames.first().ok_or(WebSocketError::ProtocolError(
+			"No dataframes provided"
+		)).map(|d| d.opcode()));
 
 		let mut data = Vec::new();
 
 		for (i, dataframe) in frames.iter().enumerate() {
 			if i > 0 && dataframe.opcode() != Opcode::Continuation as u8 {
 				return Err(WebSocketError::ProtocolError(
-					"Unexpected non-continuation data frame".to_string()
+					"Unexpected non-continuation data frame"
 				));
 			}
 			if *dataframe.reserved() != [false; 3] {
 				return Err(WebSocketError::ProtocolError(
-					"Unsupported reserved bits received".to_string()
+					"Unsupported reserved bits received"
 				));
 			}
 			data.extend(dataframe.payload().iter().cloned());
@@ -197,7 +197,7 @@ impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 			Some(Opcode::Ping) => Message::ping(data),
 			Some(Opcode::Pong) => Message::pong(data),
 			_ => return Err(WebSocketError::ProtocolError(
-				"Unsupported opcode received".to_string()
+				"Unsupported opcode received"
 			)),
 		})
 	}
