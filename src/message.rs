@@ -168,8 +168,8 @@ impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 
 		let mut data = Vec::new();
 
-		for dataframe in frames.iter() {
-			if dataframe.opcode() != Opcode::Continuation as u8 {
+		for (i, dataframe) in frames.iter().enumerate() {
+			if i > 0 && dataframe.opcode() != Opcode::Continuation as u8 {
 				return Err(WebSocketError::ProtocolError(
 					"Unexpected non-continuation data frame".to_string()
 				));
