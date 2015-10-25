@@ -20,11 +20,15 @@ use unicase::UniCase;
 
 /// Represents a server-side (incoming) request.
 pub struct Request<R: Read, W: Write> {
+	/// The HTTP method used to create the request. All values except `Method::Get` are
+	/// rejected by `validate()`.
+	pub method: Method,
+
 	/// The target URI for this request.
-    pub url: RequestUri,
+	pub url: RequestUri,
 	
-    /// The HTTP version of this request.
-    pub version: HttpVersion,
+	/// The HTTP version of this request.
+	pub version: HttpVersion,
 	
 	/// The headers of this request.
 	pub headers: Headers,
@@ -77,19 +81,19 @@ impl<R: Read, W: Write> Request<R, W> {
 		(self.reader, self.writer)
 	}
 	/// Reads an inbound request.
-	/// 
+	///
 	/// This method is used within servers, and returns an inbound WebSocketRequest.
-	/// An error will be returned if the request cannot be read, or is not a valid HTTP request.
+	/// An error will be returned if the request cannot be read, or is not a valid HTTP
+	/// request.
+	///
+	/// This method does not have any restrictions on the Request. All validation happens in
+	/// the `validate` method.
 	pub fn read(reader: R, writer: W) -> WebSocketResult<Request<R, W>> {
 		let mut reader = BufReader::new(reader);
 		let request = try!(parse_request(&mut reader));
-		
-		match request.subject.0 {
-			Method::Get => { },
-			_ => { return Err(WebSocketError::RequestError("Request method must be GET".to_string())); }
-		}
-		
+
 		Ok(Request {
+			method: request.subject.0,
 			url: request.subject.1,
 			version: request.version,
 			headers: request.headers,
@@ -97,11 +101,15 @@ impl<R: Read, W: Write> Request<R, W> {
 			writer: writer,
 		})
 	}
-	/// Check if this constitutes a valid request.
+	/// Check if this constitutes a valid WebSocket upgrade request.
 	///
-	/// Note that `accept()` calls this function internally, however this may be useful for handling bad requests
-	/// in a custom way.
+    /// Note that `accept()` calls this function internally, however this may be useful for
+    /// handling requests in a custom way.
 	pub fn validate(&self) -> WebSocketResult<()> {
+		if self.method != Method::Get {
+			return Err(WebSocketError::RequestError("Request method must be GET".to_string()));
+		}
+
 		if self.version == HttpVersion::Http09 || self.version == HttpVersion::Http10 {
 			return Err(WebSocketError::RequestError("Unsupported request HTTP version".to_string()));
 		}
@@ -158,3 +166,4 @@ impl<R: Read, W: Write> Request<R, W> {
 		Response::bad_request(self)
 	}
 }
+
