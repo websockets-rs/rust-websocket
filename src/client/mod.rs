@@ -2,6 +2,7 @@
 
 use std::net::TcpStream;
 use std::marker::PhantomData;
+use std::io::Result as IoResult;
 
 use ws;
 use ws::util::url::ToWebSocketUrlComponents;
@@ -96,6 +97,24 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 
 		Request::new((host, resource_name, secure), try!(stream.try_clone()), stream)
 	}
+
+    /// Shuts down the sending half of the client connection, will cause all pending
+    /// and future IO to return immediately with an appropriate value.
+    pub fn shutdown_sender(&mut self) -> IoResult<()> {
+        self.sender.shutdown()
+    }
+
+    /// Shuts down the receiving half of the client connection, will cause all pending
+    /// and future IO to return immediately with an appropriate value.
+    pub fn shutdown_receiver(&mut self) -> IoResult<()> {
+        self.receiver.shutdown()
+    }
+
+    /// Shuts down the client connection, will cause all pending and future IO to
+    /// return immediately with an appropriate value.
+    pub fn shutdown(&mut self) -> IoResult<()> {
+        self.receiver.shutdown_all()
+    }
 }
 
 impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {

@@ -1,10 +1,13 @@
 //! The default implementation of a WebSocket Receiver.
 
 use std::io::Read;
+use std::io::Result as IoResult;
 use hyper::buffer::BufReader;
 
 use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
+use stream::WebSocketStream;
+use stream::Shutdown;
 use ws;
 
 /// A Receiver that wraps a Reader and provides a default implementation using
@@ -30,6 +33,20 @@ impl<R> Receiver<R> {
 	pub fn get_mut(&mut self) -> &mut BufReader<R> {
 		&mut self.inner
 	}
+}
+
+impl Receiver<WebSocketStream> {
+    /// Closes the receiver side of the connection, will cause all pending and future IO to
+    /// return immediately with an appropriate value.
+    pub fn shutdown(&mut self) -> IoResult<()> {
+        self.inner.get_mut().shutdown(Shutdown::Read)
+    }
+
+    /// Shuts down both Sender and Receiver, will cause all pending and future IO to
+    /// return immediately with an appropriate value.
+    pub fn shutdown_all(&mut self) -> IoResult<()> {
+        self.inner.get_mut().shutdown(Shutdown::Both)
+    }
 }
 
 impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
