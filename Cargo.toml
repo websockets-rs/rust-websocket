@@ -17,15 +17,15 @@ keywords = ["websocket", "websockets", "rfc6455"]
 license = "MIT"
 
 [dependencies]
-hyper = "*"
-unicase = "*"
-openssl = "*"
-url = "*"
-rustc-serialize = "*"
-bitflags = "*"
-rand = "*"
-byteorder = "*"
-net2 = "*"
+hyper = "0.6"
+unicase = "1.0.1"
+openssl = "0.6.7"
+url = "0.2.38"
+rustc-serialize = "0.3.16"
+bitflags = "0.3.3"
+rand = "0.3.12"
+byteorder = "0.4.2"
+net2 = "0.2.17"
 
 [features]
 nightly = ["hyper/nightly"]
