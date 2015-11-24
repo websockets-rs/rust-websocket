@@ -118,7 +118,7 @@ impl<'a> Server<'a> {
 		let stream = try!(self.inner.accept()).0;
 		let wsstream = match self.context {
 			Some(context) => {
-				let sslstream = match SslStream::new_server(context, stream) {
+				let sslstream = match SslStream::accept(context, stream) {
 					Ok(s) => s,
 					Err(err) => {
 						return Err(io::Error::new(io::ErrorKind::Other, err));
