@@ -88,7 +88,7 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 		));
 
 		let stream = if secure {
-			let sslstream = try!(SslStream::new(context, connection));
+			let sslstream = try!(SslStream::connect(context, connection));
 			WebSocketStream::Ssl(sslstream)
 		}
 		else {
