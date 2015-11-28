@@ -130,7 +130,7 @@ impl<R: Read, W: Write> Response<R, W> {
 	pub fn begin(self) -> Client<DataFrame, Sender<W>, Receiver<R>> {
 		let (reader, writer) = self.into_inner();
 		let sender = Sender::new(writer);
-		let receiver = Receiver::new(reader);
+		let receiver = Receiver::new(reader.into_inner());
 		Client::new(sender, receiver)
 	}
 }

@@ -17,11 +17,9 @@ use openssl::ssl::{SslContext, SslMethod, SslStream};
 pub use self::request::Request;
 pub use self::response::Response;
 
-pub use self::sender::Sender;
-pub use self::receiver::Receiver;
+pub use sender::Sender;
+pub use receiver::Receiver;
 
-pub mod sender;
-pub mod receiver;
 pub mod request;
 pub mod response;
 
