@@ -2,33 +2,36 @@
 
 use std::io::Read;
 use std::io::Result as IoResult;
+use hyper::buffer::BufReader;
+
 use dataframe::{DataFrame, Opcode};
+use result::{WebSocketResult, WebSocketError};
 use stream::WebSocketStream;
 use stream::Shutdown;
-use result::{WebSocketResult, WebSocketError};
 use ws;
 
 /// A Receiver that wraps a Reader and provides a default implementation using
 /// DataFrames and Messages.
 pub struct Receiver<R> {
-	inner: R,
+	inner: BufReader<R>,
 	buffer: Vec<DataFrame>
 }
 
-impl<R> Receiver<R> {
+impl<R> Receiver<R>
+where R: Read {
 	/// Create a new Receiver using the specified Reader.
 	pub fn new(reader: R) -> Receiver<R> {
 		Receiver {
-			inner: reader,
+			inner: BufReader::new(reader),
 			buffer: Vec::new()
 		}
 	}
 	/// Returns a reference to the underlying Reader.
-	pub fn get_ref(&self) -> &R {
+	pub fn get_ref(&self) -> &BufReader<R> {
 		&self.inner
 	}
 	/// Returns a mutable reference to the underlying Reader.
-	pub fn get_mut(&mut self) -> &mut R {
+	pub fn get_mut(&mut self) -> &mut BufReader<R> {
 		&mut self.inner
 	}
 }
@@ -37,20 +40,20 @@ impl Receiver<WebSocketStream> {
     /// Closes the receiver side of the connection, will cause all pending and future IO to
     /// return immediately with an appropriate value.
     pub fn shutdown(&mut self) -> IoResult<()> {
-        self.inner.shutdown(Shutdown::Read)
+        self.inner.get_mut().shutdown(Shutdown::Read)
     }
 
     /// Shuts down both Sender and Receiver, will cause all pending and future IO to
     /// return immediately with an appropriate value.
     pub fn shutdown_all(&mut self) -> IoResult<()> {
-        self.inner.shutdown(Shutdown::Both)
+        self.inner.get_mut().shutdown(Shutdown::Both)
     }
 }
 
 impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
 	/// Reads a single data frame from the remote endpoint.
 	fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
-		DataFrame::read_dataframe(&mut self.inner, true)
+		DataFrame::read_dataframe(&mut self.inner, false)
 	}
 	/// Returns the data frames that constitute one message.
 	fn recv_message_dataframes(&mut self) -> WebSocketResult<Vec<DataFrame>> {

@@ -10,7 +10,9 @@ use hyper::header::{Upgrade, Protocol, ProtocolName};
 use unicase::UniCase;
 
 use header::{WebSocketAccept, WebSocketProtocol, WebSocketExtensions};
-use server::{Request, Sender, Receiver};
+use sender::Sender;
+use receiver::Receiver;
+use server::Request;
 use client::Client;
 use result::WebSocketResult;
 use dataframe::DataFrame;

@@ -5,8 +5,6 @@ use std::io::{Read, Write};
 use std::io;
 pub use self::request::Request;
 pub use self::response::Response;
-pub use self::sender::Sender;
-pub use self::receiver::Receiver;
 
 use stream::WebSocketStream;
 
@@ -15,8 +13,6 @@ use openssl::ssl::SslStream;
 
 pub mod request;
 pub mod response;
-pub mod sender;
-pub mod receiver;
 
 /// Represents a WebSocket server which can work with either normal (non-secure) connections, or secure WebSocket connections.
 ///
