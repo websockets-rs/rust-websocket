@@ -14,16 +14,18 @@ use ws;
 /// DataFrames and Messages.
 pub struct Receiver<R> {
 	inner: BufReader<R>,
-	buffer: Vec<DataFrame>
+	buffer: Vec<DataFrame>,
+	mask: bool,
 }
 
 impl<R> Receiver<R>
 where R: Read {
 	/// Create a new Receiver using the specified Reader.
-	pub fn new(reader: R) -> Receiver<R> {
+	pub fn new(reader: R, mask: bool) -> Receiver<R> {
 		Receiver {
 			inner: BufReader::new(reader),
-			buffer: Vec::new()
+			buffer: Vec::new(),
+			mask: mask,
 		}
 	}
 	/// Returns a reference to the underlying Reader.
@@ -53,7 +55,7 @@ impl Receiver<WebSocketStream> {
 impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
 	/// Reads a single data frame from the remote endpoint.
 	fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
-		DataFrame::read_dataframe(&mut self.inner, false)
+		DataFrame::read_dataframe(&mut self.inner, self.mask)
 	}
 	/// Returns the data frames that constitute one message.
 	fn recv_message_dataframes(&mut self) -> WebSocketResult<Vec<DataFrame>> {

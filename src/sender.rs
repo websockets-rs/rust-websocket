@@ -11,14 +11,16 @@ use ws;
 /// A Sender that wraps a Writer and provides a default implementation using
 /// DataFrames and Messages.
 pub struct Sender<W> {
-	inner: W
+	inner: W,
+	mask: bool,
 }
 
 impl<W> Sender<W> {
 	/// Create a new WebSocketSender using the specified Writer.
-	pub fn new(writer: W) -> Sender<W> {
+	pub fn new(writer: W, mask: bool) -> Sender<W> {
 		Sender {
-			inner: writer
+			inner: writer,
+			mask: mask,
 		}
 	}
 	/// Returns a reference to the underlying Writer.
@@ -49,6 +51,6 @@ impl<W: Write> ws::Sender for Sender<W> {
 	/// Sends a single data frame to the remote endpoint.
 	fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
 	where D: DataFrame {
-		dataframe.write_to(&mut self.inner, true)
+		dataframe.write_to(&mut self.inner, self.mask)
 	}
 }
