@@ -142,8 +142,8 @@ impl<R: Read, W: Write> Response<R, W> {
 		try!(write!(self.get_mut_writer(), "{} {}\r\n", version, status));
 		try!(write!(self.get_mut_writer(), "{}\r\n", headers));
 		let (reader, writer) = self.into_inner();
-		let sender = Sender::new(writer);
-		let receiver = Receiver::new(reader);
+		let sender = Sender::new(writer, false);
+		let receiver = Receiver::new(reader, true);
 		Ok(Client::new(sender, receiver))
 	}
 }

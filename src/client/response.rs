@@ -129,8 +129,8 @@ impl<R: Read, W: Write> Response<R, W> {
 	/// Does not check if the response was valid. Use `validate()` to ensure that the response constitutes a successful handshake.
 	pub fn begin(self) -> Client<DataFrame, Sender<W>, Receiver<R>> {
 		let (reader, writer) = self.into_inner();
-		let sender = Sender::new(writer);
-		let receiver = Receiver::new(reader.into_inner());
+		let sender = Sender::new(writer, true);
+		let receiver = Receiver::new(reader.into_inner(), false);
 		Client::new(sender, receiver)
 	}
 }
