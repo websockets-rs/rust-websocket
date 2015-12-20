@@ -204,7 +204,7 @@ impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 		&self.sender
 	}
 	/// Returns a reference to the underlying Receiver.
-	pub fn get_reciever(&self) -> &R {
+	pub fn get_receiver(&self) -> &R {
 		&self.receiver
 	}
 	/// Returns a mutable reference to the underlying Sender.
@@ -212,7 +212,7 @@ impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 		&mut self.sender
 	}
 	/// Returns a mutable reference to the underlying Receiver.
-	pub fn get_mut_reciever(&mut self) -> &mut R {
+	pub fn get_mut_receiver(&mut self) -> &mut R {
 		&mut self.receiver
 	}
 	/// Split this client into its constituent Sender and Receiver pair.
