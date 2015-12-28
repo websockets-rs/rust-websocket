@@ -42,17 +42,17 @@ impl Write for WebSocketStream {
 
 impl WebSocketStream {
 	/// See `TcpStream.peer_addr()`.
-	pub fn peer_addr(&mut self) -> io::Result<SocketAddr> {
+	pub fn peer_addr(&self) -> io::Result<SocketAddr> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.peer_addr(),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().peer_addr(),
+			WebSocketStream::Tcp(ref inner) => inner.peer_addr(),
+			WebSocketStream::Ssl(ref inner) => inner.get_ref().peer_addr(),
 		}
 	}
 	/// See `TcpStream.local_addr()`.
-	pub fn local_addr(&mut self) -> io::Result<SocketAddr> {
+	pub fn local_addr(&self) -> io::Result<SocketAddr> {
 		match *self {
-			WebSocketStream::Tcp(ref mut inner) => inner.local_addr(),
-			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().local_addr(),
+			WebSocketStream::Tcp(ref inner) => inner.local_addr(),
+			WebSocketStream::Ssl(ref inner) => inner.get_ref().local_addr(),
 		}
 	}
 	/// See `TcpStream.set_nodelay()`.

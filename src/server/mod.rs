@@ -96,7 +96,7 @@ impl<'a> Server<'a> {
 		})
 	}
 	/// Get the socket address of this server
-	pub fn local_addr(&mut self) -> io::Result<SocketAddr> {
+	pub fn local_addr(&self) -> io::Result<SocketAddr> {
 		self.inner.local_addr()
 	}
 
