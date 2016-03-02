@@ -1,6 +1,6 @@
 //! Utility functions for dealing with URLs
 
-use url::Url;
+use url::{Url, Position};
 use url::Host as UrlHost;
 use hyper::header::Host;
 use result::{WebSocketResult, WSUrlErrorKind};
@@ -63,7 +63,7 @@ impl ToWebSocketUrlComponents for (UrlHost, u16, String, bool) {
 	/// Convert a Host, port, resource name and secure flag to WebSocket URL components.
 	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
 		(Host {
-			hostname: self.0.serialize(),
+			hostname: self.0.to_string(),
 			port: Some(self.1)
 		}, self.2.clone(), self.3).to_components()
 	}
@@ -73,7 +73,7 @@ impl<'a> ToWebSocketUrlComponents for (UrlHost, u16, &'a str, bool) {
 	/// Convert a Host, port, resource name and secure flag to WebSocket URL components.
 	fn to_components(&self) -> WebSocketResult<(Host, String, bool)> {
 		(Host {
-			hostname: self.0.serialize(),
+			hostname: self.0.to_string(),
 			port: Some(self.1)
 		}, self.2, self.3).to_components()
 	}
@@ -98,11 +98,11 @@ pub fn parse_url(url: &Url) -> WebSocketResult<(Host, String, bool)> {
     // https://html.spec.whatwg.org/multipage/#parse-a-websocket-url's-components
 
     // Step 4
-    if url.fragment != None {
+    if url.fragment().is_some() {
         return Err(From::from(WSUrlErrorKind::CannotSetFragment));
     }
 
-    let secure = match url.scheme.as_ref() {
+    let secure = match url.scheme() {
         // step 5
         "ws" => false,
         "wss" => true,
@@ -110,17 +110,11 @@ pub fn parse_url(url: &Url) -> WebSocketResult<(Host, String, bool)> {
         _ => return Err(From::from(WSUrlErrorKind::InvalidScheme)),
     };
 
-    let host = url.host().unwrap().serialize(); // Step 6
-    let port = url.port_or_default(); // Steps 7 and 8
+    let host = url.host_str().unwrap().to_owned(); // Step 6
+    let port = url.port_or_known_default(); // Steps 7 and 8
 
-    let mut resource = "/".to_owned(); // step 10
-    resource.push_str(url.path().unwrap().join("/").as_ref()); // step 9
-
-    // Step 11
-    if let Some(ref query) = url.query {
-        resource.push('?');
-        resource.push_str(query);
-    }
+    // steps 9, 10, 11
+    let resource = url[Position::BeforePath..Position::AfterQuery].to_owned();
 
     // Step 12
     Ok((Host { hostname: host, port: port }, resource, secure))
@@ -130,29 +124,17 @@ pub fn parse_url(url: &Url) -> WebSocketResult<(Host, String, bool)> {
 mod tests {
     use super::*;
     //use test;
-    use url::{Url, SchemeData, RelativeSchemeData, Host};
+    use url::Url;
     use result::{WebSocketError, WSUrlErrorKind};
 
     fn url_for_test() -> Url {
-        Url {
-            fragment: None,
-            scheme: "ws".to_owned(),
-            scheme_data: SchemeData::Relative(RelativeSchemeData {
-                username: "".to_owned(),
-                password: None,
-                host: Host::Domain("www.example.com".to_owned()),
-                port: Some(8080),
-                default_port: Some(80),
-                path: vec!["some".to_owned(), "path".to_owned()]
-            }),
-            query: Some("a=b&c=d".to_owned()),
-        }
+        Url::parse("ws://www.example.com:8080/some/path?a=b&c=d").unwrap()
     }
 
     #[test]
     fn test_parse_url_fragments_not_accepted() {
         let url = &mut url_for_test();
-        url.fragment = Some("non_null_fragment".to_owned());
+        url.set_fragment(Some("non_null_fragment"));
 
         let result = parse_url(url);
         match result {
@@ -166,10 +148,10 @@ mod tests {
     #[test]
     fn test_parse_url_invalid_schemes_return_error() {
         let url = &mut url_for_test();
-        
+
         let invalid_schemes = &["http", "https", "gopher", "file", "ftp", "other"];
         for scheme in invalid_schemes {
-            url.scheme = scheme.to_string();
+            url.set_scheme(scheme).unwrap();
 
             let result = parse_url(url);
             match result {
@@ -180,14 +162,14 @@ mod tests {
             }
         }
     }
-    
+
     #[test]
     fn test_parse_url_valid_schemes_return_ok() {
         let url = &mut url_for_test();
-        
+
         let valid_schemes = &["ws", "wss"];
         for scheme in valid_schemes {
-            url.scheme = scheme.to_string();
+            url.set_scheme(scheme).unwrap();
 
             let result = parse_url(url);
             match result {
@@ -200,7 +182,7 @@ mod tests {
     #[test]
     fn test_parse_url_ws_returns_unset_secure_flag() {
         let url = &mut url_for_test();
-        url.scheme = "ws".to_owned();
+        url.set_scheme("ws").unwrap();
 
         let result = parse_url(url);
         let secure = match result {
@@ -213,7 +195,7 @@ mod tests {
     #[test]
     fn test_parse_url_wss_returns_set_secure_flag() {
         let url = &mut url_for_test();
-        url.scheme = "wss".to_owned();
+        url.set_scheme("wss").unwrap();
 
         let result = parse_url(url);
         let secure = match result {
@@ -222,7 +204,7 @@ mod tests {
         };
         assert!(secure);
     }
-    
+
     #[test]
     fn test_parse_url_generates_proper_output() {
         let url = &url_for_test();
@@ -232,7 +214,7 @@ mod tests {
             Ok((host, resource, _)) => (host, resource),
             Err(e) => panic!(e),
         };
-        
+
         assert_eq!(host.hostname, "www.example.com".to_owned());
         assert_eq!(resource, "/some/path?a=b&c=d".to_owned());
 
@@ -245,10 +227,7 @@ mod tests {
     #[test]
     fn test_parse_url_empty_path_should_give_slash() {
         let url = &mut url_for_test();
-        match url.scheme_data {
-            SchemeData::Relative(ref mut scheme_data) => { scheme_data.path = vec![]; },
-            _ => ()
-        }
+        url.set_path("/");
 
         let result = parse_url(url);
         let resource = match result {
@@ -262,7 +241,7 @@ mod tests {
     #[test]
     fn test_parse_url_none_query_should_not_append_question_mark() {
         let url = &mut url_for_test();
-        url.query = None;
+        url.set_query(None);
 
         let result = parse_url(url);
         let resource = match result {
@@ -276,12 +255,7 @@ mod tests {
     #[test]
     fn test_parse_url_none_port_should_use_default_port() {
         let url = &mut url_for_test();
-        match url.scheme_data {
-            SchemeData::Relative(ref mut scheme_data) => {
-                scheme_data.port = None;
-            },
-            _ => ()
-        }
+        url.set_port(None).unwrap();
 
         let result = parse_url(url);
         let host = match result {
