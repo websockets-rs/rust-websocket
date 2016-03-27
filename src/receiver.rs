@@ -21,9 +21,9 @@ pub struct Receiver<R> {
 impl<R> Receiver<R>
 where R: Read {
 	/// Create a new Receiver using the specified Reader.
-	pub fn new(reader: R, mask: bool) -> Receiver<R> {
+	pub fn new(reader: BufReader<R>, mask: bool) -> Receiver<R> {
 		Receiver {
-			inner: BufReader::new(reader),
+			inner: reader,
 			buffer: Vec::new(),
 			mask: mask,
 		}
