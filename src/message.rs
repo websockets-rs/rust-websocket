@@ -3,7 +3,7 @@ use std::io::Write;
 use std::borrow::Cow;
 use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
-use dataframe::{DataFrame, Opcode};
+use dataframe::Opcode;
 use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
 use ws::util::bytes_to_string;
 use ws;
