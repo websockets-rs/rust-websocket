@@ -11,8 +11,9 @@ pub use hyper::uri::RequestUri;
 use hyper::buffer::BufReader;
 use hyper::version::HttpVersion;
 use hyper::header::Headers;
-use hyper::header::{Connection, ConnectionOption};
-use hyper::header::{Upgrade, ProtocolName};
+use hyper::header::{ContentLength, TransferEncoding};
+use hyper::header::{Connection, ConnectionOption, Upgrade, ProtocolName};
+use hyper::http::h1::HttpReader::{SizedReader, ChunkedReader, EmptyReader};
 use hyper::http::h1::parse_request;
 use hyper::method::Method;
 
@@ -29,7 +30,10 @@ pub struct Request<R: Read, W: Write> {
 	
 	/// The HTTP version of this request.
 	pub version: HttpVersion,
-	
+
+	/// Request body.
+	pub body: String,
+
 	/// The headers of this request.
 	pub headers: Headers,
 	
@@ -92,12 +96,28 @@ impl<R: Read, W: Write> Request<R, W> {
 		let mut reader = BufReader::new(reader);
 		let request = try!(parse_request(&mut reader));
 
+		let mut body = if request.headers.has::<ContentLength>() {
+			match request.headers.get::<ContentLength>() {
+				Some(&ContentLength(len)) => SizedReader(reader, len),
+				None => unreachable!()
+			}
+		} else if request.headers.has::<TransferEncoding>() {
+			//todo!("check for Transfer-Encoding: chunked");
+			ChunkedReader(reader, None)
+		} else {
+			EmptyReader(reader)
+		};
+
+		let mut body_str = String::new();
+		try!(body.read_to_string(&mut body_str));
+
 		Ok(Request {
 			method: request.subject.0,
 			url: request.subject.1,
 			version: request.version,
 			headers: request.headers,
-			reader: reader.into_inner(),
+			body: body_str,
+			reader: body.into_inner().into_inner(),
 			writer: writer,
 		})
 	}
