@@ -8,7 +8,6 @@ use std::fmt;
 use openssl::ssl::error::SslError;
 use hyper::Error as HttpError;
 use url::ParseError;
-use byteorder;
 
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
@@ -80,6 +79,9 @@ impl Error for WebSocketError {
 
 impl From<io::Error> for WebSocketError {
 	fn from(err: io::Error) -> WebSocketError {
+		if err.kind() == io::ErrorKind::UnexpectedEof {
+			return WebSocketError::NoDataAvailable;
+		}
 		WebSocketError::IoError(err)
 	}
 }
@@ -105,15 +107,6 @@ impl From<SslError> for WebSocketError {
 impl From<Utf8Error> for WebSocketError {
 	fn from(err: Utf8Error) -> WebSocketError {
 		WebSocketError::Utf8Error(err)
-	}
-}
-
-impl From<byteorder::Error> for WebSocketError {
-	fn from(err: byteorder::Error) -> WebSocketError {
-		match err {
-			byteorder::Error::UnexpectedEOF => WebSocketError::NoDataAvailable,
-			byteorder::Error::Io(err) => From::from(err)
-		}
 	}
 }
 
