@@ -6,7 +6,7 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 bitflags! {
 	/// Flags relevant to a WebSocket data frame.
-	flags DataFrameFlags: u8 {
+	pub flags DataFrameFlags: u8 {
 		/// Marks this dataframe as the last dataframe
 		const FIN = 0x80,
 		/// First reserved bit
