@@ -7,6 +7,70 @@ use openssl::ssl::SslStream;
 
 pub use std::net::{SocketAddr, Shutdown, TcpStream};
 
+/// Represents a stream that can be read from, written to, and split into two.
+/// This is an abstraction around readable and writable things to be able
+/// to speak websockets over ssl, tcp, unix sockets, etc.
+pub trait Stream<R, W>
+where R: Read,
+      W: Write,
+{
+    /// Get a mutable borrow to the reading component of this stream
+	fn reader(&mut self) -> &mut R;
+
+    /// Get a mutable borrow to the writing component of this stream
+	fn writer(&mut self) -> &mut W;
+
+    /// Split this stream into readable and writable components.
+    /// The motivation behind this is to be able to read on one thread
+    /// and send messages on another.
+	fn split(self) -> Result<(R, W), io::Error>;
+}
+
+impl<R, W> Stream<R, W> for (R, W)
+where R: Read,
+      W: Write,
+{
+	fn reader(&mut self) -> &mut R {
+		&mut self.0
+	}
+
+	fn writer(&mut self) -> &mut W {
+		&mut self.1
+	}
+
+	fn split(self) -> Result<(R, W), io::Error> {
+		Ok(self)
+	}
+}
+
+impl Stream<TcpStream, TcpStream> for TcpStream {
+	fn reader(&mut self) -> &mut TcpStream {
+		self
+	}
+
+	fn writer(&mut self) -> &mut TcpStream {
+		self
+	}
+
+	fn split(self) -> Result<(TcpStream, TcpStream), io::Error> {
+		Ok((try!(self.try_clone()), self))
+	}
+}
+
+impl Stream<SslStream<TcpStream>, SslStream<TcpStream>> for SslStream<TcpStream> {
+	fn reader(&mut self) -> &mut SslStream<TcpStream> {
+		self
+	}
+
+	fn writer(&mut self) -> &mut SslStream<TcpStream> {
+		self
+	}
+
+	fn split(self) -> Result<(SslStream<TcpStream>, SslStream<TcpStream>), io::Error> {
+		Ok((try!(self.try_clone()), self))
+	}
+}
+
 /// A useful stream type for carrying WebSocket connections.
 pub enum WebSocketStream {
 	/// A TCP stream.
