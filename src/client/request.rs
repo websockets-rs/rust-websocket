@@ -38,7 +38,10 @@ impl<R: Read, W: Write> Request<R, W> {
 	/// In general `Client::connect()` should be used for connecting to servers.
 	/// However, if the request is to be written to a different Writer, this function
 	/// may be used.
-	pub fn new<T: ToWebSocketUrlComponents>(components: T, reader: R, writer: W) -> WebSocketResult<Request<R, W>> {
+	pub fn new<T>(components: T, stream: (R, W)) -> WebSocketResult<Request<R, W>>
+	where T: ToWebSocketUrlComponents,
+	{
+		let (reader, writer) = stream;
 		let mut headers = Headers::new();
 		let (host, resource_name, _) = try!(components.to_components());
 		headers.set(host);

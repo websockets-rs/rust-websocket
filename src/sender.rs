@@ -4,9 +4,9 @@ use std::io::Write;
 use std::io::Result as IoResult;
 use result::WebSocketResult;
 use ws::dataframe::DataFrame;
-use stream::WebSocketStream;
-use stream::Shutdown;
+use stream::AsTcpStream;
 use ws;
+pub use stream::Shutdown;
 
 /// A Sender that wraps a Writer and provides a default implementation using
 /// DataFrames and Messages.
@@ -33,23 +33,20 @@ impl<W> Sender<W> {
 	}
 }
 
-impl Sender<WebSocketStream> {
-    /// Closes the sender side of the connection, will cause all pending and future IO to
-    /// return immediately with an appropriate value.
-    pub fn shutdown(&mut self) -> IoResult<()> {
-        self.inner.shutdown(Shutdown::Write)
-    }
+impl<S> Sender<S>
+where S: AsTcpStream
+{
+	/// Closes the sender side of the connection, will cause all pending and future IO to
+	/// return immediately with an appropriate value.
+	pub fn shutdown(&self) -> IoResult<()> {
+		self.inner.as_tcp().shutdown(Shutdown::Write)
+	}
 
-    /// Shuts down both Sender and Receiver, will cause all pending and future IO to
-    /// return immediately with an appropriate value.
-    pub fn shutdown_all(&mut self) -> IoResult<()> {
-        self.inner.shutdown(Shutdown::Both)
-    }
-
-    /// Changes whether the sender is in nonblocking mode.
-    pub fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
-        self.inner.set_nonblocking(nonblocking)
-    }
+	/// Shuts down both Sender and Receiver, will cause all pending and future IO to
+	/// return immediately with an appropriate value.
+	pub fn shutdown_all(&self) -> IoResult<()> {
+		self.inner.as_tcp().shutdown(Shutdown::Both)
+	}
 }
 
 impl<W: Write> ws::Sender for Sender<W> {

@@ -6,8 +6,6 @@ use std::io;
 pub use self::request::Request;
 pub use self::response::Response;
 
-use stream::WebSocketStream;
-
 use openssl::ssl::SslContext;
 use openssl::ssl::SslStream;
 

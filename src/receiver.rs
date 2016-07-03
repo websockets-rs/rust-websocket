@@ -6,9 +6,9 @@ use hyper::buffer::BufReader;
 
 use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
-use stream::WebSocketStream;
-use stream::Shutdown;
 use ws;
+use stream::AsTcpStream;
+pub use stream::Shutdown;
 
 /// A Receiver that wraps a Reader and provides a default implementation using
 /// DataFrames and Messages.
@@ -19,7 +19,8 @@ pub struct Receiver<R> {
 }
 
 impl<R> Receiver<R>
-where R: Read {
+where R: Read,
+{
 	/// Create a new Receiver using the specified Reader.
 	pub fn new(reader: BufReader<R>, mask: bool) -> Receiver<R> {
 		Receiver {
@@ -38,26 +39,20 @@ where R: Read {
 	}
 }
 
-impl Receiver<WebSocketStream> {
-    /// Closes the receiver side of the connection, will cause all pending and future IO to
-    /// return immediately with an appropriate value.
-    pub fn shutdown(&mut self) -> IoResult<()> {
-        self.inner.get_mut().shutdown(Shutdown::Read)
-    }
+impl<S> Receiver<S>
+where S: AsTcpStream,
+{
+	/// Closes the receiver side of the connection, will cause all pending and future IO to
+	/// return immediately with an appropriate value.
+	pub fn shutdown(&self) -> IoResult<()> {
+		self.inner.get_ref().as_tcp().shutdown(Shutdown::Read)
+	}
 
-    /// Shuts down both Sender and Receiver, will cause all pending and future IO to
-    /// return immediately with an appropriate value.
-    pub fn shutdown_all(&mut self) -> IoResult<()> {
-        self.inner.get_mut().shutdown(Shutdown::Both)
-    }
-
-    /// Changes whether the receiver is in nonblocking mode.
-    ///
-    /// If it is in nonblocking mode and there is no incoming message, trying to receive a message
-    /// will return an error instead of blocking.
-    pub fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
-        self.inner.get_ref().set_nonblocking(nonblocking)
-    }
+	/// Shuts down both Sender and Receiver, will cause all pending and future IO to
+	/// return immediately with an appropriate value.
+	pub fn shutdown_all(&self) -> IoResult<()> {
+		self.inner.get_ref().as_tcp().shutdown(Shutdown::Both)
+	}
 }
 
 impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
