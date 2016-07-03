@@ -9,7 +9,10 @@ pub use std::net::{
 	TcpStream,
 	Shutdown,
 };
-pub use openssl::ssl::SslStream;
+pub use openssl::ssl::{
+	SslStream,
+	SslContext,
+};
 
 pub trait AsTcpStream: Read + Write {
 	fn as_tcp(&self) -> &TcpStream;
@@ -135,3 +138,11 @@ impl Stream for Box<AsTcpStream> {
 		Ok((try!(self.try_clone()), self))
 	}
 }
+
+#[derive(Clone)]
+pub struct NoSslContext;
+
+pub trait MaybeSslContext: Clone {}
+
+impl MaybeSslContext for NoSslContext {}
+impl MaybeSslContext for SslContext {}

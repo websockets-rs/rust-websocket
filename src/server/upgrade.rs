@@ -46,6 +46,22 @@ where S: Stream,
 	}
 }
 
+impl<S> IntoWs<Request> for S
+where S: Stream,
+{
+	type Stream = S;
+
+	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, (Request, IntoWsError)> {
+		unimplemented!();
+	}
+}
+
+impl IntoWs<Request> for Request {
+	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, (Request, IntoWsError)> {
+		unimplemented!();
+	}
+}
+
 /// Trait to take a stream or similar and attempt to recover the start of a
 /// websocket handshake from it.
 /// Should be used when a stream might contain a request for a websocket session.
@@ -57,9 +73,11 @@ where S: Stream,
 /// Note: the stream is owned because the websocket client expects to own its stream.
 pub trait IntoWs<O>
 {
-    /// Attempt to parse the start of a Websocket handshake, later with the  returned
-    /// `WsUpgrade` struct, call `accept to start a websocket client, and `reject` to
-    /// send a handshake rejection response.
-	fn into_ws(self) -> Result<WsUpgrade<S>, (O, IntoWsError)>;
+	type Stream: Stream;
+
+	/// Attempt to parse the start of a Websocket handshake, later with the  returned
+	/// `WsUpgrade` struct, call `accept to start a websocket client, and `reject` to
+	/// send a handshake rejection response.
+	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, (O, IntoWsError)>;
 }
 

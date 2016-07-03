@@ -123,8 +123,7 @@ impl Client<DataFrame, Sender<Box<AsTcpStream>>, Receiver<Box<AsTcpStream>>> {
 				80
 			},
 		};
-		let hostname = &host.hostname[..];
-		let tcp_stream = try!(TcpStream::connect((hostname, port)));
+		let tcp_stream = try!(TcpStream::connect((&host.hostname[..], port)));
 
 		let stream: Box<AsTcpStream> = if secure {
 			if let Some(c) = ssl_context {
