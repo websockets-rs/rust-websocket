@@ -3,6 +3,7 @@
 use std::net::TcpStream;
 use std::marker::PhantomData;
 use std::io::Result as IoResult;
+use std::ops::Deref;
 
 use ws;
 use ws::util::url::ToWebSocketUrlComponents;
@@ -10,6 +11,7 @@ use ws::receiver::{DataFrameIterator, MessageIterator};
 use result::WebSocketResult;
 use stream::{
 	AsTcpStream,
+	TryUnsizedClone,
 	Stream,
 };
 use dataframe::DataFrame;
@@ -65,33 +67,54 @@ pub struct Client<F, S, R> {
 	_dataframe: PhantomData<fn(F)>
 }
 
-impl<S> Client<DataFrame, Sender<S>, Receiver<S>>
-where S: AsTcpStream + Stream,
-{
-	/// Connects to the given ws:// or wss:// URL and return a Request to be sent.
+impl Client<DataFrame, Sender<TcpStream>, Receiver<TcpStream>> {
+	/// Connects to the given ws:// URL and return a Request to be sent.
+	///
+	/// If you would like to use a secure connection (wss://), please use `connect_secure`.
 	///
 	/// A connection is established, however the request is not sent to
 	/// the server until a call to ```send()```.
-	pub fn connect<C>(components: C) -> WebSocketResult<Request<S::R, S::W>>
+	pub fn connect<C>(components: C) -> WebSocketResult<Request<TcpStream, TcpStream>>
 	where C: ToWebSocketUrlComponents,
 	{
-		// TODO: Do not create a default SSL Context every time
-		let context = try!(SslContext::new(SslMethod::Tlsv1));
-		Client::connect_ssl_context(components, &context)
+		let (host, resource_name, secure) = try!(components.to_components());
+		let stream = TcpStream::connect((&host.hostname[..], host.port.unwrap_or(80)));
+		let stream = try!(stream);
+		Request::new((host, resource_name, secure), try!(stream.split()))
 	}
+}
 
+impl Client<DataFrame, Sender<SslStream<TcpStream>>, Receiver<SslStream<TcpStream>>> {
 	/// Connects to the specified wss:// URL using the given SSL context.
 	///
-	/// If a ws:// URL is supplied, a normal, non-secure connection is established
-	/// and the context parameter is ignored.
+	/// If you would like to use an insecure connection (ws://), please use `connect`.
 	///
 	/// A connection is established, however the request is not sent to
 	/// the server until a call to ```send()```.
-	pub fn connect_ssl_context<C>(components: C, context: &SslContext) -> WebSocketResult<Request<S::R, S::W>>
+	pub fn connect_secure<C>(components: C, context: Option<&SslContext>) -> WebSocketResult<Request<SslStream<TcpStream>, SslStream<TcpStream>>>
 	where C: ToWebSocketUrlComponents,
 	{
 		let (host, resource_name, secure) = try!(components.to_components());
 
+		let stream = TcpStream::connect((&host.hostname[..], host.port.unwrap_or(443)));
+		let stream = try!(stream);
+		let sslstream = if let Some(c) = context {
+			SslStream::connect(c, stream)
+		} else {
+			let context = try!(SslContext::new(SslMethod::Tlsv1));
+			SslStream::connect(&context, stream)
+		};
+		let sslstream = try!(sslstream);
+
+		Request::new((host, resource_name, secure), try!(sslstream.split()))
+	}
+}
+
+impl Client<DataFrame, Sender<Box<AsTcpStream>>, Receiver<Box<AsTcpStream>>> {
+	pub fn connect_agnostic<C>(components: C, ssl_context: Option<&SslContext>) -> WebSocketResult<Request<Box<AsTcpStream>, Box<AsTcpStream>>>
+	where C: ToWebSocketUrlComponents
+	{
+		let (host, resource_name, secure) = try!(components.to_components());
 		let port = match host.port {
 			Some(p) => p,
 			None => if secure {
@@ -100,38 +123,46 @@ where S: AsTcpStream + Stream,
 				80
 			},
 		};
-
 		let hostname = &host.hostname[..];
+		let tcp_stream = try!(TcpStream::connect((hostname, port)));
 
-		let connection = try!(TcpStream::connect((hostname, port)));
-
-		let components = (host, resource_name, secure);
-
-		if secure {
-			let sslstream = try!(SslStream::connect(context, connection));
-			Request::new(components, try!(sslstream.split()))
+		let stream: Box<AsTcpStream> = if secure {
+			if let Some(c) = ssl_context {
+				Box::new(try!(SslStream::connect(c, tcp_stream)))
+			} else {
+				let context = try!(SslContext::new(SslMethod::Tlsv1));
+				Box::new(try!(SslStream::connect(&context, tcp_stream)))
+			}
 		} else {
-			Request::new(components, try!(connection.split()))
+			Box::new(tcp_stream)
 		};
+
+		let (read, write) = (try!(stream.try_clone()), stream);
+
+		Request::new((host, resource_name, secure), (read, write))
+	}
+}
+
+impl<S> Client<DataFrame, Sender<S>, Receiver<S>>
+where S: AsTcpStream,
+{
+	/// Shuts down the sending half of the client connection, will cause all pending
+	/// and future IO to return immediately with an appropriate value.
+	pub fn shutdown_sender(&self) -> IoResult<()> {
+		self.sender.shutdown()
 	}
 
-    /// Shuts down the sending half of the client connection, will cause all pending
-    /// and future IO to return immediately with an appropriate value.
-    pub fn shutdown_sender(&self) -> IoResult<()> {
-        self.sender.shutdown()
-    }
+	/// Shuts down the receiving half of the client connection, will cause all pending
+	/// and future IO to return immediately with an appropriate value.
+	pub fn shutdown_receiver(&self) -> IoResult<()> {
+		self.receiver.shutdown()
+	}
 
-    /// Shuts down the receiving half of the client connection, will cause all pending
-    /// and future IO to return immediately with an appropriate value.
-    pub fn shutdown_receiver(&self) -> IoResult<()> {
-        self.receiver.shutdown()
-    }
-
-    /// Shuts down the client connection, will cause all pending and future IO to
-    /// return immediately with an appropriate value.
-    pub fn shutdown(&self) -> IoResult<()> {
-        self.receiver.shutdown_all()
-    }
+	/// Shuts down the client connection, will cause all pending and future IO to
+	/// return immediately with an appropriate value.
+	pub fn shutdown(&self) -> IoResult<()> {
+		self.receiver.shutdown_all()
+	}
 }
 
 impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {

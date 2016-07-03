@@ -4,11 +4,44 @@ use std::io::{
 	Read,
 	Write
 };
+use std::ops::Deref;
 pub use std::net::{
 	TcpStream,
 	Shutdown,
 };
 pub use openssl::ssl::SslStream;
+
+pub trait AsTcpStream: Read + Write {
+	fn as_tcp(&self) -> &TcpStream;
+}
+
+impl AsTcpStream for TcpStream {
+	fn as_tcp(&self) -> &TcpStream {
+		self
+	}
+}
+
+impl AsTcpStream for SslStream<TcpStream> {
+	fn as_tcp(&self) -> &TcpStream {
+		self.get_ref()
+	}
+}
+
+impl AsTcpStream for Box<AsTcpStream> {
+	fn as_tcp(&self) -> &TcpStream {
+		self.deref().as_tcp()
+	}
+}
+
+pub trait TryUnsizedClone<C: ?Sized> {
+	fn try_clone(&self) -> io::Result<Box<C>>;
+}
+
+impl TryUnsizedClone<AsTcpStream> for Box<AsTcpStream> {
+	fn try_clone(&self) -> io::Result<Box<AsTcpStream>> {
+		unimplemented!();
+	}
+}
 
 /// Represents a stream that can be read from, written to, and split into two.
 /// This is an abstraction around readable and writable things to be able
@@ -53,51 +86,52 @@ where R: Read,
 }
 
 impl Stream for TcpStream {
-	type R = TcpStream;
-	type W = TcpStream;
+	type R = Self;
+	type W = Self;
 
-	fn reader(&mut self) -> &mut TcpStream {
+	fn reader(&mut self) -> &mut Self::R {
 		self
 	}
 
-	fn writer(&mut self) -> &mut TcpStream {
+	fn writer(&mut self) -> &mut Self::W {
 		self
 	}
 
-	fn split(self) -> io::Result<(TcpStream, TcpStream)> {
+	fn split(self) -> io::Result<(Self::R, Self::W)> {
 		Ok((try!(self.try_clone()), self))
 	}
 }
 
 impl Stream for SslStream<TcpStream> {
-	type R = SslStream<TcpStream>;
-	type W = SslStream<TcpStream>;
+	type R = Self;
+	type W = Self;
 
-	fn reader(&mut self) -> &mut SslStream<TcpStream> {
+	fn reader(&mut self) -> &mut Self::R {
 		self
 	}
 
-	fn writer(&mut self) -> &mut SslStream<TcpStream> {
+	fn writer(&mut self) -> &mut Self::W {
 		self
 	}
 
-	fn split(self) -> io::Result<(SslStream<TcpStream>, SslStream<TcpStream>)> {
+	fn split(self) -> io::Result<(Self::R, Self::W)> {
 		Ok((try!(self.try_clone()), self))
 	}
 }
 
-pub trait AsTcpStream: Read + Write {
-	fn as_tcp(&self) -> &TcpStream;
-}
+impl Stream for Box<AsTcpStream> {
+	type R = Self;
+	type W = Self;
 
-impl AsTcpStream for TcpStream {
-	fn as_tcp(&self) -> &TcpStream {
+	fn reader(&mut self) -> &mut Self::R {
 		self
 	}
-}
 
-impl AsTcpStream for SslStream<TcpStream> {
-	fn as_tcp(&self) -> &TcpStream {
-		self.get_ref()
+	fn writer(&mut self) -> &mut Self::W {
+		self
+	}
+
+	fn split(self) -> io::Result<(Self::R, Self::W)> {
+		Ok((try!(self.try_clone()), self))
 	}
 }

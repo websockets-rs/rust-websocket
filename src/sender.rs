@@ -34,7 +34,7 @@ impl<W> Sender<W> {
 }
 
 impl<S> Sender<S>
-where S: AsTcpStream
+where S: AsTcpStream,
 {
 	/// Closes the sender side of the connection, will cause all pending and future IO to
 	/// return immediately with an appropriate value.
