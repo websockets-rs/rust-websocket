@@ -57,10 +57,10 @@ pub trait Stream
 	type W: Write;
 
 	/// Get a mutable borrow to the reading component of this stream
-	fn reader(&mut self) -> &mut Self::R;
+	fn reader(&mut self) -> &mut Read;
 
 	/// Get a mutable borrow to the writing component of this stream
-	fn writer(&mut self) -> &mut Self::W;
+	fn writer(&mut self) -> &mut Write;
 
 	/// Split this stream into readable and writable components.
 	/// The motivation behind this is to be able to read on one thread
@@ -75,11 +75,11 @@ where R: Read,
 	type R = R;
 	type W = W;
 
-	fn reader(&mut self) -> &mut Self::R {
+	fn reader(&mut self) -> &mut Read {
 		&mut self.0
 	}
 
-	fn writer(&mut self) -> &mut Self::W {
+	fn writer(&mut self) -> &mut Write {
 		&mut self.1
 	}
 
@@ -92,11 +92,11 @@ impl Stream for TcpStream {
 	type R = Self;
 	type W = Self;
 
-	fn reader(&mut self) -> &mut Self::R {
+	fn reader(&mut self) -> &mut Read {
 		self
 	}
 
-	fn writer(&mut self) -> &mut Self::W {
+	fn writer(&mut self) -> &mut Write {
 		self
 	}
 
@@ -109,11 +109,11 @@ impl Stream for SslStream<TcpStream> {
 	type R = Self;
 	type W = Self;
 
-	fn reader(&mut self) -> &mut Self::R {
+	fn reader(&mut self) -> &mut Read {
 		self
 	}
 
-	fn writer(&mut self) -> &mut Self::W {
+	fn writer(&mut self) -> &mut Write {
 		self
 	}
 
@@ -126,11 +126,11 @@ impl Stream for Box<AsTcpStream> {
 	type R = Self;
 	type W = Self;
 
-	fn reader(&mut self) -> &mut Self::R {
+	fn reader(&mut self) -> &mut Read {
 		self
 	}
 
-	fn writer(&mut self) -> &mut Self::W {
+	fn writer(&mut self) -> &mut Write {
 		self
 	}
 

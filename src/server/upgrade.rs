@@ -16,17 +16,12 @@ pub struct WsUpgrade<S>
 where S: Stream,
 {
 	stream: S,
+	request: hyper::Request,
 }
 
 impl<S> WsUpgrade<S>
 where S: Stream,
 {
-	fn from_stream(inner: S) -> Self {
-		WsUpgrade {
-			stream: inner,
-		}
-	}
-
 	pub fn accept(self) {
 		unimplemented!();
 	}
@@ -44,7 +39,7 @@ impl<S> WsUpgrade<S>
 where S: Stream + AsTcpStream,
 {
 	pub fn tcp_stream(&self) -> &TcpStream {
-		unimplemented!();
+		self.stream.as_tcp()
 	}
 }
 
@@ -57,14 +52,13 @@ where S: Stream + AsTcpStream,
 /// Otherwise the original stream is returned along with an error.
 ///
 /// Note: the stream is owned because the websocket client expects to own its stream.
-pub trait IntoWs<S>
-where S: Stream,
-{
+pub trait IntoWs {
+	type Stream: Stream;
 	type Error;
 	/// Attempt to parse the start of a Websocket handshake, later with the  returned
 	/// `WsUpgrade` struct, call `accept to start a websocket client, and `reject` to
 	/// send a handshake rejection response.
-	fn into_ws(mut self) -> Result<WsUpgrade<S>, Self::Error>;
+	fn into_ws(mut self) -> Result<WsUpgrade<Self::Stream>, Self::Error>;
 }
 
 pub mod hyper {
@@ -72,8 +66,8 @@ pub mod hyper {
 
 	use std::convert::From;
 	use std::error::Error;
-	use std::io;
 	use hyper::http::h1::parse_request;
+	use hyper::net::NetworkStream;
 	use header::{
 		WebSocketKey,
 		WebSocketVersion,
@@ -88,12 +82,18 @@ pub mod hyper {
 		IntoWs,
 		WsUpgrade,
 	};
+	use std::io::{
+		Read,
+		Write,
+		self,
+	};
 
 	pub use hyper::http::h1::Incoming;
 	pub use hyper::method::Method;
 	pub use hyper::version::HttpVersion;
 	pub use hyper::uri::RequestUri;
 	pub use hyper::buffer::BufReader;
+	pub use hyper::server::Request as HyperRequest;
 	pub use hyper::header::{
 		Upgrade,
 		ProtocolName,
@@ -102,6 +102,8 @@ pub mod hyper {
 	};
 
 	pub type Request = Incoming<(Method, RequestUri)>;
+
+	pub struct RequestStreamPair<S: Stream>(pub S, pub Request);
 
 	#[derive(Debug)]
 	pub enum HyperIntoWsError {
@@ -163,12 +165,13 @@ pub mod hyper {
 		}
 	}
 
-	impl<S> IntoWs<S> for S
+	impl<S> IntoWs for S
 	where S: Stream,
 	{
+		type Stream = S;
 		type Error = (Self, Option<Request>, HyperIntoWsError);
 
-		fn into_ws(mut self) -> Result<WsUpgrade<Self>, Self::Error> {
+		fn into_ws(mut self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
 			let request = {
 				let mut reader = BufReader::new(self.reader());
 				parse_request(&mut reader)
@@ -180,21 +183,42 @@ pub mod hyper {
 			};
 
 			match validate(&request) {
-				Ok(_) => unimplemented!(),
+				Ok(_) => Ok(WsUpgrade {
+					stream: self,
+					request: request,
+				}),
 				Err(e) => Err((self, Some(request), e)),
 			}
 		}
 	}
 
-	// TODO: Remove request and response from server
+	impl<S> IntoWs for RequestStreamPair<S>
+	where S: Stream,
+	{
+		type Stream = S;
+		type Error = (S, Request, HyperIntoWsError);
 
-	// TODO
-	// impl IntoWs<Request> for Request {
-	// 	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, (Request, IntoWsError)> {
+		fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
+			match validate(&self.1) {
+				Ok(_) => Ok(WsUpgrade {
+					stream: self.0,
+					request: self.1,
+				}),
+				Err(e) => Err((self.0, self.1, e)),
+			}
+		}
+	}
+
+	// impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
+	// 	type Stream = Box<Stream<W=Box<Write>, R=Box<Read>>>;
+	// 	type Error = (HyperRequest<'a, 'b>, HyperIntoWsError);
+
+	// 	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
 	// 		unimplemented!();
 	// 	}
 	// }
 
+	// TODO: Remove request and response from server
 
 	pub fn validate(request: &Request) -> Result<(), HyperIntoWsError> {
 		if request.subject.0 != Method::Get {
