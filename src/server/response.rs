@@ -13,7 +13,7 @@ use unicase::UniCase;
 use header::{WebSocketAccept, WebSocketProtocol, WebSocketExtensions};
 use sender::Sender;
 use receiver::Receiver;
-use server::Request;
+use server::request::Request;
 use client::Client;
 use result::WebSocketResult;
 use dataframe::DataFrame;

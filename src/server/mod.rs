@@ -13,21 +13,39 @@ use std::io::{
 };
 use std::borrow::Cow;
 use std::ops::Deref;
+use std::convert::Into;
 use openssl::ssl::{
 	SslContext,
 	SslMethod,
 	SslStream,
 };
 use stream::{
+	Stream,
 	MaybeSslContext,
 	NoSslContext,
 };
-
-pub use self::request::Request;
-pub use self::response::Response;
+use self::upgrade::{
+	WsUpgrade,
+	IntoWs,
+};
+pub use self::upgrade::hyper::{
+	Request,
+	HyperIntoWsError,
+};
 
 pub mod request;
 pub mod response;
+pub mod upgrade;
+
+pub struct InvalidConnection<S>
+where S: Stream,
+{
+	pub stream: Option<S>,
+	pub parsed: Option<Request>,
+	pub error: HyperIntoWsError,
+}
+
+pub type AcceptResult<S> = Result<WsUpgrade<S>, InvalidConnection<S>>;
 
 /// Represents a WebSocket server which can work with either normal (non-secure) connections, or secure WebSocket connections.
 ///
@@ -134,13 +152,32 @@ impl<'s> Server<'s, SslContext> {
 	}
 
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
-	pub fn accept(&mut self) -> io::Result<SslStream<TcpStream>> {
-		let stream = try!(self.inner.accept()).0;
-		match SslStream::accept(&*self.ssl_context, stream) {
-			Ok(s) => Ok(s),
-			Err(err) => {
-				Err(io::Error::new(io::ErrorKind::Other, err))
-			},
+	pub fn accept(&mut self) -> AcceptResult<SslStream<TcpStream>> {
+		let stream = match self.inner.accept() {
+			Ok(s) => s.0,
+			Err(e) => return Err(InvalidConnection {
+				stream: None,
+				parsed: None,
+				error: e.into(),
+			}),
+		};
+
+		let stream = match SslStream::accept(&*self.ssl_context, stream) {
+			Ok(s) => s,
+			Err(err) => return Err(InvalidConnection {
+				stream: None,
+				parsed: None,
+				error: io::Error::new(io::ErrorKind::Other, err).into(),
+			}),
+		};
+
+		match stream.into_ws() {
+			Ok(u) => Ok(u),
+			Err((s, r, e)) => Err(InvalidConnection {
+				stream: Some(s),
+				parsed: r,
+				error: e.into(),
+			}),
 		}
 	}
 
@@ -154,10 +191,10 @@ impl<'s> Server<'s, SslContext> {
 }
 
 impl<'s> Iterator for Server<'s, SslContext> {
-	type Item = io::Result<SslStream<TcpStream>>;
+	type Item = WsUpgrade<SslStream<TcpStream>>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-		Some(self.accept())
+		self.accept().ok()
 	}
 }
 
@@ -171,40 +208,32 @@ impl<'s> Server<'s, NoSslContext> {
 	}
 
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
-	pub fn accept(&mut self) -> io::Result<TcpStream> {
-		Ok(try!(self.inner.accept()).0)
+	pub fn accept(&mut self) -> AcceptResult<TcpStream> {
+		let stream = match self.inner.accept() {
+			Ok(s) => s.0,
+			Err(e) => return Err(InvalidConnection {
+				stream: None,
+				parsed: None,
+				error: e.into(),
+			}),
+		};
+
+		match stream.into_ws() {
+			Ok(u) => Ok(u),
+			Err((s, r, e)) => Err(InvalidConnection {
+				stream: Some(s),
+				parsed: r,
+				error: e.into(),
+			}),
+		}
 	}
 }
 
 impl<'s> Iterator for Server<'s, NoSslContext> {
-	type Item = io::Result<TcpStream>;
+	type Item = WsUpgrade<TcpStream>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-		Some(self.accept())
+		self.accept().ok()
 	}
 }
-
-// /// Represents a connection to the server that has not been processed yet.
-// pub struct Connection<R: Read, W: Write>(R, W);
-
-// impl<R: Read, W: Write> Connection<R, W> {
-// 	/// Process this connection and read the request.
-// 	pub fn read_request(self) -> io::Result<Request<R, W>> {
-// 		match Request::read(self.0, self.1) {
-// 			Ok(result) => { Ok(result) },
-// 			Err(err) => {
-// 				Err(io::Error::new(io::ErrorKind::InvalidInput, err))
-// 			}
-// 		}
-// 	}
-// }
-
-// impl Connection<WebSocketStream, WebSocketStream> {
-//     /// Shuts down the currennt connection in the specified way.
-//     /// All future IO calls to this connection will return immediately with an appropriate
-//     /// return value.
-//     pub fn shutdown(&mut self, how: Shutdown) -> io::Result<()> {
-//         self.0.shutdown(how)
-//     }
-// }
 

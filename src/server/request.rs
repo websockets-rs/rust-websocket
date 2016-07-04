@@ -2,7 +2,7 @@
 
 use std::io::{Read, Write};
 
-use server::Response;
+use server::response::Response;
 use result::{WebSocketResult, WebSocketError};
 use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensions, Origin};
 
