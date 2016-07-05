@@ -14,6 +14,8 @@ pub use openssl::ssl::{
 	SslContext,
 };
 
+mod hyper;
+
 pub trait AsTcpStream: Read + Write {
 	fn as_tcp(&self) -> &TcpStream;
 }
