@@ -33,8 +33,6 @@ pub use self::upgrade::hyper::{
 	HyperIntoWsError,
 };
 
-pub mod request;
-pub mod response;
 pub mod upgrade;
 
 pub struct InvalidConnection<S>
