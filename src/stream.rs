@@ -1,10 +1,11 @@
 //! Provides the default stream type for WebSocket connections.
+use std::ops::Deref;
+use std::any::Any;
 use std::io::{
 	self,
 	Read,
 	Write
 };
-use std::ops::Deref;
 pub use std::net::{
 	TcpStream,
 	Shutdown,
@@ -14,15 +15,20 @@ pub use openssl::ssl::{
 	SslContext,
 };
 
-mod hyper;
-
-pub trait AsTcpStream: Read + Write {
+pub trait AsTcpStream: Read + Write + Any + 'static {
 	fn as_tcp(&self) -> &TcpStream;
+
+	fn duplicate(&self) -> io::Result<Self>
+	where Self: Sized;
 }
 
 impl AsTcpStream for TcpStream {
 	fn as_tcp(&self) -> &TcpStream {
 		self
+	}
+
+	fn duplicate(&self) -> io::Result<Self> {
+		self.try_clone()
 	}
 }
 
@@ -30,20 +36,19 @@ impl AsTcpStream for SslStream<TcpStream> {
 	fn as_tcp(&self) -> &TcpStream {
 		self.get_ref()
 	}
+
+	fn duplicate(&self) -> io::Result<Self> {
+		self.try_clone()
+	}
 }
 
 impl AsTcpStream for Box<AsTcpStream> {
 	fn as_tcp(&self) -> &TcpStream {
 		self.deref().as_tcp()
 	}
-}
 
-pub trait TryUnsizedClone<C: ?Sized> {
-	fn try_clone(&self) -> io::Result<Box<C>>;
-}
-
-impl TryUnsizedClone<AsTcpStream> for Box<AsTcpStream> {
-	fn try_clone(&self) -> io::Result<Box<AsTcpStream>> {
+	fn duplicate(&self) -> io::Result<Self>
+	where Self: Any {
 		unimplemented!();
 	}
 }
@@ -90,7 +95,9 @@ where R: Read,
 	}
 }
 
-impl Stream for TcpStream {
+impl<S> Stream for S
+where S: AsTcpStream,
+{
 	type R = Self;
 	type W = Self;
 
@@ -103,48 +110,17 @@ impl Stream for TcpStream {
 	}
 
 	fn split(self) -> io::Result<(Self::R, Self::W)> {
-		Ok((try!(self.try_clone()), self))
+		Ok((try!(self.duplicate()), self))
 	}
 }
 
-impl Stream for SslStream<TcpStream> {
-	type R = Self;
-	type W = Self;
-
-	fn reader(&mut self) -> &mut Read {
-		self
-	}
-
-	fn writer(&mut self) -> &mut Write {
-		self
-	}
-
-	fn split(self) -> io::Result<(Self::R, Self::W)> {
-		Ok((try!(self.try_clone()), self))
-	}
-}
-
-impl Stream for Box<AsTcpStream> {
-	type R = Self;
-	type W = Self;
-
-	fn reader(&mut self) -> &mut Read {
-		self
-	}
-
-	fn writer(&mut self) -> &mut Write {
-		self
-	}
-
-	fn split(self) -> io::Result<(Self::R, Self::W)> {
-		Ok((try!(self.try_clone()), self))
-	}
-}
-
+/// Marker struct for having no SSL context in a struct.
 #[derive(Clone)]
 pub struct NoSslContext;
-
+/// Trait that is implemented over NoSslContext and SslContext that
+/// serves as a generic bound to make a struct with.
+/// Used in the Server to specify impls based on wether the server
+/// is running over SSL or not.
 pub trait MaybeSslContext: Clone {}
-
 impl MaybeSslContext for NoSslContext {}
 impl MaybeSslContext for SslContext {}

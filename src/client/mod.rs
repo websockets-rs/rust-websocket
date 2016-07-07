@@ -11,7 +11,6 @@ use ws::receiver::{DataFrameIterator, MessageIterator};
 use result::WebSocketResult;
 use stream::{
 	AsTcpStream,
-	TryUnsizedClone,
 	Stream,
 };
 use dataframe::DataFrame;
@@ -136,7 +135,7 @@ impl Client<DataFrame, Sender<Box<AsTcpStream>>, Receiver<Box<AsTcpStream>>> {
 			Box::new(tcp_stream)
 		};
 
-		let (read, write) = (try!(stream.try_clone()), stream);
+		let (read, write) = (try!(stream.duplicate()), stream);
 
 		Request::new((host, resource_name, secure), (read, write))
 	}

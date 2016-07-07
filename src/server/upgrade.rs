@@ -210,15 +210,13 @@ pub mod hyper {
 	}
 
 	// impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
-	// 	type Stream = Box<Stream<W=Box<Write>, R=Box<Read>>>;
+	// 	type Stream = Box<NetworkStream>;
 	// 	type Error = (HyperRequest<'a, 'b>, HyperIntoWsError);
 
 	// 	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
 	// 		unimplemented!();
 	// 	}
 	// }
-
-	// TODO: Remove request and response from server
 
 	pub fn validate(request: &Request) -> Result<(), HyperIntoWsError> {
 		if request.subject.0 != Method::Get {
@@ -230,17 +228,17 @@ pub mod hyper {
 		{
 			return Err(HyperIntoWsError::UnsupportedHttpVersion);
 		}
-		
+
 		if let Some(version) = request.headers.get::<WebSocketVersion>() {
 			if version != &WebSocketVersion::WebSocket13 {
 				return Err(HyperIntoWsError::UnsupportedWebsocketVersion);
 			}
 		}
-		
+
 		if request.headers.get::<WebSocketKey>().is_none() {
 			return Err(HyperIntoWsError::NoSecWsKeyHeader);
 		}
-		
+
 		match request.headers.get() {
 			Some(&Upgrade(ref upgrade)) => {
 				if upgrade.iter().all(|u| u.name != ProtocolName::WebSocket) {
@@ -260,7 +258,7 @@ pub mod hyper {
 			}
 			false
 		}
-		
+
 		match request.headers.get() {
 			Some(&Connection(ref connection)) => {
 				if !check_connection_header(connection) {
@@ -269,7 +267,7 @@ pub mod hyper {
 			},
 			None => return Err(HyperIntoWsError::NoConnectionHeader),
 		};
-		
+
 		Ok(())
 	}
 }
