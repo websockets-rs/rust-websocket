@@ -126,6 +126,14 @@ impl<'a> Server<'a> {
 		};
 		Ok(Connection(try!(wsstream.try_clone()), try!(wsstream.try_clone())))
 	}
+
+    /// Changes whether the Server is in nonblocking mode.
+    ///
+    /// If it is in nonblocking mode, accept() will return an error instead of blocking when there
+    /// are no incoming connections.
+    pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
+        self.inner.set_nonblocking(nonblocking)
+    }
 }
 
 impl<'a> Iterator for Server<'a> {
