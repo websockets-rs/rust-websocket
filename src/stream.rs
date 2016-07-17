@@ -1,6 +1,5 @@
 //! Provides the default stream type for WebSocket connections.
 use std::ops::Deref;
-use std::any::Any;
 use std::io::{
 	self,
 	Read,
@@ -15,11 +14,13 @@ pub use openssl::ssl::{
 	SslContext,
 };
 
-pub trait AsTcpStream: Read + Write + Any + 'static {
+pub trait AsTcpStream: Read + Write {
 	fn as_tcp(&self) -> &TcpStream;
 
 	fn duplicate(&self) -> io::Result<Self>
 	where Self: Sized;
+
+	fn box_duplicate(&self) -> io::Result<Box<AsTcpStream>>;
 }
 
 impl AsTcpStream for TcpStream {
@@ -29,6 +30,10 @@ impl AsTcpStream for TcpStream {
 
 	fn duplicate(&self) -> io::Result<Self> {
 		self.try_clone()
+	}
+
+	fn box_duplicate(&self) -> io::Result<Box<AsTcpStream>> {
+		Ok(Box::new(try!(self.duplicate())))
 	}
 }
 
@@ -40,6 +45,10 @@ impl AsTcpStream for SslStream<TcpStream> {
 	fn duplicate(&self) -> io::Result<Self> {
 		self.try_clone()
 	}
+
+	fn box_duplicate(&self) -> io::Result<Box<AsTcpStream>> {
+		Ok(Box::new(try!(self.duplicate())))
+	}
 }
 
 impl AsTcpStream for Box<AsTcpStream> {
@@ -47,9 +56,12 @@ impl AsTcpStream for Box<AsTcpStream> {
 		self.deref().as_tcp()
 	}
 
-	fn duplicate(&self) -> io::Result<Self>
-	where Self: Any {
-		unimplemented!();
+	fn duplicate(&self) -> io::Result<Self> {
+		self.deref().box_duplicate()
+	}
+
+	fn box_duplicate(&self) -> io::Result<Box<AsTcpStream>> {
+		self.duplicate()
 	}
 }
 
