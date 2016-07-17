@@ -55,7 +55,6 @@ pub use self::server::Server;
 pub use self::dataframe::DataFrame;
 pub use self::message::Message;
 pub use self::stream::Stream;
-pub use self::stream::AsTcpStream;
 pub use self::ws::Sender;
 pub use self::ws::Receiver;
 

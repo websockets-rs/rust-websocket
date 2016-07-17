@@ -109,6 +109,7 @@ impl Client<DataFrame, Sender<SslStream<TcpStream>>, Receiver<SslStream<TcpStrea
 	}
 }
 
+// TODO: look at how to get hyper to give you a stream then maybe remove this
 impl Client<DataFrame, Sender<Box<AsTcpStream>>, Receiver<Box<AsTcpStream>>> {
 	pub fn connect_agnostic<C>(components: C, ssl_context: Option<&SslContext>) -> WebSocketResult<Request<Box<AsTcpStream>, Box<AsTcpStream>>>
 	where C: ToWebSocketUrlComponents
@@ -141,6 +142,7 @@ impl Client<DataFrame, Sender<Box<AsTcpStream>>, Receiver<Box<AsTcpStream>>> {
 	}
 }
 
+// TODO: add method to expose tcp to edit things
 impl<S> Client<DataFrame, Sender<S>, Receiver<S>>
 where S: AsTcpStream,
 {

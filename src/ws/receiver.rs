@@ -3,6 +3,7 @@
 //! Also provides iterators over data frames and messages.
 //! See the `ws` module documentation for more information.
 
+use std::io::Read;
 use std::marker::PhantomData;
 use ws::Message;
 use ws::dataframe::DataFrame;
@@ -13,6 +14,7 @@ pub trait Receiver<F>: Sized
 where F: DataFrame {
 	/// Reads a single data frame from this receiver.
 	fn recv_dataframe(&mut self) -> WebSocketResult<F>;
+
 	/// Returns the data frames that constitute one message.
 	fn recv_message_dataframes(&mut self) -> WebSocketResult<Vec<F>>;
 
@@ -23,6 +25,7 @@ where F: DataFrame {
 			_dataframe: PhantomData
 		}
 	}
+
 	/// Reads a single message from this receiver.
 	fn recv_message<'m, D, M, I>(&mut self) -> WebSocketResult<M>
 	where M: Message<'m, D, DataFrameIterator = I>,
@@ -35,7 +38,8 @@ where F: DataFrame {
 
 	/// Returns an iterator over incoming messages.
 	fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Self, D, F, M>
-	where M: Message<'a, D>, D: DataFrame {
+	where M: Message<'a, D>, D: DataFrame
+	{
 		MessageIterator {
 			inner: self,
 			_dataframe: PhantomData,
@@ -47,7 +51,8 @@ where F: DataFrame {
 
 /// An iterator over data frames from a Receiver.
 pub struct DataFrameIterator<'a, R, D>
-where R: 'a + Receiver<D>, D: DataFrame {
+where R: 'a + Receiver<D>, D: DataFrame
+{
 	inner: &'a mut R,
 	_dataframe: PhantomData<D>
 }

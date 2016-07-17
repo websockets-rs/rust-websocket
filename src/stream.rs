@@ -1,129 +1,102 @@
 //! Provides the default stream type for WebSocket connections.
-use std::ops::Deref;
+extern crate mio;
+
 use std::io::{
 	self,
 	Read,
 	Write
 };
-pub use std::net::{
-	TcpStream,
-	Shutdown,
-};
+pub use std::net::TcpStream;
+pub use std::net::Shutdown;
 pub use openssl::ssl::{
 	SslStream,
 	SslContext,
 };
+pub use self::mio::Evented;
 
-pub trait AsTcpStream: Read + Write {
-	fn as_tcp(&self) -> &TcpStream;
-
-	fn duplicate(&self) -> io::Result<Self>
-	where Self: Sized;
-
-	fn box_duplicate(&self) -> io::Result<Box<AsTcpStream>>;
+pub trait Splittable<R, W>
+where R: Read + Evented,
+	  W: Write + Evented,
+{
+	fn split(self) -> io::Result<(R, W)>;
 }
 
-impl AsTcpStream for TcpStream {
-	fn as_tcp(&self) -> &TcpStream {
-		self
-	}
-
-	fn duplicate(&self) -> io::Result<Self> {
-		self.try_clone()
-	}
-
-	fn box_duplicate(&self) -> io::Result<Box<AsTcpStream>> {
-		Ok(Box::new(try!(self.duplicate())))
-	}
-}
-
-impl AsTcpStream for SslStream<TcpStream> {
-	fn as_tcp(&self) -> &TcpStream {
-		self.get_ref()
-	}
-
-	fn duplicate(&self) -> io::Result<Self> {
-		self.try_clone()
-	}
-
-	fn box_duplicate(&self) -> io::Result<Box<AsTcpStream>> {
-		Ok(Box::new(try!(self.duplicate())))
-	}
-}
-
-impl AsTcpStream for Box<AsTcpStream> {
-	fn as_tcp(&self) -> &TcpStream {
-		self.deref().as_tcp()
-	}
-
-	fn duplicate(&self) -> io::Result<Self> {
-		self.deref().box_duplicate()
-	}
-
-	fn box_duplicate(&self) -> io::Result<Box<AsTcpStream>> {
-		self.duplicate()
-	}
-}
-
-/// Represents a stream that can be read from, written to, and split into two.
+/// Represents a stream that can be read from, and written to.
 /// This is an abstraction around readable and writable things to be able
 /// to speak websockets over ssl, tcp, unix sockets, etc.
-pub trait Stream
+pub trait Stream<R, W>
+where R: Read + Evented,
+	  W: Write + Evented,
 {
-	/// The reading component of the stream
-	type R: Read;
-	/// The writing component of the stream
-	type W: Write;
-
 	/// Get a mutable borrow to the reading component of this stream
-	fn reader(&mut self) -> &mut Read;
+	fn reader(&mut self) -> &mut R;
 
 	/// Get a mutable borrow to the writing component of this stream
-	fn writer(&mut self) -> &mut Write;
-
-	/// Split this stream into readable and writable components.
-	/// The motivation behind this is to be able to read on one thread
-	/// and send messages on another.
-	fn split(self) -> io::Result<(Self::R, Self::W)>;
+	fn writer(&mut self) -> &mut W;
 }
 
-impl<R, W> Stream for (R, W)
-where R: Read,
-	  W: Write,
-{
-	type R = R;
-	type W = W;
+pub struct ReadWritePair<R, W>(pub R, pub W)
+where R: Read + Evented,
+	  W: Write + Evented;
 
-	fn reader(&mut self) -> &mut Read {
+impl<R, W> Splittable<R, W> for ReadWritePair<R, W>
+where R: Read + Evented,
+	  W: Write + Evented,
+{
+	fn split(self) -> io::Result<(R, W)> {
+		Ok((self.0, self.1))
+	}
+}
+
+impl<R, W> Stream<R, W> for ReadWritePair<R, W>
+where R: Read + Evented,
+	  W: Write + Evented,
+{
+	#[inline]
+	fn reader(&mut self) -> &mut R {
 		&mut self.0
 	}
 
-	fn writer(&mut self) -> &mut Write {
+	#[inline]
+	fn writer(&mut self) -> &mut W {
 		&mut self.1
-	}
-
-	fn split(self) -> io::Result<(Self::R, Self::W)> {
-		Ok(self)
 	}
 }
 
-impl<S> Stream for S
-where S: AsTcpStream,
+impl Splittable<TcpStream, TcpStream> for TcpStream {
+	fn split(self) -> io::Result<(TcpStream, TcpStream)> {
+		self.try_clone().map(|s| (s, self))
+	}
+}
+
+impl<S> Stream<S, S> for S
+where S: Read + Write + Evented,
 {
-	type R = Self;
-	type W = Self;
-
-	fn reader(&mut self) -> &mut Read {
+	#[inline]
+	fn reader(&mut self) -> &mut S {
 		self
 	}
 
-	fn writer(&mut self) -> &mut Write {
+	#[inline]
+	fn writer(&mut self) -> &mut S {
 		self
 	}
+}
 
-	fn split(self) -> io::Result<(Self::R, Self::W)> {
-		Ok((try!(self.duplicate()), self))
-	}
+pub trait AsTcpStream {
+    fn as_tcp(&self) -> &TcpStream;
+}
+
+impl AsTcpStream for TcpStream {
+    fn as_tcp(&self) -> &TcpStream {
+        &self
+    }
+}
+
+impl AsTcpStream for SslStream<TcpStream> {
+    fn as_tcp(&self) -> &TcpStream {
+        self.get_ref()
+    }
 }
 
 /// Marker struct for having no SSL context in a struct.

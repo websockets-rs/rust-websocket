@@ -1,6 +1,7 @@
 //! Allows you to take an existing request or stream of data and convert it into a
 //! WebSocket client.
 use std::net::TcpStream;
+use std::io::Read;
 use stream::{
 	Stream,
 	AsTcpStream,
@@ -15,7 +16,9 @@ pub mod hyper;
 /// Users should then call `accept` or `deny` to complete the handshake
 /// and start a session.
 pub struct WsUpgrade<S>
-where S: Stream,
+where S: Stream<R, W>,
+      R: Read,
+      W: Write,
 {
 	stream: S,
 	request: hyper::Request,

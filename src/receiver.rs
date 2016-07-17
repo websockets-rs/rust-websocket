@@ -12,27 +12,25 @@ pub use stream::Shutdown;
 
 /// A Receiver that wraps a Reader and provides a default implementation using
 /// DataFrames and Messages.
-pub struct Receiver<R> {
-	inner: BufReader<R>,
+pub struct Receiver {
 	buffer: Vec<DataFrame>,
 	mask: bool,
 }
 
-impl<R> Receiver<R>
-where R: Read,
-{
+impl Receiver {
 	/// Create a new Receiver using the specified Reader.
-	pub fn new(reader: BufReader<R>, mask: bool) -> Receiver<R> {
+	pub fn new(mask: bool) -> Receiver {
 		Receiver {
-			inner: reader,
 			buffer: Vec::new(),
 			mask: mask,
 		}
 	}
+
 	/// Returns a reference to the underlying Reader.
 	pub fn get_ref(&self) -> &BufReader<R> {
 		&self.inner
 	}
+
 	/// Returns a mutable reference to the underlying Reader.
 	pub fn get_mut(&mut self) -> &mut BufReader<R> {
 		&mut self.inner

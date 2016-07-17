@@ -1,9 +1,17 @@
 extern crate hyper;
+extern crate openssl;
 
+use std::net::TcpStream;
+use std::any::Any;
 use std::convert::From;
 use std::error::Error;
+use openssl::ssl::SslStream;
 use hyper::http::h1::parse_request;
-use hyper::net::NetworkStream;
+use hyper::net::{
+	NetworkStream,
+	HttpStream,
+	HttpsStream,
+};
 use header::{
 	WebSocketKey,
 	WebSocketVersion,
@@ -13,7 +21,10 @@ use std::fmt::{
 	Display,
 	self,
 };
-use stream::Stream;
+use stream::{
+	Stream,
+	AsTcpStream,
+};
 use super::{
 	IntoWs,
 	WsUpgrade,
@@ -31,6 +42,7 @@ pub use hyper::uri::RequestUri;
 pub use hyper::buffer::BufReader;
 pub use hyper::server::Request as HyperRequest;
 pub use hyper::header::{
+	Headers,
 	Upgrade,
 	ProtocolName,
 	Connection,
@@ -51,6 +63,7 @@ pub enum HyperIntoWsError {
 	NoUpgradeHeader,
 	NoWsConnectionHeader,
 	NoConnectionHeader,
+	UnknownNetworkStream,
 	/// IO error from reading the underlying socket
 	Io(io::Error),
 	/// Error while parsing an incoming request
@@ -75,6 +88,7 @@ impl Error for HyperIntoWsError {
 			&NoUpgradeHeader => "Missing Upgrade WebSocket header",
 			&NoWsConnectionHeader => "Invalid Connection WebSocket header",
 			&NoConnectionHeader => "Missing Connection WebSocket header",
+			&UnknownNetworkStream => "Cannot downcast to known impl of NetworkStream",
 			&Io(ref e) => e.description(),
 			&Parsing(ref e) => e.description(),
 		}
@@ -101,8 +115,11 @@ impl From<hyper::error::Error> for HyperIntoWsError {
 	}
 }
 
-impl<S> IntoWs for S
-where S: Stream,
+// TODO: Move this into the main upgrade module
+impl<R, W, S> IntoWs for S
+where S: Stream<R, W>,
+      R: Read,
+      W: Write,
 {
 	type Stream = S;
 	type Error = (Self, Option<Request>, HyperIntoWsError);
@@ -118,7 +135,7 @@ where S: Stream,
 			Err(e) => return Err((self, None, e.into())),
 		};
 
-		match validate(&request) {
+		match validate(&request.subject.0, &request.version, &request.headers) {
 			Ok(_) => Ok(WsUpgrade {
 				stream: self,
 				request: request,
@@ -128,14 +145,17 @@ where S: Stream,
 	}
 }
 
-impl<S> IntoWs for RequestStreamPair<S>
-where S: Stream,
+// TODO: Move this into the main upgrade module
+impl<S, R, W> IntoWs for RequestStreamPair<S>
+where S: Stream<R, W>,
+      R: Read,
+      W: Write,
 {
 	type Stream = S;
 	type Error = (S, Request, HyperIntoWsError);
 
 	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
-		match validate(&self.1) {
+		match validate(&self.1.subject.0, &self.1.version, &self.1.headers) {
 			Ok(_) => Ok(WsUpgrade {
 				stream: self.0,
 				request: self.1,
@@ -145,37 +165,57 @@ where S: Stream,
 	}
 }
 
-// impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
-// 	type Stream = Box<NetworkStream>;
-// 	type Error = (HyperRequest<'a, 'b>, HyperIntoWsError);
+impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
+	type Stream = Box<AsTcpStream>;
+	type Error = (HyperRequest<'a, 'b>, HyperIntoWsError);
 
-// 	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
-// 		unimplemented!();
-// 	}
-// }
+	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
+		if let Err(e) = validate(&self.method, &self.version, &self.headers) {
+			return Err((self, e));
+		}
 
-pub fn validate(request: &Request) -> Result<(), HyperIntoWsError> {
-	if request.subject.0 != Method::Get {
+		let stream: Option<Box<AsTcpStream>> = unimplemented!();
+
+		if let Some(s) = stream {
+			Ok(WsUpgrade {
+				stream: s,
+				request: Incoming {
+					version: self.version,
+					headers: self.headers,
+					subject: (self.method, self.uri),
+				},
+			})
+		} else {
+			Err((self, HyperIntoWsError::UnknownNetworkStream))
+		}
+	}
+}
+
+pub fn validate(
+	method: &Method,
+	version: &HttpVersion,
+	headers: &Headers
+) -> Result<(), HyperIntoWsError>
+{
+	if *method != Method::Get {
 		return Err(HyperIntoWsError::MethodNotGet);
 	}
 
-	if request.version == HttpVersion::Http09
-		|| request.version == HttpVersion::Http10
-	{
+	if *version == HttpVersion::Http09 || *version == HttpVersion::Http10 {
 		return Err(HyperIntoWsError::UnsupportedHttpVersion);
 	}
 
-	if let Some(version) = request.headers.get::<WebSocketVersion>() {
+	if let Some(version) = headers.get::<WebSocketVersion>() {
 		if version != &WebSocketVersion::WebSocket13 {
 			return Err(HyperIntoWsError::UnsupportedWebsocketVersion);
 		}
 	}
 
-	if request.headers.get::<WebSocketKey>().is_none() {
+	if headers.get::<WebSocketKey>().is_none() {
 		return Err(HyperIntoWsError::NoSecWsKeyHeader);
 	}
 
-	match request.headers.get() {
+	match headers.get() {
 		Some(&Upgrade(ref upgrade)) => {
 			if upgrade.iter().all(|u| u.name != ProtocolName::WebSocket) {
 				return Err(HyperIntoWsError::NoWsUpgradeHeader)
@@ -195,7 +235,7 @@ pub fn validate(request: &Request) -> Result<(), HyperIntoWsError> {
 		false
 	}
 
-	match request.headers.get() {
+	match headers.get() {
 		Some(&Connection(ref connection)) => {
 			if !check_connection_header(connection) {
 				return Err(HyperIntoWsError::NoWsConnectionHeader);
@@ -206,3 +246,4 @@ pub fn validate(request: &Request) -> Result<(), HyperIntoWsError> {
 
 	Ok(())
 }
+
