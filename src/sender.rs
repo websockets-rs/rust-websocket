@@ -45,6 +45,11 @@ impl Sender<WebSocketStream> {
     pub fn shutdown_all(&mut self) -> IoResult<()> {
         self.inner.shutdown(Shutdown::Both)
     }
+
+    /// Changes whether the sender is in nonblocking mode.
+    pub fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
+        self.inner.set_nonblocking(nonblocking)
+    }
 }
 
 impl<W: Write> ws::Sender for Sender<W> {

@@ -50,6 +50,14 @@ impl Receiver<WebSocketStream> {
     pub fn shutdown_all(&mut self) -> IoResult<()> {
         self.inner.get_mut().shutdown(Shutdown::Both)
     }
+
+    /// Changes whether the receiver is in nonblocking mode.
+    ///
+    /// If it is in nonblocking mode and there is no incoming message, trying to receive a message
+    /// will return an error instead of blocking.
+    pub fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
+        self.inner.get_ref().set_nonblocking(nonblocking)
+    }
 }
 
 impl<R: Read> ws::Receiver<DataFrame> for Receiver<R> {
