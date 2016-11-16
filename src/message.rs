@@ -1,5 +1,6 @@
 //! Module containing the default implementation for messages.
 use std::io::Write;
+use std::fmt;
 use std::borrow::Cow;
 use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
@@ -23,6 +24,18 @@ pub enum Type {
 	Pong = 10,
     /// Close connection message with optional reason
 	Close = 8,
+}
+
+impl fmt::Display for Type {
+    fn fmt(&self, f:&mut fmt::Formatter) -> fmt::Result{
+        match *self {
+            Type::Text   => write!(f, "Type.Text (code: 1)"),
+            Type::Binary => write!(f, "Type.Binary (code: 2)"),
+            Type::Ping   => write!(f, "Type.Ping (code: 9)"),
+            Type::Pong   => write!(f, "Type.Pong (code: 10)"),
+            Type::Close  => write!(f, "Type.Close (code: 8)")
+        }
+    }
 }
 
 /// Represents a WebSocket message.
