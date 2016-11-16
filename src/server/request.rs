@@ -102,7 +102,6 @@ impl<R: Read, W: Write> Request<R, W> {
 				None => unreachable!()
 			}
 		} else if request.headers.has::<TransferEncoding>() {
-			//todo!("check for Transfer-Encoding: chunked");
 			ChunkedReader(reader, None)
 		} else {
 			EmptyReader(reader)
