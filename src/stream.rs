@@ -83,4 +83,12 @@ impl WebSocketStream {
 			WebSocketStream::Ssl(ref inner) => WebSocketStream::Ssl(try!(inner.try_clone())),
 		})
 	}
+
+    /// Changes whether the stream is in nonblocking mode.
+    pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
+        match *self {
+			WebSocketStream::Tcp(ref inner) => inner.set_nonblocking(nonblocking),
+			WebSocketStream::Ssl(ref inner) => inner.get_ref().set_nonblocking(nonblocking),
+        }
+    }
 }
