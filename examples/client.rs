@@ -2,7 +2,7 @@ extern crate websocket;
 
 fn main() {
 	use std::thread;
-	use std::sync::mpsc::channel;
+	use std::sync::mpsc::sync_channel;
 	use std::io::stdin;
 
 	use websocket::{Message, Sender, Receiver};
@@ -26,7 +26,7 @@ fn main() {
 
 	let (mut sender, mut receiver) = response.begin().split();
 
-	let (tx, rx) = channel();
+	let (tx, rx) = sync_channel(10);
 
 	let tx_1 = tx.clone();
 

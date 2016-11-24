@@ -9,7 +9,8 @@ pub use self::response::Response;
 use stream::WebSocketStream;
 
 use openssl::ssl::SslContext;
-use openssl::ssl::SslStream;
+#[cfg(feature="ssl")]
+use openssl::ssl::{SslStream};
 
 pub mod request;
 pub mod response;
@@ -46,14 +47,17 @@ pub mod response;
 ///
 ///#Secure Servers
 /// ```no_run
+///# #[cfg(feature="ssl")] pub mod ssltest {
 ///extern crate websocket;
 ///extern crate openssl;
-///# fn main() {
+///# pub fn main() {
+///# use self::websocket;
+///# use self::openssl;
 ///use std::thread;
 ///use std::path::Path;
-///use websocket::{Server, Message};
-///use openssl::ssl::{SslContext, SslMethod};
-///use openssl::x509::X509FileType;
+///use self::websocket::{Server, Message};
+///use self::openssl::ssl::{SslContext, SslMethod};
+///use self::openssl::x509::X509FileType;
 ///
 ///let mut context = SslContext::new(SslMethod::Tlsv1).unwrap();
 ///let _ = context.set_certificate_file(&(Path::new("cert.pem")), X509FileType::PEM);
@@ -74,6 +78,9 @@ pub mod response;
 ///    });
 ///}
 /// # }
+/// # }
+/// # #[cfg(feature="ssl")] fn main() { ssltest::main() }
+/// # #[cfg(not(feature="ssl"))] fn main(){ println!("SSL server test ignored"); }
 /// ```
 pub struct Server<'a> {
 	inner: TcpListener,
@@ -113,6 +120,7 @@ impl<'a> Server<'a> {
 	pub fn accept(&mut self) -> io::Result<Connection<WebSocketStream, WebSocketStream>> {
 		let stream = try!(self.inner.accept()).0;
 		let wsstream = match self.context {
+			#[cfg(feature="ssl")]
 			Some(context) => {
 				let sslstream = match SslStream::accept(context, stream) {
 					Ok(s) => s,
@@ -122,6 +130,8 @@ impl<'a> Server<'a> {
 				};
 				WebSocketStream::Ssl(sslstream)
 			}
+			#[cfg(not(feature="ssl"))]
+			Some(_) => panic!("Assertion failed. SSL feature is not enabled"),
 			None => { WebSocketStream::Tcp(stream) }
 		};
 		Ok(Connection(try!(wsstream.try_clone()), try!(wsstream.try_clone())))

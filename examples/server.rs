@@ -34,8 +34,8 @@ fn main() {
 
 			println!("Connection from {}", ip);
 
-			let message: Message = Message::text("Hello".to_string());
-			client.send_message(&message).unwrap();
+			//let message: Message = Message::text("Hello".to_string());
+			//client.send_message(&message).unwrap();
 
 			let (mut sender, mut receiver) = client.split();
 

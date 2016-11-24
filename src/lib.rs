@@ -40,6 +40,7 @@ extern crate hyper;
 extern crate unicase;
 extern crate url;
 extern crate rustc_serialize as serialize;
+#[cfg(feature="ssl")]
 extern crate openssl;
 extern crate rand;
 extern crate byteorder;
@@ -69,3 +70,8 @@ pub mod stream;
 pub mod header;
 pub mod receiver;
 pub mod sender;
+
+#[cfg(not(feature="ssl"))]
+mod openssl { pub mod ssl {
+    pub struct SslContext;
+}}
