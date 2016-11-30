@@ -57,8 +57,8 @@ impl DataFrame {
     						"Expected unmasked data frame"
     					));
     				}
-
-    				let data: Vec<u8> = try!(reader.take(header.len).bytes().collect());
+    				let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
+    				try!(reader.take(header.len).read_to_end(&mut data));
     				mask::mask_data(mask, &data)
     			}
     			None => {
@@ -67,8 +67,9 @@ impl DataFrame {
     						"Expected masked data frame"
     					));
     				}
-
-    				try!(reader.take(header.len).bytes().collect())
+    				let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
+    				try!(reader.take(header.len).read_to_end(&mut data));
+    				data
     			}
     		}
     	})
