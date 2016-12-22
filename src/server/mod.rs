@@ -145,7 +145,7 @@ impl<'a> Iterator for Server<'a> {
 }
 
 /// Represents a connection to the server that has not been processed yet.
-pub struct Connection<R: Read, W: Write>(R, W);
+pub struct Connection<R: Read, W: Write>(pub R, pub W);
 
 impl<R: Read, W: Write> Connection<R, W> {
 	/// Process this connection and read the request.
