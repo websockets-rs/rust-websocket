@@ -14,7 +14,9 @@ pub enum WebSocketStream {
 	Tcp(TcpStream),
 	/// An SSL-backed TCP Stream
 	#[cfg(feature="ssl")]
-	Ssl(SslStream<TcpStream>)
+	Ssl(SslStream<TcpStream>),
+	/// An opaque pair of arbitrary Read and Write to server as backend
+	Custom((Box<Read+Send>, Box<Write+Send>)),
 }
 
 impl Read for WebSocketStream {
@@ -23,6 +25,7 @@ impl Read for WebSocketStream {
 		WebSocketStream::Tcp(ref mut inner) => inner.read(buf),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref mut inner) => inner.read(buf),
+			WebSocketStream::Custom((ref mut r, _)) => r.read(buf),
 		}
 	}
 }
@@ -33,6 +36,7 @@ impl Write for WebSocketStream {
 			WebSocketStream::Tcp(ref mut inner) => inner.write(msg),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref mut inner) => inner.write(msg),
+			WebSocketStream::Custom((_,ref mut w)) => w.write(msg),
 		}
 	}
 
@@ -41,6 +45,7 @@ impl Write for WebSocketStream {
 			WebSocketStream::Tcp(ref mut inner) => inner.flush(),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref mut inner) => inner.flush(),
+			WebSocketStream::Custom((_,ref mut w)) => w.flush(),
 		}
 	}
 }
@@ -52,6 +57,9 @@ impl WebSocketStream {
 			WebSocketStream::Tcp(ref inner) => inner.peer_addr(),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref inner) => inner.get_ref().peer_addr(),
+			WebSocketStream::Custom(_) => 
+				Err(io::Error::new(io::ErrorKind::AddrNotAvailable, 
+					"no address for custom-backed websocket")),
 		}
 	}
 	/// See `TcpStream.local_addr()`.
@@ -60,6 +68,9 @@ impl WebSocketStream {
 			WebSocketStream::Tcp(ref inner) => inner.local_addr(),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref inner) => inner.get_ref().local_addr(),
+			WebSocketStream::Custom(_) => 
+				Err(io::Error::new(io::ErrorKind::AddrNotAvailable, 
+					"no address for custom-backed websocket")),
 		}
 	}
 	/// See `TcpStream.set_nodelay()`.
@@ -68,6 +79,8 @@ impl WebSocketStream {
 			WebSocketStream::Tcp(ref mut inner) => TcpStreamExt::set_nodelay(inner, nodelay),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref mut inner) => TcpStreamExt::set_nodelay(inner.get_mut(), nodelay),
+			WebSocketStream::Custom(_) => Err(io::Error::new(io::ErrorKind::Other, 
+					"no nodelay for custom-backed websocket")),
 		}
 	}
 	/// See `TcpStream.set_keepalive()`.
@@ -76,6 +89,8 @@ impl WebSocketStream {
 			WebSocketStream::Tcp(ref mut inner) => TcpStreamExt::set_keepalive_ms(inner, delay_in_ms),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref mut inner) => TcpStreamExt::set_keepalive_ms(inner.get_mut(), delay_in_ms),
+			WebSocketStream::Custom(_) => Err(io::Error::new(io::ErrorKind::Other, 
+					"no keepalive for custom-backed websocket")),
 		}
 	}
 	/// See `TcpStream.shutdown()`.
@@ -84,6 +99,8 @@ impl WebSocketStream {
 			WebSocketStream::Tcp(ref mut inner) => inner.shutdown(shutdown),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref mut inner) => inner.get_mut().shutdown(shutdown),
+			WebSocketStream::Custom(_) => Err(io::Error::new(io::ErrorKind::Other, 
+					"can't shutdown custom-backed websocket")),
 		}
 	}
 	/// See `TcpStream.try_clone()`.
@@ -92,6 +109,8 @@ impl WebSocketStream {
 			WebSocketStream::Tcp(ref inner) => WebSocketStream::Tcp(try!(inner.try_clone())),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref inner) => WebSocketStream::Ssl(try!(inner.try_clone())),
+			WebSocketStream::Custom(_) => Err(io::Error::new(io::ErrorKind::Other, 
+					"can't clone custom-backed websocket"))?,
 		})
 	}
 
@@ -101,6 +120,8 @@ impl WebSocketStream {
 			WebSocketStream::Tcp(ref inner) => inner.set_nonblocking(nonblocking),
 			#[cfg(feature="ssl")]
 			WebSocketStream::Ssl(ref inner) => inner.get_ref().set_nonblocking(nonblocking),
+			WebSocketStream::Custom(_) => Err(io::Error::new(io::ErrorKind::Other, 
+					"no nonblocking for custom-backed websocket")),
         }
     }
 }
