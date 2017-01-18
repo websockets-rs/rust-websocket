@@ -1,7 +1,7 @@
 [package]
 
-version = "0.17.1"
 name = "websocket-vi"
+version = "0.18.0"
 authors = ["cyderize <admin@cyderize.org>", "Vitaly \"_Vi\" Shukela <vi0oss@gmail.com>"]
 
 description = "A WebSocket (RFC6455) library for Rust (fork)."
