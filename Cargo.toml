@@ -17,15 +17,18 @@ keywords = ["websocket", "websockets", "rfc6455"]
 license = "MIT"
 
 [dependencies]
-hyper = ">=0.7, <0.10"
+hyper = { version = ">=0.7, <0.10", default-features=false }
 unicase = "1.0.1"
-openssl = "0.7.6"
+openssl = { version = "0.7.6", optional=true }
 url = "1.0"
 rustc-serialize = "0.3.16"
 bitflags = "0.7"
 rand = "0.3.12"
 byteorder = "0.5.1"
 net2 = "0.2.17"
+sha1 = "0.2.0"
 
 [features]
+default = ["ssl"]
 nightly = ["hyper/nightly"]
+ssl = ["openssl", "hyper/ssl"]
