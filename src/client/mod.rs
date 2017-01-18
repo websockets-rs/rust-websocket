@@ -41,11 +41,11 @@ pub mod response;
 ///#Connecting to a Server
 ///
 ///```no_run
-///extern crate websocket;
+///extern crate websocket_vi;
 ///# fn main() {
 ///
-///use websocket::{Client, Message};
-///use websocket::client::request::Url;
+///use websocket_vi::{Client, Message};
+///use websocket_vi::client::request::Url;
 ///
 ///let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
 ///let request = Client::connect(url).unwrap(); // Connect to the server
@@ -170,10 +170,10 @@ impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	/// Returns an iterator over incoming messages.
 	///
 	///```no_run
-	///# extern crate websocket;
+	///# extern crate websocket_vi;
 	///# fn main() {
-	///use websocket::{Client, Message};
-	///# use websocket::client::request::Url;
+	///use websocket_vi::{Client, Message};
+	///# use websocket_vi::client::request::Url;
 	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
 	///# let request = Client::connect(url).unwrap(); // Connect to the server
 	///# let response = request.send().unwrap(); // Send the request
@@ -193,10 +193,10 @@ impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	/// `Receiver` to be able to send messages within an iteration.
 	///
 	///```no_run
-	///# extern crate websocket;
+	///# extern crate websocket_vi;
 	///# fn main() {
-	///use websocket::{Client, Message, Sender, Receiver};
-	///# use websocket::client::request::Url;
+	///use websocket_vi::{Client, Message, Sender, Receiver};
+	///# use websocket_vi::client::request::Url;
 	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
 	///# let request = Client::connect(url).unwrap(); // Connect to the server
 	///# let response = request.send().unwrap(); // Send the request
@@ -238,11 +238,11 @@ impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	/// This allows the Sender and Receiver to be sent to different threads.
 	///
 	///```no_run
-	///# extern crate websocket;
+	///# extern crate websocket_vi;
 	///# fn main() {
-	///use websocket::{Client, Message, Sender, Receiver};
+	///use websocket_vi::{Client, Message, Sender, Receiver};
 	///use std::thread;
-	///# use websocket::client::request::Url;
+	///# use websocket_vi::client::request::Url;
 	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
 	///# let request = Client::connect(url).unwrap(); // Connect to the server
 	///# let response = request.send().unwrap(); // Send the request

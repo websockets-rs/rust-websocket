@@ -1,9 +1,9 @@
-extern crate websocket;
+extern crate websocket_vi;
 
 use std::thread;
-use websocket::{Server, Message, Sender, Receiver};
-use websocket::message::Type;
-use websocket::header::WebSocketProtocol;
+use websocket_vi::{Server, Message, Sender, Receiver};
+use websocket_vi::message::Type;
+use websocket_vi::header::WebSocketProtocol;
 
 fn main() {
 	let server = Server::bind("127.0.0.1:2794").unwrap();

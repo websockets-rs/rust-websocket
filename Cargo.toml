@@ -1,14 +1,14 @@
 [package]
 
-name = "websocket"
 version = "0.17.1"
-authors = ["cyderize <admin@cyderize.org>"]
+name = "websocket-vi"
+authors = ["cyderize <admin@cyderize.org>", "Vitaly \"_Vi\" Shukela <vi0oss@gmail.com>"]
 
-description = "A WebSocket (RFC6455) library for Rust."
+description = "A WebSocket (RFC6455) library for Rust (fork)."
 
 documentation = "http://cyderize.github.io/rust-websocket/doc/websocket/"
 homepage = "http://cyderize.github.io/rust-websocket/"
-repository = "https://github.com/cyderize/rust-websocket.git"
+repository = "https://github.com/vi/rust-websocket.git"
 
 readme = "README.md"
 

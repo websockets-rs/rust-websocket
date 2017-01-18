@@ -1,7 +1,7 @@
-Rust-WebSocket [![Build Status](https://travis-ci.org/cyderize/rust-websocket.svg?branch=master)](https://travis-ci.org/cyderize/rust-websocket)
+Rust-WebSocket
 ==============
 
-Rust-WebSocket is a WebSocket ([RFC6455](http://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
+Rust-WebSocket is a WebSocket ([RFC6455](http://datatracker.ietf.org/doc/rfc6455/)) library written in Rust. This is a fork.
 
 Rust-WebSocket provides a framework for dealing with WebSocket connections (both clients and servers). The library is currently in an experimental state, but provides functionality for both normal and secure WebSockets, a message level API supporting fragmentation, a data frame level API, and the ability to extend and customize behaviour.
 
@@ -10,18 +10,10 @@ Rust-WebSocket provides a framework for dealing with WebSocket connections (both
 To add a library release version from [crates.io](https://crates.io/crates/websocket) to a Cargo project, add this to the 'dependencies' section of your Cargo.toml:
 
 ```INI
-websocket = "0.17.1"
+websocket-vi = "~0.18.0"
 ```
 
-To add the library's Git repository to a Cargo project, add this to your Cargo.toml:
-
-```INI
-[dependencies.websocket]
-
-git = "https://github.com/cyderize/rust-websocket.git"
-```
-
-And add ```extern crate websocket;``` to your project.
+And add ```extern crate websocket_vi;``` to your project.
 
 ## Usage
 

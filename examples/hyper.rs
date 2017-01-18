@@ -1,11 +1,11 @@
-extern crate websocket;
+extern crate websocket_vi;
 extern crate hyper;
 
 use std::thread;
 use std::io::Write;
-use websocket::{Server, Message, Sender, Receiver};
-use websocket::header::WebSocketProtocol;
-use websocket::message::Type;
+use websocket_vi::{Server, Message, Sender, Receiver};
+use websocket_vi::header::WebSocketProtocol;
+use websocket_vi::message::Type;
 use hyper::Server as HttpServer;
 use hyper::server::Handler;
 use hyper::net::Fresh;
