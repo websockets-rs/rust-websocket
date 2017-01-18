@@ -19,7 +19,7 @@ license = "MIT"
 [dependencies]
 hyper = ">=0.7, <0.10"
 unicase = "1.0.1"
-openssl = "0.7.6"
+openssl = "0.9.6"
 url = "1.0"
 rustc-serialize = "0.3.16"
 bitflags = "0.7"
