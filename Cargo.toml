@@ -24,7 +24,7 @@ url = "1.0"
 rustc-serialize = "0.3.16"
 bitflags = "0.7"
 rand = "0.3.12"
-byteorder = "0.5.1"
+byteorder = "1.0"
 net2 = "0.2.17"
 
 [features]
