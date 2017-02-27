@@ -17,7 +17,7 @@ keywords = ["websocket", "websockets", "rfc6455"]
 license = "MIT"
 
 [dependencies]
-hyper = ">=0.7, <0.10"
+hyper = ">=0.7, <0.11"
 unicase = "1.0.1"
 openssl = "0.7.6"
 url = "1.0"
