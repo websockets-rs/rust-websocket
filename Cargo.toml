@@ -1,7 +1,7 @@
 [package]
 
-name = "websocket"
-version = "0.17.1"
+name = "servo-websocket"
+version = "0.18.0"
 authors = ["cyderize <admin@cyderize.org>"]
 
 description = "A WebSocket (RFC6455) library for Rust."
@@ -9,22 +9,22 @@ description = "A WebSocket (RFC6455) library for Rust."
 documentation = "http://cyderize.github.io/rust-websocket/doc/websocket/"
 homepage = "http://cyderize.github.io/rust-websocket/"
 repository = "https://github.com/cyderize/rust-websocket.git"
-
 readme = "README.md"
-
 keywords = ["websocket", "websockets", "rfc6455"]
-
 license = "MIT"
 
+[lib]
+name = "websocket"
+
 [dependencies]
-hyper = ">=0.7, <0.10"
+hyper = "0.9"
 unicase = "1.0.1"
 openssl = "0.7.6"
 url = "1.0"
 rustc-serialize = "0.3.16"
 bitflags = "0.7"
 rand = "0.3.12"
-byteorder = "0.5.1"
+byteorder = "1.0"
 net2 = "0.2.17"
 
 [features]
