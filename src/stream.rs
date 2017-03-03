@@ -80,7 +80,8 @@ impl WebSocketStream {
 	pub fn try_clone(&self) -> io::Result<WebSocketStream> {
 		Ok(match *self {
 			WebSocketStream::Tcp(ref inner) => WebSocketStream::Tcp(try!(inner.try_clone())),
-			WebSocketStream::Ssl(ref inner) => WebSocketStream::Ssl(try!(inner.try_clone())),
+			// FIXME: This is **terrible**! But SslStream no longer has try_clone...
+			WebSocketStream::Ssl(ref inner) => WebSocketStream::Tcp(try!(inner.get_ref().try_clone())),
 		})
 	}
 

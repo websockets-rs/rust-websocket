@@ -5,7 +5,7 @@ use std::fmt::{self, Debug};
 use std::str::FromStr;
 use serialize::base64::{ToBase64, FromBase64, STANDARD};
 use header::WebSocketKey;
-use openssl::crypto::hash::{self, hash};
+use openssl::hash::{self, hash};
 use result::{WebSocketResult, WebSocketError};
 
 static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -49,18 +49,18 @@ impl FromStr for WebSocketAccept {
 
 impl WebSocketAccept {
 	/// Create a new WebSocketAccept from the given WebSocketKey
-	pub fn new(key: &WebSocketKey) -> WebSocketAccept {
+	pub fn new(key: &WebSocketKey) -> WebSocketResult<WebSocketAccept> {
 		let serialized = key.serialize();
 		let mut concat_key = String::with_capacity(serialized.len() + 36);
 		concat_key.push_str(&serialized[..]);
 		concat_key.push_str(MAGIC_GUID);
-		let output = hash(hash::Type::SHA1, concat_key.as_bytes());
+		let output = hash(hash::MessageDigest::sha1(), concat_key.as_bytes())?;
 		let mut iter = output.into_iter();
 		let mut bytes = [0u8; 20];
 		for i in bytes.iter_mut() {
 			*i = iter.next().unwrap();
 		}
-		WebSocketAccept(bytes)
+		Ok(WebSocketAccept(bytes))
 	}
 	/// Return the Base64 encoding of this WebSocketAccept
 	pub fn serialize(&self) -> String {
@@ -95,17 +95,17 @@ mod tests {
 	#[test]
 	fn test_header_accept() {
 		let key = FromStr::from_str("dGhlIHNhbXBsZSBub25jZQ==").unwrap();
-		let accept = WebSocketAccept::new(&key);
+		let accept = WebSocketAccept::new(&key).unwrap();
 		let mut headers = Headers::new();
 		headers.set(accept);
-		
+
 		assert_eq!(&headers.to_string()[..], "Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n");
 	}
 	#[bench]
 	fn bench_header_accept_new(b: &mut test::Bencher) {
 		let key = WebSocketKey::new();
 		b.iter(|| {
-			let mut accept = WebSocketAccept::new(&key);
+			let mut accept = WebSocketAccept::new(&key).unwrap();
 			test::black_box(&mut accept);
 		});
 	}

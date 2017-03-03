@@ -7,7 +7,6 @@ use websocket::{Server, Message, Sender, Receiver};
 use websocket::header::WebSocketProtocol;
 use websocket::message::Type;
 use hyper::Server as HttpServer;
-use hyper::server::Handler;
 use hyper::net::Fresh;
 use hyper::server::request::Request;
 use hyper::server::response::Response;
