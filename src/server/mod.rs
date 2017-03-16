@@ -1,6 +1,8 @@
 //! Provides an implementation of a WebSocket server
 use std::net::{SocketAddr, ToSocketAddrs, TcpListener};
 use std::net::Shutdown;
+#[cfg(feature="reuseaddr")]
+use net2::TcpBuilder;
 use std::io::{Read, Write};
 use std::io;
 pub use self::request::Request;
@@ -14,6 +16,9 @@ use openssl::ssl::{SslStream};
 
 pub mod request;
 pub mod response;
+
+#[cfg(feature="reuseaddr")]
+const SOMAXCONN: i32 = 128;
 
 /// Represents a WebSocket server which can work with either normal (non-secure) connections, or secure WebSocket connections.
 ///
@@ -82,25 +87,45 @@ pub mod response;
 /// # #[cfg(feature="ssl")] fn main() { ssltest::main() }
 /// # #[cfg(not(feature="ssl"))] fn main(){ println!("SSL server test ignored"); }
 /// ```
+
 pub struct Server<'a> {
 	inner: TcpListener,
 	context: Option<&'a SslContext>,
 }
 
 impl<'a> Server<'a> {
+	#[cfg(feature="reuseaddr")]
+	fn make_builder() -> io::Result<TcpBuilder> {
+		let tcp = try!(TcpBuilder::new_v4());
+		try!(try!(tcp.reuse_address(true)).only_v6(false));
+		Ok(tcp)
+	}
+
+	fn bind_generic<T: ToSocketAddrs>(addr: T, context: Option<&'a SslContext>) -> io::Result<Server<'a>> {
+		Ok(Server {
+			inner: {
+				#[cfg(not(feature="reuseaddr"))]
+				{
+					try!(TcpListener::bind(&addr))
+				}
+				#[cfg(feature="reuseaddr")]
+				{
+					let builder = try!(Self::make_builder());
+					try!(builder.bind(&addr));
+					try!(builder.listen(SOMAXCONN))
+				}
+			},
+			context: context,
+		})
+	}
+
 	/// Bind this Server to this socket
 	pub fn bind<T: ToSocketAddrs>(addr: T) -> io::Result<Server<'a>> {
-		Ok(Server {
-			inner: try!(TcpListener::bind(&addr)),
-			context: None,
-		})
+		Self::bind_generic(addr, None)
 	}
 	/// Bind this Server to this socket, utilising the given SslContext
 	pub fn bind_secure<T: ToSocketAddrs>(addr: T, context: &'a SslContext) -> io::Result<Server<'a>> {
-		Ok(Server {
-			inner: try!(TcpListener::bind(&addr)),
-			context: Some(context),
-		})
+		Self::bind_generic(addr, Some(context))
 	}
 	/// Get the socket address of this server
 	pub fn local_addr(&self) -> io::Result<SocketAddr> {
