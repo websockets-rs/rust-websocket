@@ -45,7 +45,7 @@ The library can be tested using `cargo test` to run tests and `cargo bench` to r
 
 A number of tests are included, which ensure core WebSocket functionality works as expected. These tests are not yet comprehensive, and are still being worked on.
 
-##Autobahn TestSuite
+## Autobahn TestSuite
 
 Rust-WebSocket uses the [Autobahn TestSuite](http://autobahn.ws/testsuite) to test conformance to RFC6455. If you have Autobahn TestSuite installed you can run these tests yourself using the commands:
 
