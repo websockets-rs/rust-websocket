@@ -45,6 +45,7 @@ extern crate openssl;
 extern crate rand;
 extern crate byteorder;
 extern crate sha1;
+extern crate net2;
 
 #[macro_use]
 extern crate bitflags;

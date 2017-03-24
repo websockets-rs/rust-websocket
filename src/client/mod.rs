@@ -1,6 +1,9 @@
 //! Contains the WebSocket client.
 
+#[cfg(not(feature="reuseaddr"))]
 use std::net::TcpStream;
+#[cfg(feature="reuseaddr")]
+use net2::TcpBuilder;
 use std::marker::PhantomData;
 use std::io::Result as IoResult;
 
@@ -93,9 +96,19 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 			return Err(::result::WebSocketError::SslFeatureNotEnabled);
 		}}
 
-		let connection = try!(TcpStream::connect(
-			(&host.hostname[..], host.port.unwrap_or(if secure { 443 } else { 80 }))
-		));
+		let connection = {
+			let address = (&host.hostname[..], host.port.unwrap_or(if secure { 443 } else { 80 }));
+			#[cfg(not(feature="reuseaddr"))]
+			{
+				try!(TcpStream::connect(address))
+			}
+			#[cfg(feature="reuseaddr")]
+			{
+				let tcp = try!(TcpBuilder::new_v4());
+				try!(tcp.reuse_address(true));
+				try!(tcp.connect(address))
+			}
+		};
 
 		#[cfg(feature="ssl")]
 		let stream = if secure {

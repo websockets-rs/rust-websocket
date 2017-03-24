@@ -10,7 +10,7 @@ Rust-WebSocket provides a framework for dealing with WebSocket connections (both
 To add a library release version from [crates.io](https://crates.io/crates/websocket) to a Cargo project, add this to the 'dependencies' section of your Cargo.toml:
 
 ```INI
-websocket-vi = "~0.18.0"
+websocket-vi = "~0.18.1"
 ```
 
 And add ```extern crate websocket_vi;``` to your project.
