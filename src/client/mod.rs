@@ -105,7 +105,7 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 			#[cfg(feature="reuseaddr")]
 			{
 				let tcp = try!(TcpBuilder::new_v4());
-				try!(try!(tcp.reuse_address(true)).only_v6(false));
+				try!(tcp.reuse_address(true));
 				try!(tcp.connect(address))
 			}
 		};

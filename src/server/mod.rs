@@ -94,13 +94,6 @@ pub struct Server<'a> {
 }
 
 impl<'a> Server<'a> {
-	#[cfg(feature="reuseaddr")]
-	fn make_builder() -> io::Result<TcpBuilder> {
-		let tcp = try!(TcpBuilder::new_v4());
-		try!(try!(tcp.reuse_address(true)).only_v6(false));
-		Ok(tcp)
-	}
-
 	fn bind_generic<T: ToSocketAddrs>(addr: T, context: Option<&'a SslContext>) -> io::Result<Server<'a>> {
 		Ok(Server {
 			inner: {
@@ -110,7 +103,8 @@ impl<'a> Server<'a> {
 				}
 				#[cfg(feature="reuseaddr")]
 				{
-					let builder = try!(Self::make_builder());
+					let builder = try!(TcpBuilder::new_v4());
+					try!(builder.reuse_address(true));
 					try!(builder.bind(&addr));
 					try!(builder.listen(SOMAXCONN))
 				}
