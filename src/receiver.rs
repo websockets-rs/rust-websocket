@@ -4,9 +4,21 @@ use std::io::Read;
 use std::io::Result as IoResult;
 use hyper::buffer::BufReader;
 
-use dataframe::{DataFrame, Opcode};
-use result::{WebSocketResult, WebSocketError};
+use dataframe::{
+    DataFrame,
+    Opcode
+};
+use result::{
+    WebSocketResult,
+    WebSocketError
+};
 use ws;
+use ws::dataframe::DataFrame as DataFrameable;
+use ws::receiver::Receiver as ReceiverTrait;
+use ws::receiver::{
+    MessageIterator,
+    DataFrameIterator,
+};
 use stream::{
     AsTcpStream,
     Stream,
@@ -17,21 +29,36 @@ pub use stream::Shutdown;
 pub struct Reader<R>
     where R: Read
 {
-    reader: R,
-    receiver: Receiver,
+    pub reader: R,
+    pub receiver: Receiver,
 }
 
 impl<R> Reader<R>
     where R: Read,
 {
-	  /// Returns a reference to the underlying Reader.
-	  pub fn get_ref(&self) -> &R {
-		    &self.reader
+	  /// Reads a single data frame from the remote endpoint.
+	  pub fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
+		    self.receiver.recv_dataframe(&mut self.reader)
 	  }
 
-	  /// Returns a mutable reference to the underlying Reader.
-	  pub fn get_mut(&mut self) -> &mut R {
-		    &mut self.reader
+	  /// Returns an iterator over incoming data frames.
+	  pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, R> {
+		    self.receiver.incoming_dataframes(&mut self.reader)
+	  }
+
+	  /// Reads a single message from this receiver.
+	  pub fn recv_message<'m, M, I>(&mut self) -> WebSocketResult<M>
+	      where M: ws::Message<'m, DataFrame, DataFrameIterator = I>,
+              I: Iterator<Item = DataFrame>
+    {
+		    self.receiver.recv_message(&mut self.reader)
+	  }
+
+	  pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Receiver, D, M, R>
+	      where M: ws::Message<'a, D>,
+              D: DataFrameable
+    {
+		    self.receiver.incoming_messages(&mut self.reader)
 	  }
 }
 

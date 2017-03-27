@@ -2,6 +2,10 @@
 use std::net::TcpStream;
 use std::marker::PhantomData;
 use std::io::Result as IoResult;
+use std::io::{
+    Read,
+    Write,
+};
 use std::ops::Deref;
 
 use ws;
@@ -16,6 +20,8 @@ use result::WebSocketResult;
 use stream::{
 	  AsTcpStream,
 	  Stream,
+    Splittable,
+    Shutdown,
 };
 use dataframe::DataFrame;
 use ws::dataframe::DataFrame as DataFrameable;
@@ -25,8 +31,11 @@ use openssl::ssl::{SslContext, SslMethod, SslStream};
 pub use self::request::Request;
 pub use self::response::Response;
 
-pub use sender::Sender;
-pub use receiver::Receiver;
+use sender::Sender;
+pub use sender::Writer;
+
+use receiver::Receiver;
+pub use receiver::Reader;
 
 pub mod request;
 pub mod response;
@@ -155,36 +164,37 @@ pub struct ClientBuilder<S>
 // 	}
 // }
 
-// // TODO: add method to expose tcp to edit things
-// impl<S> Client<S>
-// where S: AsTcpStream + Stream,
-// {
-// 	/// Shuts down the sending half of the client connection, will cause all pending
-// 	/// and future IO to return immediately with an appropriate value.
-// 	pub fn shutdown_sender(&self) -> IoResult<()> {
-// 		self.sender.shutdown()
-// 	}
+impl<S> Client<S>
+    where S: AsTcpStream + Stream,
+{
+	  /// Shuts down the sending half of the client connection, will cause all pending
+	  /// and future IO to return immediately with an appropriate value.
+	  pub fn shutdown_sender(&self) -> IoResult<()> {
+		    self.stream.as_tcp().shutdown(Shutdown::Write)
+	  }
 
-// 	/// Shuts down the receiving half of the client connection, will cause all pending
-// 	/// and future IO to return immediately with an appropriate value.
-// 	pub fn shutdown_receiver(&self) -> IoResult<()> {
-// 		self.receiver.shutdown()
-// 	}
+	  /// Shuts down the receiving half of the client connection, will cause all pending
+	  /// and future IO to return immediately with an appropriate value.
+	  pub fn shutdown_receiver(&self) -> IoResult<()> {
+		    self.stream.as_tcp().shutdown(Shutdown::Read)
+	  }
 
-// 	/// Shuts down the client connection, will cause all pending and future IO to
-// 	/// return immediately with an appropriate value.
-// 	pub fn shutdown(&self) -> IoResult<()> {
-// 		self.receiver.shutdown_all()
-// 	}
-// }
+	  /// Shuts down the client connection, will cause all pending and future IO to
+	  /// return immediately with an appropriate value.
+	  pub fn shutdown(&self) -> IoResult<()> {
+		    self.stream.as_tcp().shutdown(Shutdown::Both)
+	  }
+
+    // TODO: add net2 set_nonblocking and stuff
+}
 
 impl<S> Client<S>
     where S: Stream,
 {
-	  /// Creates a Client from the given Sender and Receiver.
+	  /// Crtes a Client from the given Sender and Receiver.
 	  ///
-	  /// Essentially the opposite of `Client.split()`.
-	  fn new(stream: S) -> Client<S> {
+	  /// Esstiallthe opposite of `Client.split()`.
+	  fn new(stream: S) -> Self {
 		    Client {
             stream: stream,
             // TODO: always true?
@@ -274,7 +284,7 @@ impl<S> Client<S>
 	  ///}
 	  ///# }
 	  ///```
-	  pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Receiver, D, DataFrame, M, S::Reader>
+	  pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Receiver, D, M, S::Reader>
 	      where M: ws::Message<'a, D>,
               D: DataFrameable
     {
@@ -282,41 +292,47 @@ impl<S> Client<S>
 	  }
 }
 
-// TODO
-// impl<S> Client<S>
-//     where S: Splittable,
-// {
-// 	/// Split this client into its constituent Sender and Receiver pair.
-// 	///
-// 	/// This allows the Sender and Receiver to be sent to different threads.
-// 	///
-// 	///```no_run
-// 	///# extern crate websocket;
-// 	///# fn main() {
-// 	///use websocket::{Client, Message, Sender, Receiver};
-// 	///use std::thread;
-// 	///# use websocket::client::request::Url;
-// 	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-// 	///# let request = Client::connect(url).unwrap(); // Connect to the server
-// 	///# let response = request.send().unwrap(); // Send the request
-// 	///# response.validate().unwrap(); // Ensure the response is valid
-// 	///
-// 	///let client = response.begin(); // Get a Client
-// 	///
-// 	///let (mut sender, mut receiver) = client.split();
-// 	///
-// 	///thread::spawn(move || {
-// 	///    for message in receiver.incoming_messages() {
-//     ///        let message: Message = message.unwrap();
-// 	///        println!("Recv: {:?}", message);
-// 	///    }
-// 	///});
-// 	///
-// 	///let message = Message::text("Hello, World!");
-// 	///sender.send_message(&message).unwrap();
-// 	///# }
-// 	///```
-// 	pub fn split(self) -> (Reader<S>, Writer<S>) {
-//       let cloned_stream = try!(self.stream.try_clone());
-// 	}
-// }
+impl<S> Client<S>
+    where S: Splittable + Stream,
+{
+	  /// Split this client into its constituent Sender and Receiver pair.
+	  ///
+	  /// This allows the Sender and Receiver to be sent to different threads.
+	  ///
+	  ///```no_run
+	  ///# extern crate websocket;
+	  ///# fn main() {
+	  ///use websocket::{Client, Message, Sender, Receiver};
+	  ///use std::thread;
+	  ///# use websocket::client::request::Url;
+	  ///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
+	  ///# let request = Client::connect(url).unwrap(); // Connect to the server
+	  ///# let response = request.send().unwrap(); // Send the request
+	  ///# response.validate().unwrap(); // Ensure the response is valid
+	  ///
+	  ///let client = response.begin(); // Get a Client
+	  ///
+	  ///let (mut sender, mut receiver) = client.split();
+	  ///
+	  ///thread::spawn(move || {
+	  ///    for message in receiver.incoming_messages() {
+    ///        let message: Message = message.unwrap();
+	  ///        println!("Recv: {:?}", message);
+	  ///    }
+	  ///});
+	  ///
+	  ///let message = Message::text("Hello, World!");
+	  ///sender.send_message(&message).unwrap();
+	  ///# }
+	  ///```
+	  pub fn split(self) -> IoResult<(Reader<<S as Splittable>::Reader>, Writer<<S as Splittable>::Writer>)> {
+        let (read, write) = try!(self.stream.split());
+        Ok((Reader {
+            reader: read,
+            receiver: self.receiver,
+        }, Writer {
+            writer: write,
+            sender: self.sender,
+        }))
+	  }
+}
