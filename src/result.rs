@@ -5,6 +5,7 @@ use std::str::Utf8Error;
 use std::error::Error;
 use std::convert::From;
 use std::fmt;
+#[cfg(feature="ssl")]
 use openssl::ssl::error::SslError;
 use hyper::Error as HttpError;
 use url::ParseError;
@@ -34,7 +35,11 @@ pub enum WebSocketError {
     /// A WebSocket URL error
     WebSocketUrlError(WSUrlErrorKind),
 	/// An SSL error
+	#[cfg(feature="ssl")]
 	SslError(SslError),
+	/// An error when user tries wss:// when SSL feature is not enabled
+	#[cfg(not(feature="ssl"))]
+	SslFeatureNotEnabled,
 	/// A UTF-8 error
 	Utf8Error(Utf8Error),
 }
@@ -58,7 +63,10 @@ impl Error for WebSocketError {
 			WebSocketError::IoError(_) => "I/O failure",
 			WebSocketError::HttpError(_) => "HTTP failure",
 			WebSocketError::UrlError(_) => "URL failure",
+			#[cfg(feature="ssl")]
 			WebSocketError::SslError(_) => "SSL failure",
+			#[cfg(not(feature="ssl"))]
+			WebSocketError::SslFeatureNotEnabled => "SSL feature not enabled",
 			WebSocketError::Utf8Error(_) => "UTF-8 failure",
             WebSocketError::WebSocketUrlError(_) => "WebSocket URL failure",
 		}
@@ -69,7 +77,10 @@ impl Error for WebSocketError {
 			WebSocketError::IoError(ref error) => Some(error),
 			WebSocketError::HttpError(ref error) => Some(error),
 			WebSocketError::UrlError(ref error) => Some(error),
+			#[cfg(feature="ssl")]
 			WebSocketError::SslError(ref error) => Some(error),
+			#[cfg(not(feature="ssl"))]
+			WebSocketError::SslFeatureNotEnabled => None,
 			WebSocketError::Utf8Error(ref error) => Some(error),
             WebSocketError::WebSocketUrlError(ref error) => Some(error),
 			_ => None,
@@ -98,6 +109,7 @@ impl From<ParseError> for WebSocketError {
 	}
 }
 
+#[cfg(feature="ssl")]
 impl From<SslError> for WebSocketError {
 	fn from(err: SslError) -> WebSocketError {
 		WebSocketError::SslError(err)

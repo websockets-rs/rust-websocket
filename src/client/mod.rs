@@ -12,7 +12,9 @@ use stream::WebSocketStream;
 use dataframe::DataFrame;
 use ws::dataframe::DataFrame as DataFrameable;
 
-use openssl::ssl::{SslContext, SslMethod, SslStream};
+use openssl::ssl::SslContext;
+#[cfg(feature="ssl")]
+use openssl::ssl::{SslMethod, SslStream};
 
 pub use self::request::Request;
 pub use self::response::Response;
@@ -68,8 +70,13 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 	/// A connection is established, however the request is not sent to
 	/// the server until a call to ```send()```.
 	pub fn connect<T: ToWebSocketUrlComponents>(components: T) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
+		#[cfg(feature="ssl")]
 		let context = try!(SslContext::new(SslMethod::Tlsv1));
-		Client::connect_ssl_context(components, &context)
+		#[cfg(feature="ssl")]
+		{Client::connect_ssl_context(components, &context)}
+		#[cfg(not(feature="ssl"))]
+		{Client::connect_ssl_context(components, &SslContext)}
+		
 	}
 	/// Connects to the specified wss:// URL using the given SSL context.
 	///
@@ -80,11 +87,17 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 	/// the server until a call to ```send()```.
 	pub fn connect_ssl_context<T: ToWebSocketUrlComponents>(components: T, context: &SslContext) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
 		let (host, resource_name, secure) = try!(components.to_components());
+		
+		#[cfg(not(feature="ssl"))]
+		{if secure {
+			return Err(::result::WebSocketError::SslFeatureNotEnabled);
+		}}
 
 		let connection = try!(TcpStream::connect(
 			(&host.hostname[..], host.port.unwrap_or(if secure { 443 } else { 80 }))
 		));
 
+		#[cfg(feature="ssl")]
 		let stream = if secure {
 			let sslstream = try!(SslStream::connect(context, connection));
 			WebSocketStream::Ssl(sslstream)
@@ -92,6 +105,11 @@ impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
 		else {
 			WebSocketStream::Tcp(connection)
 		};
+		
+		#[cfg(not(feature="ssl"))]
+		let stream = WebSocketStream::Tcp(connection);
+		#[cfg(not(feature="ssl"))]
+		let _ = context;
 
 		Request::new((host, resource_name, secure), try!(stream.try_clone()), stream)
 	}
