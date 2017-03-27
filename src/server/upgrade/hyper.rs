@@ -116,10 +116,8 @@ impl From<hyper::error::Error> for HyperIntoWsError {
 }
 
 // TODO: Move this into the main upgrade module
-impl<R, W, S> IntoWs for S
-where S: Stream<R, W>,
-      R: Read,
-      W: Write,
+impl<S> IntoWs for S
+where S: Stream,
 {
 	type Stream = S;
 	type Error = (Self, Option<Request>, HyperIntoWsError);
@@ -146,10 +144,8 @@ where S: Stream<R, W>,
 }
 
 // TODO: Move this into the main upgrade module
-impl<S, R, W> IntoWs for RequestStreamPair<S>
-where S: Stream<R, W>,
-      R: Read,
-      W: Write,
+impl<S> IntoWs for RequestStreamPair<S>
+where S: Stream,
 {
 	type Stream = S;
 	type Error = (S, Request, HyperIntoWsError);
@@ -165,31 +161,32 @@ where S: Stream<R, W>,
 	}
 }
 
-impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
-	type Stream = Box<AsTcpStream>;
-	type Error = (HyperRequest<'a, 'b>, HyperIntoWsError);
+// TODO
+// impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
+// 	type Stream = Box<AsTcpStream>;
+// 	type Error = (HyperRequest<'a, 'b>, HyperIntoWsError);
 
-	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
-		if let Err(e) = validate(&self.method, &self.version, &self.headers) {
-			return Err((self, e));
-		}
+// 	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
+// 		if let Err(e) = validate(&self.method, &self.version, &self.headers) {
+// 			return Err((self, e));
+// 		}
 
-		let stream: Option<Box<AsTcpStream>> = unimplemented!();
+// 		let stream: Option<Box<AsTcpStream>> = unimplemented!();
 
-		if let Some(s) = stream {
-			Ok(WsUpgrade {
-				stream: s,
-				request: Incoming {
-					version: self.version,
-					headers: self.headers,
-					subject: (self.method, self.uri),
-				},
-			})
-		} else {
-			Err((self, HyperIntoWsError::UnknownNetworkStream))
-		}
-	}
-}
+// 		if let Some(s) = stream {
+// 			Ok(WsUpgrade {
+// 				stream: s,
+// 				request: Incoming {
+// 					version: self.version,
+// 					headers: self.headers,
+// 					subject: (self.method, self.uri),
+// 				},
+// 			})
+// 		} else {
+// 			Err((self, HyperIntoWsError::UnknownNetworkStream))
+// 		}
+// 	}
+// }
 
 pub fn validate(
 	method: &Method,

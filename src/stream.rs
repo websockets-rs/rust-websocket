@@ -1,5 +1,6 @@
 //! Provides the default stream type for WebSocket connections.
-extern crate mio;
+// TODO: add mio support & tokio
+// extern crate mio;
 
 use std::io::{
 	self,
@@ -12,11 +13,10 @@ pub use openssl::ssl::{
 	SslStream,
 	SslContext,
 };
-pub use self::mio::Evented;
 
 pub trait Splittable<R, W>
-where R: Read + Evented,
-	  W: Write + Evented,
+where R: Read,
+	  W: Write,
 {
 	fn split(self) -> io::Result<(R, W)>;
 }
@@ -24,34 +24,37 @@ where R: Read + Evented,
 /// Represents a stream that can be read from, and written to.
 /// This is an abstraction around readable and writable things to be able
 /// to speak websockets over ssl, tcp, unix sockets, etc.
-pub trait Stream<R, W>
-where R: Read + Evented,
-	  W: Write + Evented,
-{
+pub trait Stream {
+	type Reader: Read;
+  type Writer: Write;
+
 	/// Get a mutable borrow to the reading component of this stream
-	fn reader(&mut self) -> &mut R;
+	fn reader(&mut self) -> &mut Self::Reader;
 
 	/// Get a mutable borrow to the writing component of this stream
-	fn writer(&mut self) -> &mut W;
+	fn writer(&mut self) -> &mut Self::Writer;
 }
 
 pub struct ReadWritePair<R, W>(pub R, pub W)
-where R: Read + Evented,
-	  W: Write + Evented;
+where R: Read,
+	  W: Write;
 
 impl<R, W> Splittable<R, W> for ReadWritePair<R, W>
-where R: Read + Evented,
-	  W: Write + Evented,
+where R: Read,
+	  W: Write,
 {
 	fn split(self) -> io::Result<(R, W)> {
 		Ok((self.0, self.1))
 	}
 }
 
-impl<R, W> Stream<R, W> for ReadWritePair<R, W>
-where R: Read + Evented,
-	  W: Write + Evented,
+impl<R, W> Stream for ReadWritePair<R, W>
+where R: Read,
+	  W: Write,
 {
+    type Reader = R;
+    type Writer = W;
+
 	#[inline]
 	fn reader(&mut self) -> &mut R {
 		&mut self.0
@@ -69,9 +72,12 @@ impl Splittable<TcpStream, TcpStream> for TcpStream {
 	}
 }
 
-impl<S> Stream<S, S> for S
-where S: Read + Write + Evented,
+impl<S> Stream for S
+where S: Read + Write,
 {
+    type Reader = Self;
+    type Writer = Self;
+
 	#[inline]
 	fn reader(&mut self) -> &mut S {
 		self

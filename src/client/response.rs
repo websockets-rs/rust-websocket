@@ -116,21 +116,24 @@ impl<R: Read, W: Write> Response<R, W> {
 		Ok(())
 	}
 
-	/// Consume this response and return a Client ready to transmit/receive data frames
-	/// using the data frame type D, Sender B and Receiver C.
-	///
-	/// Does not check if the response was valid. Use `validate()` to ensure that the response constitutes a successful handshake.
-	pub fn begin_with<D, B, C>(self, sender: B, receiver: C) -> Client<D, B, C>
-	where B: ws::Sender, C: ws::Receiver<D>, D: DataFrameable {
-		Client::new(sender, receiver)
-	}
-	/// Consume this response and return a Client ready to transmit/receive data frames.
-	///
-	/// Does not check if the response was valid. Use `validate()` to ensure that the response constitutes a successful handshake.
-	pub fn begin(self) -> Client<DataFrame, Sender<W>, Receiver<R>> {
-		let (reader, writer) = self.into_inner();
-		let sender = Sender::new(writer, true);
-		let receiver = Receiver::new(reader, false);
-		Client::new(sender, receiver)
-	}
+    // TODO
+ // 	/// Consume this response and return a Client ready to transmit/receive data frames
+  //	/// using the data frame type D, Sender B and Receiver C.
+  //	///
+	// /// Does not check if the response was valid. Use `validate()` to ensure that the response constitutes a successful handshake.
+	// pub fn begin_with<D, B, C>(self, sender: B, receiver: C) -> Client<D, B, C>
+	// where B: ws::Sender, C: ws::Receiver<D>, D: DataFrameable {
+	// 	Client::new(sender, receiver)
+	// }
+
+  // TODO
+  //	/// Consume this response and return a Client ready to transmit/receive data frames.
+	//  ///
+	//  /// Does not check if the response was valid. Use `validate()` to ensure that the response constitutes a successful handshake.
+	// pub fn begin(self) -> Client<DataFrame, Sender<W>, Receiver<R>> {
+	// 	let (reader, writer) = self.into_inner();
+	// 	let sender = Sender::new(writer, true);
+	// 	let receiver = Receiver::new(reader, false);
+	// 	Client::new(sender, receiver)
+	// }
 }

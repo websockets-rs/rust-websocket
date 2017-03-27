@@ -16,9 +16,7 @@ pub mod hyper;
 /// Users should then call `accept` or `deny` to complete the handshake
 /// and start a session.
 pub struct WsUpgrade<S>
-where S: Stream<R, W>,
-      R: Read,
-      W: Write,
+where S: Stream,
 {
 	stream: S,
 	request: hyper::Request,

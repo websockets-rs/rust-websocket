@@ -8,51 +8,62 @@ use stream::AsTcpStream;
 use ws;
 pub use stream::Shutdown;
 
+pub struct Writer<W> {
+    writer: W,
+    sender: Sender,
+}
+
+impl<W> Writer<W>
+    where W: Write,
+{
+	  /// Returns a reference to the underlying Writer.
+	  pub fn get_ref(&self) -> &W {
+		    &self.writer
+	  }
+	  /// Returns a mutable reference to the underlying Writer.
+	  pub fn get_mut(&mut self) -> &mut W {
+		    &mut self.writer
+	  }
+}
+
+impl<S> Writer<S>
+    where S: AsTcpStream + Write,
+{
+	  /// Closes the sender side of the connection, will cause all pending and future IO to
+	  /// return immediately with an appropriate value.
+	  pub fn shutdown(&self) -> IoResult<()> {
+		    self.writer.as_tcp().shutdown(Shutdown::Write)
+	  }
+
+	  /// Shuts down both Sender and Receiver, will cause all pending and future IO to
+	  /// return immediately with an appropriate value.
+	  pub fn shutdown_all(&self) -> IoResult<()> {
+		    self.writer.as_tcp().shutdown(Shutdown::Both)
+	  }
+}
+
 /// A Sender that wraps a Writer and provides a default implementation using
 /// DataFrames and Messages.
-pub struct Sender<W> {
-	inner: W,
+pub struct Sender {
 	mask: bool,
 }
 
-impl<W> Sender<W> {
+impl Sender {
 	/// Create a new WebSocketSender using the specified Writer.
-	pub fn new(writer: W, mask: bool) -> Sender<W> {
+	pub fn new(mask: bool) -> Sender {
 		Sender {
-			inner: writer,
 			mask: mask,
 		}
 	}
-	/// Returns a reference to the underlying Writer.
-	pub fn get_ref(&self) -> &W {
-		&self.inner
-	}
-	/// Returns a mutable reference to the underlying Writer.
-	pub fn get_mut(&mut self) -> &mut W {
-		&mut self.inner
-	}
 }
 
-impl<S> Sender<S>
-where S: AsTcpStream,
-{
-	/// Closes the sender side of the connection, will cause all pending and future IO to
-	/// return immediately with an appropriate value.
-	pub fn shutdown(&self) -> IoResult<()> {
-		self.inner.as_tcp().shutdown(Shutdown::Write)
-	}
 
-	/// Shuts down both Sender and Receiver, will cause all pending and future IO to
-	/// return immediately with an appropriate value.
-	pub fn shutdown_all(&self) -> IoResult<()> {
-		self.inner.as_tcp().shutdown(Shutdown::Both)
-	}
-}
-
-impl<W: Write> ws::Sender for Sender<W> {
+impl ws::Sender for Sender {
 	/// Sends a single data frame to the remote endpoint.
-	fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
-	where D: DataFrame {
-		dataframe.write_to(&mut self.inner, self.mask)
+	  fn send_dataframe<D, W>(&mut self, writer: &mut W, dataframe: &D) -> WebSocketResult<()>
+	      where D: DataFrame,
+              W: Write,
+    {
+		dataframe.write_to(writer, self.mask)
 	}
 }
