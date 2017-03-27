@@ -101,7 +101,7 @@ impl<R: Read, W: Write> Response<R, W> {
 		let key = try!(self.request.key().ok_or(
 			WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid")
 		));
-		if self.accept() != Some(&(WebSocketAccept::new(key))) {
+		if self.accept() != Some(&(WebSocketAccept::new(key)?)) {
 			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
 		}
 		if self.headers.get() != Some(&(Upgrade(vec![Protocol{

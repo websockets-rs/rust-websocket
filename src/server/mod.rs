@@ -8,8 +8,7 @@ pub use self::response::Response;
 
 use stream::WebSocketStream;
 
-use openssl::ssl::SslContext;
-use openssl::ssl::SslStream;
+use openssl::ssl::{SslContext, Ssl};
 
 pub mod request;
 pub mod response;
@@ -52,13 +51,14 @@ pub mod response;
 ///use std::thread;
 ///use std::path::Path;
 ///use websocket::{Server, Message};
-///use openssl::ssl::{SslContext, SslMethod};
-///use openssl::x509::X509FileType;
+///use openssl::ssl::{Ssl, SslContext, SslContextBuilder, SslMethod};
+///use openssl::x509::X509_FILETYPE_PEM;
 ///
-///let mut context = SslContext::new(SslMethod::Tlsv1).unwrap();
-///let _ = context.set_certificate_file(&(Path::new("cert.pem")), X509FileType::PEM);
-///let _ = context.set_private_key_file(&(Path::new("key.pem")), X509FileType::PEM);
-///let server = Server::bind_secure("127.0.0.1:1234", &context).unwrap();
+///let mut builder = SslContextBuilder::new(SslMethod::tls()).unwrap();
+///let _ = builder.set_certificate_file(&(Path::new("cert.pem")), X509_FILETYPE_PEM);
+///let _ = builder.set_private_key_file(&(Path::new("key.pem")), X509_FILETYPE_PEM);
+///let ctx = builder.build();
+///let server = Server::bind_secure("127.0.0.1:1234", &ctx).unwrap();
 ///
 ///for connection in server {
 ///    // Spawn a new thread for each connection.
@@ -114,7 +114,7 @@ impl<'a> Server<'a> {
 		let stream = try!(self.inner.accept()).0;
 		let wsstream = match self.context {
 			Some(context) => {
-				let sslstream = match SslStream::accept(context, stream) {
+				let sslstream = match Ssl::new(context)?.accept(stream) {
 					Ok(s) => s,
 					Err(err) => {
 						return Err(io::Error::new(io::ErrorKind::Other, err));

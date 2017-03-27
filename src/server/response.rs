@@ -74,7 +74,7 @@ impl<R: Read, W: Write> Response<R, W> {
 	/// Create a new outbound WebSocket response.
 	pub fn new(request: Request<R, W>) -> Response<R, W> {
 		let mut headers = Headers::new();
-		headers.set(WebSocketAccept::new(request.key().unwrap()));
+		headers.set(WebSocketAccept::new(request.key().unwrap()).unwrap());
 		headers.set(Connection(vec![
 			ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
 		]));
