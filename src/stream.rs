@@ -165,14 +165,3 @@ impl<T> AsTcpStream for Box<T>
         self.deref().as_tcp()
     }
 }
-
-/// Marker struct for having no SSL context in a struct.
-#[derive(Clone)]
-pub struct NoSslContext;
-/// Trait that is implemented over NoSslContext and SslContext that
-/// serves as a generic bound to make a struct with.
-/// Used in the Server to specify impls based on wether the server
-/// is running over SSL or not.
-pub trait MaybeSslContext: Clone {}
-impl MaybeSslContext for NoSslContext {}
-impl MaybeSslContext for SslContext {}

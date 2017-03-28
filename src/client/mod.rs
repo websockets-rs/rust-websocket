@@ -1,6 +1,5 @@
 //! Contains the WebSocket client.
 extern crate url;
-extern crate net2;
 
 use std::borrow::{
     Cow,
@@ -22,7 +21,6 @@ use openssl::ssl::{
     SslMethod,
     SslStream,
 };
-use openssl::ssl::error::SslError;
 use hyper::buffer::BufReader;
 use hyper::status::StatusCode;
 use hyper::http::h1::parse_response;
@@ -37,7 +35,6 @@ use hyper::header::{
     ProtocolName,
 };
 use unicase::UniCase;
-use self::net2::TcpStreamExt;
 
 use ws;
 use ws::sender::Sender as SenderTrait;
@@ -157,25 +154,20 @@ impl<S> Client<S>
         self.stream.as_tcp().set_nodelay(nodelay)
 	  }
 
-	  /// See `TcpStream.set_keepalive()`.
-	  pub fn set_keepalive(&mut self, delay_in_ms: Option<u32>) -> IoResult<()> {
-        TcpStreamExt::set_keepalive_ms(self.stream.as_tcp(), delay_in_ms)
-	  }
-
     /// Changes whether the stream is in nonblocking mode.
     pub fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
         self.stream.as_tcp().set_nonblocking(nonblocking)
     }
 }
 
-impl<'u, 'p, 'e, 's, S> Client<S>
+impl<'u, S> Client<S>
     where S: Stream,
 {
-    pub fn from_url(address: &'u Url) -> ClientBuilder<'u, 's> {
+    pub fn from_url(address: &'u Url) -> ClientBuilder<'u> {
         ClientBuilder::new(Cow::Borrowed(address))
     }
 
-    pub fn build(address: &str) -> Result<ClientBuilder<'u, 's>, ParseError> {
+    pub fn build(address: &str) -> Result<ClientBuilder<'u>, ParseError> {
         let url = try!(Url::parse(address));
         Ok(ClientBuilder::new(Cow::Owned(url)))
     }

@@ -23,11 +23,13 @@ use hyper::header::{
     ProtocolName,
 };
 use unicase::UniCase;
-use openssl::ssl::error::SslError;
+use openssl::error::ErrorStack as SslError;
 use openssl::ssl::{
     SslContext,
     SslMethod,
     SslStream,
+    SslConnector,
+    SslConnectorBuilder,
 };
 use header::extensions::Extension;
 use header::{
@@ -73,23 +75,21 @@ macro_rules! upsert_header {
 
 /// Build clients with a builder-style API
 #[derive(Clone, Debug)]
-pub struct ClientBuilder<'u, 's> {
+pub struct ClientBuilder<'u> {
     url: Cow<'u, Url>,
     version: HttpVersion,
     headers: Headers,
     version_set: bool,
     key_set: bool,
-    ssl_context: Option<Cow<'s, SslContext>>,
 }
 
-impl<'u, 's> ClientBuilder<'u, 's> {
+impl<'u> ClientBuilder<'u> {
     pub fn new(url: Cow<'u, Url>) -> Self {
         ClientBuilder {
             url: url,
             version: HttpVersion::Http11,
             version_set: false,
             key_set: false,
-            ssl_context: None,
             headers: Headers::new(),
         }
     }
@@ -184,11 +184,6 @@ impl<'u, 's> ClientBuilder<'u, 's> {
         self
     }
 
-    pub fn ssl_context(mut self, context: &'s SslContext) -> Self {
-        self.ssl_context = Some(Cow::Borrowed(context));
-        self
-    }
-
     fn establish_tcp(&mut self, secure: Option<bool>) -> WebSocketResult<TcpStream> {
         let port = match (self.url.port(), secure) {
             (Some(port), _) => port,
@@ -206,20 +201,30 @@ impl<'u, 's> ClientBuilder<'u, 's> {
         Ok(tcp_stream)
     }
 
-    fn wrap_ssl(&self, tcp_stream: TcpStream) -> Result<SslStream<TcpStream>, SslError> {
-        let context = match self.ssl_context {
-            Some(ref ctx) => Cow::Borrowed(ctx.as_ref()),
-            None => Cow::Owned(try!(SslContext::new(SslMethod::Tlsv1))),
+    fn wrap_ssl(&self,
+                tcp_stream: TcpStream,
+                connector: Option<SslConnector>
+    ) -> WebSocketResult<SslStream<TcpStream>> {
+        let host = match self.url.host_str() {
+            Some(h) => h,
+            None => return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName)),
+        };
+        let connector = match connector {
+            Some(c) => c,
+            None => try!(SslConnectorBuilder::new(SslMethod::tls())).build(),
         };
 
-        SslStream::connect(&*context, tcp_stream)
+        let ssl_stream = try!(connector.connect(host, tcp_stream));
+        Ok(ssl_stream)
     }
 
-    pub fn connect(&mut self) -> WebSocketResult<Client<BoxedNetworkStream>> {
+    pub fn connect(&mut self,
+                   ssl_config: Option<SslConnector>
+    ) -> WebSocketResult<Client<BoxedNetworkStream>> {
         let tcp_stream = try!(self.establish_tcp(None));
 
         let boxed_stream = if self.url.scheme() == "wss" {
-            BoxedNetworkStream(Box::new(try!(self.wrap_ssl(tcp_stream))))
+            BoxedNetworkStream(Box::new(try!(self.wrap_ssl(tcp_stream, ssl_config))))
         } else {
             BoxedNetworkStream(Box::new(tcp_stream))
         };
@@ -233,10 +238,12 @@ impl<'u, 's> ClientBuilder<'u, 's> {
         self.connect_on(tcp_stream)
     }
 
-    pub fn connect_secure(&mut self) -> WebSocketResult<Client<SslStream<TcpStream>>> {
+    pub fn connect_secure(&mut self,
+                          ssl_config: Option<SslConnector>
+    ) -> WebSocketResult<Client<SslStream<TcpStream>>> {
         let tcp_stream = try!(self.establish_tcp(Some(true)));
 
-        let ssl_stream = try!(self.wrap_ssl(tcp_stream));
+        let ssl_stream = try!(self.wrap_ssl(tcp_stream, ssl_config));
 
         self.connect_on(ssl_stream)
     }
@@ -291,7 +298,7 @@ impl<'u, 's> ClientBuilder<'u, 's> {
             WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid")
         ));
 
-        if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
+        if response.headers.get() != Some(&(try!(WebSocketAccept::new(key)))) {
             return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
         }
 

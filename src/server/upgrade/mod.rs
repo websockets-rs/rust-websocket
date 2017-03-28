@@ -72,11 +72,11 @@ impl<S> WsUpgrade<S>
 	  pub fn accept_with(mut self, custom_headers: &Headers) -> IoResult<Client<S>> {
         let mut headers = Headers::new();
         headers.extend(custom_headers.iter());
-        headers.set(WebSocketAccept::new(
+        headers.set(try!(WebSocketAccept::new(
             // NOTE: we know there is a key because this is a valid request
             // i.e. to construct this you must go through the validate function
             self.request.headers.get::<WebSocketKey>().unwrap()
-        ));
+        )));
 		    headers.set(Connection(vec![
 			      ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
 		    ]));
