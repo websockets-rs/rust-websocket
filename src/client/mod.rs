@@ -1,4 +1,7 @@
 //! Contains the WebSocket client.
+extern crate url;
+
+use std::borrow::Borrow;
 use std::net::TcpStream;
 use std::marker::PhantomData;
 use std::io::Result as IoResult;
@@ -8,6 +11,27 @@ use std::io::{
 };
 use std::ops::Deref;
 
+use self::url::{
+    Url,
+    Position,
+};
+use openssl::ssl::{
+    SslContext,
+    SslMethod,
+    SslStream,
+};
+use hyper::version::HttpVersion;
+use hyper::header::{
+    Headers,
+    Host,
+    Connection,
+    ConnectionOption,
+    Upgrade,
+    Protocol,
+    ProtocolName,
+};
+use unicase::UniCase;
+
 use ws;
 use ws::sender::Sender as SenderTrait;
 use ws::util::url::ToWebSocketUrlComponents;
@@ -16,6 +40,14 @@ use ws::receiver::{
     MessageIterator,
 };
 use ws::receiver::Receiver as ReceiverTrait;
+use header::extensions::Extension;
+use header::{
+    WebSocketKey,
+    WebSocketVersion,
+    WebSocketProtocol,
+    WebSocketExtensions,
+    Origin
+};
 use result::WebSocketResult;
 use stream::{
 	  AsTcpStream,
@@ -24,68 +56,201 @@ use stream::{
     Shutdown,
 };
 use dataframe::DataFrame;
+
 use ws::dataframe::DataFrame as DataFrameable;
-
-use openssl::ssl::{SslContext, SslMethod, SslStream};
-
+use sender::Sender;
+use receiver::Receiver;
 pub use self::request::Request;
 pub use self::response::Response;
-
-use sender::Sender;
 pub use sender::Writer;
-
-use receiver::Receiver;
 pub use receiver::Reader;
 
 pub mod request;
 pub mod response;
 
-/// Represents a WebSocket client, which can send and receive messages/data frames.
-///
-/// `D` is the data frame type, `S` is the type implementing `Sender<D>` and `R`
-/// is the type implementing `Receiver<D>`.
-///
-/// For most cases, the data frame type will be `dataframe::DataFrame`, the Sender
-/// type will be `client::Sender<stream::WebSocketStream>` and the receiver type
-/// will be `client::Receiver<stream::WebSocketStream>`.
-///
-/// A `Client` can be split into a `Sender` and a `Receiver` which can then be moved
-/// to different threads, often using a send loop and receiver loop concurrently,
-/// as shown in the client example in `examples/client.rs`.
-///
-///#Connecting to a Server
-///
-///```no_run
-///extern crate websocket;
-///# fn main() {
-///
-///use websocket::{Client, Message};
-///use websocket::client::request::Url;
-///
-///let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-///let request = Client::connect(url).unwrap(); // Connect to the server
-///let response = request.send().unwrap(); // Send the request
-///response.validate().unwrap(); // Ensure the response is valid
-///
-///let mut client = response.begin(); // Get a Client
-///
-///let message = Message::text("Hello, World!");
-///client.send_message(&message).unwrap(); // Send message
-///# }
-///```
-pub struct Client<S>
-    where S: Stream,
-{
-	  stream: S,
-    sender: Sender,
-    receiver: Receiver,
+// TODO: if using URL, remove the to url components trait
+// TODO: implement ToOwned
+/// Build clients with a builder-style API
+pub struct ClientBuilder<'u, 's> {
+    url: &'u Url,
+    version: HttpVersion,
+	  headers: Headers,
+    version_set: bool,
+    key_set: bool,
+    ssl_context: Option<&'s SslContext>,
 }
-// TODO: add back client.split()
 
-pub struct ClientBuilder<S>
-    where S: Stream,
-{
-    stream: S,
+macro_rules! upsert_header {
+    ($headers:expr; $header:ty; {
+        Some($pat:pat) => $some_match:expr,
+        None => $default:expr
+    }) => {{
+        match $headers.has::<$header>() {
+            true => {
+                match $headers.get_mut::<$header>() {
+                    Some($pat) => { $some_match; },
+                    None => (),
+                };
+            }
+            false => {
+                $headers.set($default);
+            },
+        };
+    }}
+}
+
+impl<'u, 's> ClientBuilder<'u, 's> {
+    pub fn new(url: &'u Url) -> Self {
+        ClientBuilder {
+            url: url,
+			      version: HttpVersion::Http11,
+            version_set: false,
+            key_set: false,
+            ssl_context: None,
+            headers: Headers::new(),
+        }
+    }
+
+    pub fn add_protocol<P>(mut self, protocol: P) -> Self
+        where P: Into<String>,
+    {
+        upsert_header!(self.headers; WebSocketProtocol; {
+            Some(protos) => protos.0.push(protocol.into()),
+            None => WebSocketProtocol(vec![protocol.into()])
+        });
+        self
+    }
+
+    pub fn add_protocols<I, S>(mut self, protocols: I) -> Self
+        where I: IntoIterator<Item = S>,
+              S: Into<String>,
+    {
+        let mut protocols: Vec<String> = protocols.into_iter()
+            .map(Into::into).collect();
+
+        upsert_header!(self.headers; WebSocketProtocol; {
+            Some(protos) => protos.0.append(&mut protocols),
+            None => WebSocketProtocol(protocols)
+        });
+        self
+    }
+
+    pub fn clear_protocols(mut self) -> Self {
+        self.headers.remove::<WebSocketProtocol>();
+        self
+    }
+
+    pub fn add_extension(mut self, extension: Extension) -> Self
+    {
+        upsert_header!(self.headers; WebSocketExtensions; {
+            Some(protos) => protos.0.push(extension),
+            None => WebSocketExtensions(vec![extension])
+        });
+        self
+    }
+
+    pub fn add_extensions<I>(mut self, extensions: I) -> Self
+        where I: IntoIterator<Item = Extension>,
+    {
+        let mut extensions: Vec<Extension> = extensions.into_iter().collect();
+        upsert_header!(self.headers; WebSocketExtensions; {
+            Some(protos) => protos.0.append(&mut extensions),
+            None => WebSocketExtensions(extensions)
+        });
+        self
+    }
+
+    pub fn clear_extensions(mut self) -> Self {
+        self.headers.remove::<WebSocketExtensions>();
+        self
+    }
+
+	  pub fn key(mut self, key: [u8; 16]) -> Self {
+        self.headers.set(WebSocketKey(key));
+        self.key_set = true;
+        self
+	  }
+
+    pub fn clear_key(mut self) -> Self {
+        self.headers.remove::<WebSocketKey>();
+        self.key_set = false;
+        self
+    }
+
+	  pub fn version(mut self, version: WebSocketVersion) -> Self {
+        self.headers.set(version);
+        self.version_set = true;
+        self
+	  }
+
+    pub fn clear_version(mut self) -> Self {
+        self.headers.remove::<WebSocketVersion>();
+        self.version_set = false;
+        self
+    }
+
+	  pub fn origin(mut self, origin: String) -> Self {
+        self.headers.set(Origin(origin));
+        self
+	  }
+
+    pub fn custom_headers<F>(mut self, edit: F) -> Self
+        where F: Fn(&mut Headers),
+    {
+        edit(&mut self.headers);
+        self
+    }
+
+    pub fn ssl_context(mut self, context: &'s SslContext) -> Self {
+        self.ssl_context = Some(context);
+        self
+    }
+
+    pub fn connect_on<S>(&mut self, mut stream: S) -> WebSocketResult<Client<S>>
+        where S: Stream,
+    {
+        // Get info about ports
+        let is_ssl = self.url.scheme() == "wss";
+        let port = match self.url.port() {
+            Some(port) => port,
+            None if is_ssl => 443,
+            None => 80,
+        };
+        let host = match self.url.host_str() {
+            Some(h) => h,
+            None => unimplemented!(),
+        };
+        let resource = self.url[Position::BeforePath..Position::AfterQuery]
+            .to_owned();
+
+        // set host header and other headers
+		    self.headers.set(Host {
+            hostname: host.to_string(),
+            port: self.url.port(),
+        });
+
+		    self.headers.set(Connection(vec![
+			      ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
+		    ]));
+
+		    self.headers.set(Upgrade(vec![Protocol {
+			      name: ProtocolName::WebSocket,
+            // TODO: actually correct or just works?
+			      version: None
+		    }]));
+
+        if !self.version_set {
+		        self.headers.set(WebSocketVersion::WebSocket13);
+        }
+
+        if !self.key_set {
+		        self.headers.set(WebSocketKey::new());
+        }
+
+		    try!(write!(stream.writer(), "GET {} {}\r\n", resource, self.version));
+		    try!(write!(stream.writer(), "{}\r\n", self.headers));
+        unimplemented!();
+    }
 }
 
 // impl Client<TcpStream> {
@@ -164,6 +329,48 @@ pub struct ClientBuilder<S>
 // 	}
 // }
 
+/// Represents a WebSocket client, which can send and receive messages/data frames.
+///
+/// `D` is the data frame type, `S` is the type implementing `Sender<D>` and `R`
+/// is the type implementing `Receiver<D>`.
+///
+/// For most cases, the data frame type will be `dataframe::DataFrame`, the Sender
+/// type will be `client::Sender<stream::WebSocketStream>` and the receiver type
+/// will be `client::Receiver<stream::WebSocketStream>`.
+///
+/// A `Client` can be split into a `Sender` and a `Receiver` which can then be moved
+/// to different threads, often using a send loop and receiver loop concurrently,
+/// as shown in the client example in `examples/client.rs`.
+///
+///#Connecting to a Server
+///
+///```no_run
+///extern crate websocket;
+///# fn main() {
+///
+///use websocket::{Client, Message};
+///use websocket::client::request::Url;
+///
+///let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
+///let request = Client::connect(url).unwrap(); // Connect to the server
+///let response = request.send().unwrap(); // Send the request
+///response.validate().unwrap(); // Ensure the response is valid
+///
+///let mut client = response.begin(); // Get a Client
+///
+///let message = Message::text("Hello, World!");
+///client.send_message(&message).unwrap(); // Send message
+///# }
+///```
+pub struct Client<S>
+    where S: Stream,
+{
+	  stream: S,
+    sender: Sender,
+    receiver: Receiver,
+}
+
+// TODO: maybe make shutdown options only for TcpStream? how does it work with SslStream?
 impl<S> Client<S>
     where S: AsTcpStream + Stream,
 {
@@ -188,10 +395,15 @@ impl<S> Client<S>
     // TODO: add net2 set_nonblocking and stuff
 }
 
-impl<S> Client<S>
+impl<'u, 'p, 'e, 's, S> Client<S>
     where S: Stream,
 {
-	  /// Crtes a Client from the given Sender and Receiver.
+
+    pub fn build<C>(address: &'u Url) -> ClientBuilder<'u, 's> {
+        ClientBuilder::new(address)
+    }
+
+	  /// Creates a Client from the given Sender and Receiver.
 	  ///
 	  /// Esstiallthe opposite of `Client.split()`.
 	  fn new(stream: S) -> Self {
