@@ -123,6 +123,8 @@ pub enum WSUrlErrorKind {
     CannotSetFragment,
     /// The scheme provided is invalid for a WebSocket
     InvalidScheme,
+    /// There is no hostname or IP address to connect to
+    NoHostName,
 }
 
 impl fmt::Display for WSUrlErrorKind {
@@ -137,7 +139,8 @@ impl Error for WSUrlErrorKind {
     fn description(&self) -> &str {
         match *self {
             WSUrlErrorKind::CannotSetFragment => "WebSocket URL cannot set fragment",
-            WSUrlErrorKind::InvalidScheme => "WebSocket URL invalid scheme"
+            WSUrlErrorKind::InvalidScheme => "WebSocket URL invalid scheme",
+            WSUrlErrorKind::NoHostName => "WebSocket URL no host name provided",
         }
     }
 }

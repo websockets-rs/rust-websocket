@@ -9,7 +9,6 @@ use ws::Message;
 use ws::dataframe::DataFrame;
 use result::WebSocketResult;
 
-// TODO: maybe this is not needed anymore
 /// A trait for receiving data frames and messages.
 pub trait Receiver: Sized
 {

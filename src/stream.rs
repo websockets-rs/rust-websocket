@@ -2,6 +2,7 @@
 // TODO: add mio support & tokio
 // extern crate mio;
 
+use std::ops::Deref;
 use std::io::{
 	  self,
 	  Read,
@@ -69,6 +70,52 @@ impl<R, W> Stream for ReadWritePair<R, W>
 	  }
 }
 
+pub trait ReadWrite: Read + Write {}
+impl<S> ReadWrite for S where S: Read + Write {}
+
+pub struct BoxedStream(pub Box<ReadWrite>);
+
+impl Stream for BoxedStream {
+    type Reader = Box<ReadWrite>;
+    type Writer = Box<ReadWrite>;
+
+	  #[inline]
+	  fn reader(&mut self) -> &mut Self::Reader {
+        &mut self.0
+	  }
+
+	  #[inline]
+	  fn writer(&mut self) -> &mut Self::Writer {
+        &mut self.0
+	  }
+}
+
+pub trait NetworkStream: Read + Write + AsTcpStream {}
+impl<S> NetworkStream for S where S: Read + Write + AsTcpStream {}
+
+pub struct BoxedNetworkStream(pub Box<NetworkStream>);
+
+impl AsTcpStream for BoxedNetworkStream {
+    fn as_tcp(&self) -> &TcpStream {
+        self.0.deref().as_tcp()
+    }
+}
+
+impl Stream for BoxedNetworkStream {
+    type Reader = Box<NetworkStream>;
+    type Writer = Box<NetworkStream>;
+
+	  #[inline]
+	  fn reader(&mut self) -> &mut Self::Reader {
+        &mut self.0
+	  }
+
+	  #[inline]
+	  fn writer(&mut self) -> &mut Self::Writer {
+        &mut self.0
+	  }
+}
+
 impl Splittable for TcpStream {
 	  type Reader = TcpStream;
     type Writer = TcpStream;
@@ -108,6 +155,14 @@ impl AsTcpStream for TcpStream {
 impl AsTcpStream for SslStream<TcpStream> {
     fn as_tcp(&self) -> &TcpStream {
         self.get_ref()
+    }
+}
+
+impl<T> AsTcpStream for Box<T>
+    where T: AsTcpStream,
+{
+    fn as_tcp(&self) -> &TcpStream {
+        self.deref().as_tcp()
     }
 }
 

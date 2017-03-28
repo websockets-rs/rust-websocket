@@ -7,7 +7,6 @@ use ws::Message;
 use ws::dataframe::DataFrame;
 use result::WebSocketResult;
 
-// TODO: maybe this is not needed anymore
 /// A trait for sending data frames and messages.
 pub trait Sender {
 	/// Sends a single data frame using this sender.
