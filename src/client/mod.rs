@@ -2,17 +2,13 @@
 extern crate url;
 
 use std::borrow::{
-    Borrow,
     Cow,
 };
 use std::net::TcpStream;
-use std::marker::PhantomData;
 use std::io::Result as IoResult;
 use std::io::{
-    Read,
     Write,
 };
-use std::ops::Deref;
 
 use self::url::{
     Url,

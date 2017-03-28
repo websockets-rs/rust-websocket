@@ -18,7 +18,7 @@ impl<W> Writer<W>
     where W: Write,
 {
 	  /// Sends a single data frame to the remote endpoint.
-	  fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
+	  pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
 	      where D: DataFrame,
               W: Write,
     {

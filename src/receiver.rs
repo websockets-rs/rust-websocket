@@ -2,7 +2,6 @@
 
 use std::io::Read;
 use std::io::Result as IoResult;
-use hyper::buffer::BufReader;
 
 use dataframe::{
     DataFrame,

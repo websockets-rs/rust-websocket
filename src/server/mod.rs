@@ -28,7 +28,7 @@ use self::upgrade::{
 	WsUpgrade,
 	IntoWs,
 };
-pub use self::upgrade::hyper::{
+pub use self::upgrade::{
 	Request,
 	HyperIntoWsError,
 };
