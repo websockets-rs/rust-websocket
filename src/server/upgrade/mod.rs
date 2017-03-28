@@ -5,6 +5,11 @@ extern crate hyper as real_hyper;
 use std::error::Error;
 use std::net::TcpStream;
 use std::io;
+use std::io::Result as IoResult;
+use std::io::Error as IoError;
+use std::io::{
+    Write,
+};
 use std::fmt::{
 	  Formatter,
 	  Display,
@@ -14,11 +19,19 @@ use stream::{
 	  Stream,
 	  AsTcpStream,
 };
+use header::extensions::Extension;
 use header::{
+    WebSocketAccept,
 	  WebSocketKey,
 	  WebSocketVersion,
+    WebSocketProtocol,
+    WebSocketExtensions,
+    Origin,
 };
+use client::Client;
 
+use unicase::UniCase;
+use self::real_hyper::status::StatusCode;
 pub use self::real_hyper::http::h1::Incoming;
 pub use self::real_hyper::method::Method;
 pub use self::real_hyper::version::HttpVersion;
@@ -28,6 +41,7 @@ pub use self::real_hyper::http::h1::parse_request;
 pub use self::real_hyper::header::{
 	  Headers,
 	  Upgrade,
+    Protocol,
 	  ProtocolName,
 	  Connection,
 	  ConnectionOption,
@@ -51,17 +65,78 @@ pub struct WsUpgrade<S>
 impl<S> WsUpgrade<S>
     where S: Stream,
 {
-	  pub fn accept(self) {
-		    unimplemented!();
+	  pub fn accept(self) -> IoResult<Client<S>> {
+        self.accept_with(&Headers::new())
 	  }
 
-	  pub fn reject(self) -> S {
-		    unimplemented!();
+	  pub fn accept_with(mut self, custom_headers: &Headers) -> IoResult<Client<S>> {
+        let mut headers = Headers::new();
+        headers.extend(custom_headers.iter());
+        headers.set(WebSocketAccept::new(
+            // NOTE: we know there is a key because this is a valid request
+            // i.e. to construct this you must go through the validate function
+            self.request.headers.get::<WebSocketKey>().unwrap()
+        ));
+		    headers.set(Connection(vec![
+			      ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
+		    ]));
+        headers.set(Upgrade(vec![
+            // TODO: really not set a version for this?
+            Protocol::new(ProtocolName::WebSocket, None)
+        ]));
+
+        try!(self.send(StatusCode::SwitchingProtocols, &headers));
+
+        Ok(Client::unchecked(self.stream))
 	  }
+
+	  pub fn reject(self) -> Result<S, (S, IoError)> {
+        self.reject_with(&Headers::new())
+	  }
+
+    pub fn reject_with(mut self, headers: &Headers) -> Result<S, (S, IoError)> {
+        match self.send(StatusCode::BadRequest, headers) {
+            Ok(()) => Ok(self.stream),
+            Err(e) => Err((self.stream, e))
+        }
+    }
+
+    pub fn drop(self) {
+        ::std::mem::drop(self);
+    }
+
+    pub fn protocols(&self) -> Option<&[String]> {
+        self.request.headers.get::<WebSocketProtocol>().map(|p| p.0.as_slice())
+    }
+
+    pub fn extensions(&self) -> Option<&[Extension]> {
+        self.request.headers.get::<WebSocketExtensions>().map(|e| e.0.as_slice())
+    }
+
+    pub fn key(&self) -> Option<&[u8; 16]> {
+        self.request.headers.get::<WebSocketKey>().map(|k| &k.0)
+    }
+
+    pub fn version(&self) -> Option<&WebSocketVersion> {
+        self.request.headers.get::<WebSocketVersion>()
+    }
+
+    pub fn origin(&self) -> Option<&str> {
+        self.request.headers.get::<Origin>().map(|o| &o.0 as &str)
+    }
 
 	  pub fn into_stream(self) -> S {
-		    unimplemented!();
+        self.stream
 	  }
+
+    fn send(&mut self,
+            status: StatusCode,
+            headers: &Headers
+    ) -> IoResult<()> {
+		    try!(write!(self.stream.writer(), "{} {}\r\n", self.request.version, status));
+		    try!(write!(self.stream.writer(), "{}\r\n", headers));
+        Ok(())
+    }
 }
 
 impl<S> WsUpgrade<S>
