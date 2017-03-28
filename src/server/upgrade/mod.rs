@@ -81,7 +81,6 @@ impl<S> WsUpgrade<S>
 			      ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
 		    ]));
         headers.set(Upgrade(vec![
-            // TODO: really not set a version for this?
             Protocol::new(ProtocolName::WebSocket, None)
         ]));
 

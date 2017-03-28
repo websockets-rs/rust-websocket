@@ -1,10 +1,12 @@
 //! Contains the WebSocket client.
 extern crate url;
+extern crate net2;
 
 use std::borrow::{
     Cow,
 };
 use std::net::TcpStream;
+use std::net::SocketAddr;
 use std::io::Result as IoResult;
 use std::io::{
     Write,
@@ -35,6 +37,7 @@ use hyper::header::{
     ProtocolName,
 };
 use unicase::UniCase;
+use self::net2::TcpStreamExt;
 
 use ws;
 use ws::sender::Sender as SenderTrait;
@@ -111,7 +114,7 @@ pub use self::builder::ClientBuilder;
 pub struct Client<S>
     where S: Stream,
 {
-    stream: S,
+    pub stream: S,
     sender: Sender,
     receiver: Receiver,
 }
@@ -130,7 +133,6 @@ impl Client<TcpStream> {
     }
 }
 
-// TODO: add net2 set_nonblocking and stuff
 impl<S> Client<S>
     where S: AsTcpStream + Stream,
 {
@@ -138,6 +140,31 @@ impl<S> Client<S>
     /// return immediately with an appropriate value.
     pub fn shutdown(&self) -> IoResult<()> {
         self.stream.as_tcp().shutdown(Shutdown::Both)
+    }
+
+    /// See `TcpStream.peer_addr()`.
+    pub fn peer_addr(&self) -> IoResult<SocketAddr> {
+        self.stream.as_tcp().peer_addr()
+	  }
+
+	  /// See `TcpStream.local_addr()`.
+	  pub fn local_addr(&self) -> IoResult<SocketAddr> {
+        self.stream.as_tcp().local_addr()
+	  }
+
+	  /// See `TcpStream.set_nodelay()`.
+	  pub fn set_nodelay(&mut self, nodelay: bool) -> IoResult<()> {
+        self.stream.as_tcp().set_nodelay(nodelay)
+	  }
+
+	  /// See `TcpStream.set_keepalive()`.
+	  pub fn set_keepalive(&mut self, delay_in_ms: Option<u32>) -> IoResult<()> {
+        TcpStreamExt::set_keepalive_ms(self.stream.as_tcp(), delay_in_ms)
+	  }
+
+    /// Changes whether the stream is in nonblocking mode.
+    pub fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
+        self.stream.as_tcp().set_nonblocking(nonblocking)
     }
 }
 
@@ -160,9 +187,9 @@ impl<'u, 'p, 'e, 's, S> Client<S>
     pub fn unchecked(stream: S) -> Self {
         Client {
             stream: stream,
-            // TODO: always true?
+            // NOTE: these are always true & false, see
+            // https://tools.ietf.org/html/rfc6455#section-5
             sender: Sender::new(true),
-            // TODO: always false?
             receiver: Receiver::new(false),
         }
     }
@@ -293,10 +320,10 @@ impl<S> Client<S>
     pub fn split(self) -> IoResult<(Reader<<S as Splittable>::Reader>, Writer<<S as Splittable>::Writer>)> {
         let (read, write) = try!(self.stream.split());
         Ok((Reader {
-            reader: read,
+            stream: read,
             receiver: self.receiver,
         }, Writer {
-            writer: write,
+            stream: write,
             sender: self.sender,
         }))
     }

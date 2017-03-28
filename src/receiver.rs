@@ -28,7 +28,7 @@ pub use stream::Shutdown;
 pub struct Reader<R>
     where R: Read
 {
-    pub reader: R,
+    pub stream: R,
     pub receiver: Receiver,
 }
 
@@ -37,12 +37,12 @@ impl<R> Reader<R>
 {
 	  /// Reads a single data frame from the remote endpoint.
 	  pub fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
-		    self.receiver.recv_dataframe(&mut self.reader)
+		    self.receiver.recv_dataframe(&mut self.stream)
 	  }
 
 	  /// Returns an iterator over incoming data frames.
 	  pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, R> {
-		    self.receiver.incoming_dataframes(&mut self.reader)
+		    self.receiver.incoming_dataframes(&mut self.stream)
 	  }
 
 	  /// Reads a single message from this receiver.
@@ -50,14 +50,14 @@ impl<R> Reader<R>
 	      where M: ws::Message<'m, DataFrame, DataFrameIterator = I>,
               I: Iterator<Item = DataFrame>
     {
-		    self.receiver.recv_message(&mut self.reader)
+		    self.receiver.recv_message(&mut self.stream)
 	  }
 
 	  pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Receiver, D, M, R>
 	      where M: ws::Message<'a, D>,
               D: DataFrameable
     {
-		    self.receiver.incoming_messages(&mut self.reader)
+		    self.receiver.incoming_messages(&mut self.stream)
 	  }
 }
 
@@ -67,13 +67,13 @@ impl<S> Reader<S>
 	  /// Closes the receiver side of the connection, will cause all pending and future IO to
 	  /// return immediately with an appropriate value.
 	  pub fn shutdown(&self) -> IoResult<()> {
-		    self.reader.as_tcp().shutdown(Shutdown::Read)
+		    self.stream.as_tcp().shutdown(Shutdown::Read)
 	  }
 
 	  /// Shuts down both Sender and Receiver, will cause all pending and future IO to
 	  /// return immediately with an appropriate value.
 	  pub fn shutdown_all(&self) -> IoResult<()> {
-		    self.reader.as_tcp().shutdown(Shutdown::Both)
+		    self.stream.as_tcp().shutdown(Shutdown::Both)
 	  }
 }
 

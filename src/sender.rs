@@ -10,7 +10,7 @@ use ws::sender::Sender as SenderTrait;
 pub use stream::Shutdown;
 
 pub struct Writer<W> {
-    pub writer: W,
+    pub stream: W,
     pub sender: Sender,
 }
 
@@ -22,7 +22,7 @@ impl<W> Writer<W>
 	      where D: DataFrame,
               W: Write,
     {
-        self.sender.send_dataframe(&mut self.writer, dataframe)
+        self.sender.send_dataframe(&mut self.stream, dataframe)
     }
 
 	  /// Sends a single message to the remote endpoint.
@@ -30,7 +30,7 @@ impl<W> Writer<W>
 	      where M: ws::Message<'m, D>,
               D: DataFrame
     {
-		    self.sender.send_message(&mut self.writer, message)
+		    self.sender.send_message(&mut self.stream, message)
 	  }
 }
 
@@ -40,13 +40,13 @@ impl<S> Writer<S>
 	  /// Closes the sender side of the connection, will cause all pending and future IO to
 	  /// return immediately with an appropriate value.
 	  pub fn shutdown(&self) -> IoResult<()> {
-		    self.writer.as_tcp().shutdown(Shutdown::Write)
+		    self.stream.as_tcp().shutdown(Shutdown::Write)
 	  }
 
 	  /// Shuts down both Sender and Receiver, will cause all pending and future IO to
 	  /// return immediately with an appropriate value.
 	  pub fn shutdown_all(&self) -> IoResult<()> {
-		    self.writer.as_tcp().shutdown(Shutdown::Both)
+		    self.stream.as_tcp().shutdown(Shutdown::Both)
 	  }
 }
 

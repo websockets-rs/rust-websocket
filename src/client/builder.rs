@@ -262,7 +262,6 @@ impl<'u, 's> ClientBuilder<'u, 's> {
 
         self.headers.set(Upgrade(vec![Protocol {
             name: ProtocolName::WebSocket,
-            // TODO: actually correct or just works?
             version: None
         }]));
 
