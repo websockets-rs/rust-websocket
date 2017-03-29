@@ -1,6 +1,4 @@
 //! Provides the default stream type for WebSocket connections.
-// TODO: add mio support & tokio
-// extern crate mio;
 
 use std::ops::Deref;
 use std::io::{
