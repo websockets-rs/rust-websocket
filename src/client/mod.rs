@@ -4,6 +4,7 @@ extern crate url;
 use std::net::TcpStream;
 use std::net::SocketAddr;
 use std::io::Result as IoResult;
+use hyper::header::Headers;
 
 use ws;
 use ws::sender::Sender as SenderTrait;
@@ -12,6 +13,8 @@ use ws::receiver::Receiver as ReceiverTrait;
 use result::WebSocketResult;
 use stream::{AsTcpStream, Stream, Splittable, Shutdown};
 use dataframe::DataFrame;
+use header::{WebSocketProtocol, WebSocketExtensions, Origin};
+use header::extensions::Extension;
 
 use ws::dataframe::DataFrame as DataFrameable;
 use sender::Sender;
@@ -54,6 +57,7 @@ pub struct Client<S>
 	where S: Stream
 {
 	pub stream: S,
+	headers: Headers,
 	sender: Sender,
 	receiver: Receiver,
 }
@@ -109,8 +113,9 @@ impl<S> Client<S>
 	/// **without sending any handshake** this is meant to only be used with
 	/// a stream that has a websocket connection already set up.
 	/// If in doubt, don't use this!
-	pub fn unchecked(stream: S) -> Self {
+	pub fn unchecked(stream: S, headers: Headers) -> Self {
 		Client {
+			headers: headers,
 			stream: stream,
 			// NOTE: these are always true & false, see
 			// https://tools.ietf.org/html/rfc6455#section-5
@@ -152,12 +157,38 @@ impl<S> Client<S>
 		self.receiver.recv_message(self.stream.reader())
 	}
 
+	pub fn headers(&self) -> &Headers {
+		&self.headers
+	}
+
+	pub fn protocols(&self) -> &[String] {
+		self.headers
+		    .get::<WebSocketProtocol>()
+		    .map(|p| p.0.as_slice())
+		    .unwrap_or(&[])
+	}
+
+	pub fn extensions(&self) -> &[Extension] {
+		self.headers
+		    .get::<WebSocketExtensions>()
+		    .map(|e| e.0.as_slice())
+		    .unwrap_or(&[])
+	}
+
+	pub fn origin(&self) -> Option<&str> {
+		self.headers.get::<Origin>().map(|o| &o.0 as &str)
+	}
+
 	pub fn stream_ref(&self) -> &S {
 		&self.stream
 	}
 
 	pub fn stream_ref_mut(&mut self) -> &mut S {
 		&mut self.stream
+	}
+
+	pub fn into_stream(self) -> S {
+		self.stream
 	}
 
 	/// Returns an iterator over incoming messages.

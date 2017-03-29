@@ -37,33 +37,65 @@ pub mod hyper;
 pub struct WsUpgrade<S>
 	where S: Stream
 {
-	stream: S,
-	request: Request,
+	pub headers: Headers,
+	pub stream: S,
+	pub request: Request,
 }
 
 impl<S> WsUpgrade<S>
     where S: Stream
 {
-	pub fn accept(self) -> IoResult<Client<S>> {
+	pub fn use_protocol<P>(mut self, protocol: P) -> Self
+		where P: Into<String>
+	{
+		upsert_header!(self.headers; WebSocketProtocol; {
+            Some(protos) => protos.0.push(protocol.into()),
+            None => WebSocketProtocol(vec![protocol.into()])
+        });
+		self
+	}
+
+	pub fn use_extension(mut self, extension: Extension) -> Self {
+		upsert_header!(self.headers; WebSocketExtensions; {
+            Some(protos) => protos.0.push(extension),
+            None => WebSocketExtensions(vec![extension])
+        });
+		self
+	}
+
+	pub fn use_extensions<I>(mut self, extensions: I) -> Self
+		where I: IntoIterator<Item = Extension>
+	{
+		let mut extensions: Vec<Extension> =
+			extensions.into_iter().collect();
+		upsert_header!(self.headers; WebSocketExtensions; {
+            Some(protos) => protos.0.append(&mut extensions),
+            None => WebSocketExtensions(extensions)
+        });
+		self
+	}
+
+	pub fn accept(self) -> Result<Client<S>, (S, IoError)> {
 		self.accept_with(&Headers::new())
 	}
 
-	pub fn accept_with(mut self, custom_headers: &Headers) -> IoResult<Client<S>> {
-		let mut headers = Headers::new();
-		headers.extend(custom_headers.iter());
-		headers.set(WebSocketAccept::new(
-            // NOTE: we know there is a key because this is a valid request
-            // i.e. to construct this you must go through the validate function
-            self.request.headers.get::<WebSocketKey>().unwrap()
-        ));
-		headers.set(Connection(vec![
+	pub fn accept_with(mut self, custom_headers: &Headers) -> Result<Client<S>, (S, IoError)> {
+		self.headers.extend(custom_headers.iter());
+		self.headers
+		    .set(WebSocketAccept::new(// NOTE: we know there is a key because this is a valid request
+		                              // i.e. to construct this you must go through the validate function
+		                              self.request.headers.get::<WebSocketKey>().unwrap()));
+		self.headers
+		    .set(Connection(vec![
 			      ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
 		    ]));
-		headers.set(Upgrade(vec![Protocol::new(ProtocolName::WebSocket, None)]));
+		self.headers.set(Upgrade(vec![Protocol::new(ProtocolName::WebSocket, None)]));
 
-		try!(self.send(StatusCode::SwitchingProtocols, &headers));
+		if let Err(e) = self.send(StatusCode::SwitchingProtocols) {
+			return Err((self.stream, e));
+		}
 
-		Ok(Client::unchecked(self.stream))
+		Ok(Client::unchecked(self.stream, self.headers))
 	}
 
 	pub fn reject(self) -> Result<S, (S, IoError)> {
@@ -71,7 +103,8 @@ impl<S> WsUpgrade<S>
 	}
 
 	pub fn reject_with(mut self, headers: &Headers) -> Result<S, (S, IoError)> {
-		match self.send(StatusCode::BadRequest, headers) {
+		self.headers.extend(headers.iter());
+		match self.send(StatusCode::BadRequest) {
 			Ok(()) => Ok(self.stream),
 			Err(e) => Err((self.stream, e)),
 		}
@@ -113,12 +146,12 @@ impl<S> WsUpgrade<S>
 		self.stream
 	}
 
-	fn send(&mut self, status: StatusCode, headers: &Headers) -> IoResult<()> {
+	fn send(&mut self, status: StatusCode) -> IoResult<()> {
 		try!(write!(self.stream.writer(),
 		            "{} {}\r\n",
 		            self.request.version,
 		            status));
-		try!(write!(self.stream.writer(), "{}\r\n", headers));
+		try!(write!(self.stream.writer(), "{}\r\n", self.headers));
 		Ok(())
 	}
 }
@@ -173,6 +206,7 @@ impl<S> IntoWs for S
 		match validate(&request.subject.0, &request.version, &request.headers) {
 			Ok(_) => {
 				Ok(WsUpgrade {
+				       headers: Headers::new(),
 				       stream: self,
 				       request: request,
 				   })
@@ -192,6 +226,7 @@ impl<S> IntoWs for RequestStreamPair<S>
 		match validate(&self.1.subject.0, &self.1.version, &self.1.headers) {
 			Ok(_) => {
 				Ok(WsUpgrade {
+				       headers: Headers::new(),
 				       stream: self.0,
 				       request: self.1,
 				   })

@@ -38,8 +38,7 @@ fn main() {
 				return;
 			}
 
-			// TODO: same check like in server.rs
-			let mut client = connection.accept().unwrap();
+			let mut client = connection.use_protocol("rust-websocket").accept().unwrap();
 
 			let ip = client.peer_addr().unwrap();
 

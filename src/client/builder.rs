@@ -20,25 +20,6 @@ use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
 use stream::Stream;
 use super::Client;
 
-macro_rules! upsert_header {
-    ($headers:expr; $header:ty; {
-        Some($pat:pat) => $some_match:expr,
-        None => $default:expr
-    }) => {{
-        match $headers.has::<$header>() {
-            true => {
-                match $headers.get_mut::<$header>() {
-                    Some($pat) => { $some_match; },
-                    None => (),
-                };
-            }
-            false => {
-                $headers.set($default);
-            },
-        };
-    }}
-}
-
 /// Build clients with a builder-style API
 #[derive(Clone, Debug)]
 pub struct ClientBuilder<'u> {
@@ -305,6 +286,6 @@ impl<'u> ClientBuilder<'u> {
 			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'"));
 		}
 
-		Ok(Client::unchecked(stream))
+		Ok(Client::unchecked(stream, response.headers))
 	}
 }

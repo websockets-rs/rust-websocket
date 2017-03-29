@@ -60,6 +60,26 @@ pub use self::stream::Stream;
 pub use self::ws::Sender;
 pub use self::ws::Receiver;
 
+macro_rules! upsert_header {
+    ($headers:expr; $header:ty; {
+        Some($pat:pat) => $some_match:expr,
+        None => $default:expr
+    }) => {{
+        match $headers.has::<$header>() {
+            true => {
+                match $headers.get_mut::<$header>() {
+                    Some($pat) => { $some_match; },
+                    None => (),
+                };
+            }
+            false => {
+                $headers.set($default);
+            },
+        };
+    }}
+}
+
+
 pub mod ws;
 pub mod client;
 pub mod server;

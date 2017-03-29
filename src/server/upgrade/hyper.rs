@@ -30,6 +30,7 @@ impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 		let stream = reader.into_inner().get_mut();
 
 		Ok(WsUpgrade {
+		       headers: Headers::new(),
 		       stream: stream,
 		       request: Incoming {
 		           version: version,

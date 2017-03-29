@@ -4,14 +4,6 @@ use std::thread;
 use websocket::{Server, Message};
 use websocket::message::Type;
 
-// TODO: I think the .reject() call is only for malformed packets
-// there should be an easy way to accept the socket with the given protocols
-// this would mean there should be a way to accept or reject on the client
-// Do you send the protocol you want to talk when you are not given it as an
-// option? What is a rejection response? Does the client check for it?
-// Client should expose what the decided protocols/extensions/etc are.
-// can you accept only one protocol??
-
 fn main() {
 	let server = Server::bind("127.0.0.1:2794").unwrap();
 
@@ -23,7 +15,7 @@ fn main() {
 				return;
 			}
 
-			let mut client = request.accept().unwrap();
+			let mut client = request.use_protocol("rust-websocket").accept().unwrap();
 
 			let ip = client.peer_addr().unwrap();
 
