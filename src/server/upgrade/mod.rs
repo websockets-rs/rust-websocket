@@ -104,8 +104,10 @@ impl<S> WsUpgrade<S>
         ::std::mem::drop(self);
     }
 
-    pub fn protocols(&self) -> Option<&[String]> {
-        self.request.headers.get::<WebSocketProtocol>().map(|p| p.0.as_slice())
+    pub fn protocols(&self) -> &[String] {
+        self.request.headers.get::<WebSocketProtocol>()
+            .map(|p| p.0.as_slice())
+            .unwrap_or(&[])
     }
 
     pub fn extensions(&self) -> Option<&[Extension]> {

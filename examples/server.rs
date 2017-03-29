@@ -1,61 +1,57 @@
 extern crate websocket;
 
 use std::thread;
-use websocket::{Server, Message, Sender, Receiver};
+use websocket::{Server, Message};
 use websocket::message::Type;
 use websocket::header::WebSocketProtocol;
 
+// TODO: I think the .reject() call is only for malformed packets
+// there should be an easy way to accept the socket with the given protocols
+// this would mean there should be a way to accept or reject on the client
+// Do you send the protocol you want to talk when you are not given it as an
+// option? What is a rejection response? Does the client check for it?
+// Client should expose what the decided protocols/extensions/etc are.
+// can you accept only one protocol??
+
 fn main() {
-	let server = Server::bind("127.0.0.1:2794").unwrap();
+	  let server = Server::bind("127.0.0.1:2794").unwrap();
 
-	for connection in server {
-		// Spawn a new thread for each connection.
-		thread::spawn(move || {
-			let request = connection.unwrap().read_request().unwrap(); // Get the request
-			let headers = request.headers.clone(); // Keep the headers so we can check them
+	  for request in server {
+		    // Spawn a new thread for each connection.
+		    thread::spawn(move || {
+            if !request.protocols().contains(&"rust-websocket".to_string()) {
+                request.reject().unwrap();
+                return;
+            }
 
-			request.validate().unwrap(); // Validate the request
+			      let mut client = request.accept().unwrap();
 
-			let mut response = request.accept(); // Form a response
+			      let ip = client.peer_addr().unwrap();
 
-			if let Some(&WebSocketProtocol(ref protocols)) = headers.get() {
-				if protocols.contains(&("rust-websocket".to_string())) {
-					// We have a protocol we want to use
-					response.headers.set(WebSocketProtocol(vec!["rust-websocket".to_string()]));
-				}
-			}
+			      println!("Connection from {}", ip);
 
-			let mut client = response.send().unwrap(); // Send the response
+			      let message: Message = Message::text("Hello".to_string());
+			      client.send_message(&message).unwrap();
 
-			let ip = client.get_mut_sender()
-				.get_mut()
-				.peer_addr()
-				.unwrap();
+			      let (mut receiver, mut sender) = client.split().unwrap();
 
-			println!("Connection from {}", ip);
+			      for message in receiver.incoming_messages() {
+				        let message: Message = message.unwrap();
 
-			let message: Message = Message::text("Hello".to_string());
-			client.send_message(&message).unwrap();
-
-			let (mut sender, mut receiver) = client.split();
-
-			for message in receiver.incoming_messages() {
-				let message: Message = message.unwrap();
-
-				match message.opcode {
-					Type::Close => {
-						let message = Message::close();
-						sender.send_message(&message).unwrap();
-						println!("Client {} disconnected", ip);
-						return;
-					},
-					Type::Ping => {
-						let message = Message::pong(message.payload);
-						sender.send_message(&message).unwrap();
-					}
-					_ => sender.send_message(&message).unwrap(),
-				}
-			}
-		});
-	}
+				        match message.opcode {
+					          Type::Close => {
+						            let message = Message::close();
+						            sender.send_message(&message).unwrap();
+						            println!("Client {} disconnected", ip);
+						            return;
+					          },
+					          Type::Ping => {
+						            let message = Message::pong(message.payload);
+						            sender.send_message(&message).unwrap();
+					          }
+					          _ => sender.send_message(&message).unwrap(),
+				        }
+			      }
+		    });
+	  }
 }

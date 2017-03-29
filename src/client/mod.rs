@@ -8,11 +8,6 @@ use std::net::TcpStream;
 use std::net::SocketAddr;
 use std::io::Result as IoResult;
 
-use self::url::{
-    Url,
-    ParseError,
-};
-
 use ws;
 use ws::sender::Sender as SenderTrait;
 use ws::receiver::{
@@ -38,7 +33,11 @@ pub use sender::Writer;
 pub use receiver::Reader;
 
 pub mod builder;
-pub use self::builder::ClientBuilder;
+pub use self::builder::{
+    ClientBuilder,
+    Url,
+    ParseError,
+};
 
 /// Represents a WebSocket client, which can send and receive messages/data frames.
 ///
@@ -59,15 +58,10 @@ pub use self::builder::ClientBuilder;
 ///extern crate websocket;
 ///# fn main() {
 ///
-///use websocket::{Client, Message};
-///use websocket::client::request::Url;
+///use websocket::{ClientBuilder, Message};
 ///
-///let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-///let request = Client::connect(url).unwrap(); // Connect to the server
-///let response = request.send().unwrap(); // Send the request
-///response.validate().unwrap(); // Ensure the response is valid
-///
-///let mut client = response.begin(); // Get a Client
+///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
+///                     .connect(None).unwrap();
 ///
 ///let message = Message::text("Hello, World!");
 ///client.send_message(&message).unwrap(); // Send message
@@ -125,18 +119,9 @@ impl<S> Client<S>
     }
 }
 
-impl<'u, S> Client<S>
+impl<S> Client<S>
     where S: Stream,
 {
-    pub fn from_url(address: &'u Url) -> ClientBuilder<'u> {
-        ClientBuilder::new(Cow::Borrowed(address))
-    }
-
-    pub fn build(address: &str) -> Result<ClientBuilder<'u>, ParseError> {
-        let url = try!(Url::parse(address));
-        Ok(ClientBuilder::new(Cow::Owned(url)))
-    }
-
     /// Creates a Client from a given stream
     /// **without sending any handshake** this is meant to only be used with
     /// a stream that has a websocket connection already set up.
@@ -194,14 +179,10 @@ impl<'u, S> Client<S>
     ///```no_run
     ///# extern crate websocket;
     ///# fn main() {
-    ///use websocket::{Client, Message};
-    ///# use websocket::client::request::Url;
-    ///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-    ///# let request = Client::connect(url).unwrap(); // Connect to the server
-    ///# let response = request.send().unwrap(); // Send the request
-    ///# response.validate().unwrap(); // Ensure the response is valid
+    ///use websocket::{ClientBuilder, Message};
     ///
-    ///let mut client = response.begin(); // Get a Client
+    ///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
+    ///                     .connect(None).unwrap();
     ///
     ///for message in client.incoming_messages() {
     ///    let message: Message = message.unwrap();
@@ -217,15 +198,13 @@ impl<'u, S> Client<S>
     ///```no_run
     ///# extern crate websocket;
     ///# fn main() {
-    ///use websocket::{Client, Message, Sender, Receiver};
-    ///# use websocket::client::request::Url;
-    ///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-    ///# let request = Client::connect(url).unwrap(); // Connect to the server
-    ///# let response = request.send().unwrap(); // Send the request
-    ///# response.validate().unwrap(); // Ensure the response is valid
+    ///use websocket::{ClientBuilder, Message};
     ///
-    ///let client = response.begin(); // Get a Client
-    ///let (mut sender, mut receiver) = client.split(); // Split the Client
+    ///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
+    ///                     .connect_insecure().unwrap();
+    ///
+    ///let (mut receiver, mut sender) = client.split().unwrap();
+    ///
     ///for message in receiver.incoming_messages() {
     ///    let message: Message = message.unwrap();
     ///    // Echo the message back
@@ -251,17 +230,13 @@ impl<S> Client<S>
     ///```no_run
     ///# extern crate websocket;
     ///# fn main() {
-    ///use websocket::{Client, Message, Sender, Receiver};
     ///use std::thread;
-    ///# use websocket::client::request::Url;
-    ///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-    ///# let request = Client::connect(url).unwrap(); // Connect to the server
-    ///# let response = request.send().unwrap(); // Send the request
-    ///# response.validate().unwrap(); // Ensure the response is valid
+    ///use websocket::{ClientBuilder, Message};
     ///
-    ///let client = response.begin(); // Get a Client
+    ///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
+    ///                     .connect_insecure().unwrap();
     ///
-    ///let (mut sender, mut receiver) = client.split();
+    ///let (mut receiver, mut sender) = client.split().unwrap();
     ///
     ///thread::spawn(move || {
     ///    for message in receiver.incoming_messages() {

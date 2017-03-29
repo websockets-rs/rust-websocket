@@ -67,9 +67,7 @@ impl OptionalSslAcceptor for SslAcceptor {}
 ///for connection in server {
 ///    // Spawn a new thread for each connection.
 ///    thread::spawn(move || {
-///		   let request = connection.unwrap().read_request().unwrap(); // Get the request
-///		   let response = request.accept(); // Form a response
-///		   let mut client = response.send().unwrap(); // Send the response
+///		   let mut client = connection.accept().unwrap();
 ///
 ///		   let message = Message::text("Hello, client!");
 ///		   let _ = client.send_message(&message);
@@ -86,22 +84,34 @@ impl OptionalSslAcceptor for SslAcceptor {}
 ///extern crate openssl;
 ///# fn main() {
 ///use std::thread;
-///use std::path::Path;
+///use std::io::Read;
+///use std::fs::File;
 ///use websocket::{Server, Message};
-///use openssl::ssl::{SslContext, SslMethod};
-///use openssl::x509::X509FileType;
+///use openssl::pkcs12::Pkcs12;
+///use openssl::ssl::{SslMethod, SslAcceptorBuilder, SslStream};
 ///
-///let mut context = SslContext::new(SslMethod::Tlsv1).unwrap();
-///let _ = context.set_certificate_file(&(Path::new("cert.pem")), X509FileType::PEM);
-///let _ = context.set_private_key_file(&(Path::new("key.pem")), X509FileType::PEM);
-///let server = Server::bind_secure("127.0.0.1:1234", &context).unwrap();
+///// In this example we retrieve our keypair and certificate chain from a PKCS #12 archive,
+///// but but they can also be retrieved from, for example, individual PEM- or DER-formatted
+///// files. See the documentation for the `PKey` and `X509` types for more details.
+///let mut file = File::open("identity.pfx").unwrap();
+///let mut pkcs12 = vec![];
+///file.read_to_end(&mut pkcs12).unwrap();
+///let pkcs12 = Pkcs12::from_der(&pkcs12).unwrap();
+///let identity = pkcs12.parse("password123").unwrap();
+///
+///let acceptor = SslAcceptorBuilder::mozilla_intermediate(SslMethod::tls(),
+///                                                        &identity.pkey,
+///                                                        &identity.cert,
+///                                                        &identity.chain)
+///                   .unwrap()
+///                   .build();
+///
+///let server = Server::bind_secure("127.0.0.1:1234", acceptor).unwrap();
 ///
 ///for connection in server {
 ///    // Spawn a new thread for each connection.
 ///    thread::spawn(move || {
-///		   let request = connection.unwrap().read_request().unwrap(); // Get the request
-///		   let response = request.accept(); // Form a response
-///		   let mut client = response.send().unwrap(); // Send the response
+///		   let mut client = connection.accept().unwrap();
 ///
 ///		   let message = Message::text("Hello, client!");
 ///		   let _ = client.send_message(&message);
@@ -139,17 +149,12 @@ impl<S> Server<S>
 #[cfg(feature="ssl")]
 impl Server<SslAcceptor> {
 	  /// Bind this Server to this socket, utilising the given SslContext
-	  pub fn bind_secure<A>(addr: A, acceptor: Option<SslAcceptor>) -> io::Result<Self>
+	  pub fn bind_secure<A>(addr: A, acceptor: SslAcceptor) -> io::Result<Self>
 	      where A: ToSocketAddrs,
 	  {
 		    Ok(Server {
 			      listener: try!(TcpListener::bind(&addr)),
-			      ssl_acceptor: match acceptor {
-                Some(acc) => acc,
-                None => {
-                    unimplemented!();
-                }
-            },
+			      ssl_acceptor: acceptor,
 		    })
 	  }
 

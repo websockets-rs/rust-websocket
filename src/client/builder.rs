@@ -5,10 +5,11 @@ use std::io::{
     Write,
 };
 use std::net::TcpStream;
-use url::{
+pub use url::{
     Url,
-    Position,
+    ParseError,
 };
+use url::Position;
 use hyper::version::HttpVersion;
 use hyper::status::StatusCode;
 use hyper::buffer::BufReader;
@@ -81,7 +82,16 @@ pub struct ClientBuilder<'u> {
 }
 
 impl<'u> ClientBuilder<'u> {
-    pub fn new(url: Cow<'u, Url>) -> Self {
+    pub fn from_url(address: &'u Url) -> Self {
+        ClientBuilder::init(Cow::Borrowed(address))
+    }
+
+    pub fn new(address: &str) -> Result<Self, ParseError> {
+        let url = try!(Url::parse(address));
+        Ok(ClientBuilder::init(Cow::Owned(url)))
+    }
+
+    fn init(url: Cow<'u, Url>) -> Self {
         ClientBuilder {
             url: url,
             version: HttpVersion::Http11,
