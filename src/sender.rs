@@ -10,44 +10,44 @@ use ws::sender::Sender as SenderTrait;
 pub use stream::Shutdown;
 
 pub struct Writer<W> {
-    pub stream: W,
-    pub sender: Sender,
+	pub stream: W,
+	pub sender: Sender,
 }
 
 impl<W> Writer<W>
-    where W: Write,
+    where W: Write
 {
-	  /// Sends a single data frame to the remote endpoint.
-	  pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
-	      where D: DataFrame,
-              W: Write,
-    {
-        self.sender.send_dataframe(&mut self.stream, dataframe)
-    }
+	/// Sends a single data frame to the remote endpoint.
+	pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
+		where D: DataFrame,
+		      W: Write
+	{
+		self.sender.send_dataframe(&mut self.stream, dataframe)
+	}
 
-	  /// Sends a single message to the remote endpoint.
-	  pub fn send_message<'m, M, D>(&mut self, message: &'m M) -> WebSocketResult<()>
-	      where M: ws::Message<'m, D>,
-              D: DataFrame
-    {
-		    self.sender.send_message(&mut self.stream, message)
-	  }
+	/// Sends a single message to the remote endpoint.
+	pub fn send_message<'m, M, D>(&mut self, message: &'m M) -> WebSocketResult<()>
+		where M: ws::Message<'m, D>,
+		      D: DataFrame
+	{
+		self.sender.send_message(&mut self.stream, message)
+	}
 }
 
 impl<S> Writer<S>
-    where S: AsTcpStream + Write,
+    where S: AsTcpStream + Write
 {
-	  /// Closes the sender side of the connection, will cause all pending and future IO to
-	  /// return immediately with an appropriate value.
-	  pub fn shutdown(&self) -> IoResult<()> {
-		    self.stream.as_tcp().shutdown(Shutdown::Write)
-	  }
+	/// Closes the sender side of the connection, will cause all pending and future IO to
+	/// return immediately with an appropriate value.
+	pub fn shutdown(&self) -> IoResult<()> {
+		self.stream.as_tcp().shutdown(Shutdown::Write)
+	}
 
-	  /// Shuts down both Sender and Receiver, will cause all pending and future IO to
-	  /// return immediately with an appropriate value.
-	  pub fn shutdown_all(&self) -> IoResult<()> {
-		    self.stream.as_tcp().shutdown(Shutdown::Both)
-	  }
+	/// Shuts down both Sender and Receiver, will cause all pending and future IO to
+	/// return immediately with an appropriate value.
+	pub fn shutdown_all(&self) -> IoResult<()> {
+		self.stream.as_tcp().shutdown(Shutdown::Both)
+	}
 }
 
 /// A Sender that wraps a Writer and provides a default implementation using
@@ -59,18 +59,16 @@ pub struct Sender {
 impl Sender {
 	/// Create a new WebSocketSender using the specified Writer.
 	pub fn new(mask: bool) -> Sender {
-		Sender {
-			mask: mask,
-		}
+		Sender { mask: mask }
 	}
 }
 
 impl ws::Sender for Sender {
 	/// Sends a single data frame to the remote endpoint.
-	  fn send_dataframe<D, W>(&mut self, writer: &mut W, dataframe: &D) -> WebSocketResult<()>
-	      where D: DataFrame,
-              W: Write,
-    {
+	fn send_dataframe<D, W>(&mut self, writer: &mut W, dataframe: &D) -> WebSocketResult<()>
+		where D: DataFrame,
+		      W: Write
+	{
 		dataframe.write_to(writer, self.mask)
 	}
 }

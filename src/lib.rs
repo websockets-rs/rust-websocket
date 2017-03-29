@@ -52,10 +52,7 @@ extern crate bitflags;
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
 
-pub use self::client::{
-    Client,
-    ClientBuilder,
-};
+pub use self::client::{Client, ClientBuilder};
 pub use self::server::Server;
 pub use self::dataframe::DataFrame;
 pub use self::message::Message;

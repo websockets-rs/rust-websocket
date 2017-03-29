@@ -28,41 +28,35 @@ pub struct DataFrameHeader {
 	/// The masking key, if any.
 	pub mask: Option<[u8; 4]>,
 	/// The length of the payload.
-	pub len: u64
+	pub len: u64,
 }
 
 /// Writes a data frame header.
 pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResult<()>
-	where W: Write {
+	where W: Write
+{
 
 	if header.opcode > 0xF {
-		return Err(WebSocketError::DataFrameError(
-			"Invalid data frame opcode"
-		));
+		return Err(WebSocketError::DataFrameError("Invalid data frame opcode"));
 	}
 	if header.opcode >= 8 && header.len >= 126 {
-		return Err(WebSocketError::DataFrameError(
-			"Control frame length too long"
-		));
+		return Err(WebSocketError::DataFrameError("Control frame length too long"));
 	}
 
 	// Write 'FIN', 'RSV1', 'RSV2', 'RSV3' and 'opcode'
 	try!(writer.write_u8((header.flags.bits) | header.opcode));
 
-	try!(writer.write_u8(
-		// Write the 'MASK'
-		if header.mask.is_some() { 0x80 } else { 0x00 } |
+	try!(writer.write_u8(// Write the 'MASK'
+	                     if header.mask.is_some() { 0x80 } else { 0x00 } |
 		// Write the 'Payload len'
 		if header.len <= 125 { header.len as u8 }
 		else if header.len <= 65535 { 126 }
-		else { 127 }
-	));
+		else { 127 }));
 
 	// Write 'Extended payload length'
 	if header.len >= 126 && header.len <= 65535 {
 		try!(writer.write_u16::<BigEndian>(header.len as u16));
-	}
-	else if header.len > 65535 {
+	} else if header.len > 65535 {
 		try!(writer.write_u64::<BigEndian>(header.len));
 	}
 
@@ -77,7 +71,8 @@ pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResu
 
 /// Reads a data frame header.
 pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
-	where R: Read {
+	where R: Read
+{
 
 	let byte0 = try!(reader.read_u8());
 	let byte1 = try!(reader.read_u8());
@@ -90,18 +85,14 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 		126 => {
 			let len = try!(reader.read_u16::<BigEndian>()) as u64;
 			if len <= 125 {
-				return Err(WebSocketError::DataFrameError(
-					"Invalid data frame length"
-				));
+				return Err(WebSocketError::DataFrameError("Invalid data frame length"));
 			}
 			len
 		}
 		127 => {
 			let len = try!(reader.read_u64::<BigEndian>());
 			if len <= 65535 {
-				return Err(WebSocketError::DataFrameError(
-					"Invalid data frame length"
-				));
+				return Err(WebSocketError::DataFrameError("Invalid data frame length"));
 			}
 			len
 		}
@@ -110,14 +101,10 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 
 	if opcode >= 8 {
 		if len >= 126 {
-			return Err(WebSocketError::DataFrameError(
-				"Control frame length too long"
-			));
+			return Err(WebSocketError::DataFrameError("Control frame length too long"));
 		}
 		if !flags.contains(FIN) {
-			return Err(WebSocketError::ProtocolError(
-				"Illegal fragmented control frame"
-			));
+			return Err(WebSocketError::ProtocolError("Illegal fragmented control frame"));
 		}
 	}
 
@@ -126,19 +113,18 @@ pub fn read_header<R>(reader: &mut R) -> WebSocketResult<DataFrameHeader>
 			try!(reader.read_u8()),
 			try!(reader.read_u8()),
 			try!(reader.read_u8()),
-			try!(reader.read_u8())
+			try!(reader.read_u8()),
 		])
-	}
-	else {
+	} else {
 		None
 	};
 
 	Ok(DataFrameHeader {
-		flags: flags,
-		opcode: opcode,
-		mask: mask,
-		len: len
-	})
+	       flags: flags,
+	       opcode: opcode,
+	       mask: mask,
+	       len: len,
+	   })
 }
 
 #[cfg(all(feature = "nightly", test))]
@@ -153,7 +139,7 @@ mod tests {
 			flags: FIN,
 			opcode: 1,
 			mask: None,
-			len: 43
+			len: 43,
 		};
 		assert_eq!(obtained, expected);
 	}
@@ -163,7 +149,7 @@ mod tests {
 			flags: FIN,
 			opcode: 1,
 			mask: None,
-			len: 43
+			len: 43,
 		};
 		let expected = [0x81, 0x2B];
 		let mut obtained = Vec::with_capacity(2);
@@ -179,7 +165,7 @@ mod tests {
 			flags: RSV1,
 			opcode: 2,
 			mask: Some([2, 4, 8, 16]),
-			len: 512
+			len: 512,
 		};
 		assert_eq!(obtained, expected);
 	}
@@ -189,7 +175,7 @@ mod tests {
 			flags: RSV1,
 			opcode: 2,
 			mask: Some([2, 4, 8, 16]),
-			len: 512
+			len: 512,
 		};
 		let expected = [0x42, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
 		let mut obtained = Vec::with_capacity(8);
@@ -200,9 +186,7 @@ mod tests {
 	#[bench]
 	fn bench_read_header(b: &mut test::Bencher) {
 		let header = vec![0x42u8, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
-		b.iter(|| {
-			read_header(&mut &header[..]).unwrap();
-		});
+		b.iter(|| { read_header(&mut &header[..]).unwrap(); });
 	}
 	#[bench]
 	fn bench_write_header(b: &mut test::Bencher) {
@@ -210,11 +194,9 @@ mod tests {
 			flags: RSV1,
 			opcode: 2,
 			mask: Some([2, 4, 8, 16]),
-			len: 512
+			len: 512,
 		};
 		let mut writer = Vec::with_capacity(8);
-		b.iter(|| {
-			write_header(&mut writer, header).unwrap();
-		});
+		b.iter(|| { write_header(&mut writer, header).unwrap(); });
 	}
 }
