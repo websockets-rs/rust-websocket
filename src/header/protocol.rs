@@ -32,10 +32,16 @@ impl HeaderFormat for WebSocketProtocol {
 	}
 }
 
+impl fmt::Display for WebSocketProtocol {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        self.fmt_header(fmt)
+	  }
+}
+
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use hyper::header::{Header, HeaderFormatter};
+	use hyper::header::Header;
 	use test;
 	#[test]
 	fn test_header_protocol() {
@@ -59,9 +65,8 @@ mod tests {
 	fn bench_header_protocol_format(b: &mut test::Bencher) {
 		let value = vec![b"foo, bar".to_vec()];
 		let val: WebSocketProtocol = Header::parse_header(&value[..]).unwrap();
-		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			format!("{}", fmt);
+			format!("{}", val);
 		});
 	}
 }

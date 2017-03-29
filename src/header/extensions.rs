@@ -120,10 +120,16 @@ impl HeaderFormat for WebSocketExtensions {
 	}
 }
 
+impl fmt::Display for WebSocketExtensions {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        self.fmt_header(fmt)
+	  }
+}
+
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use hyper::header::{Header, HeaderFormatter};
+	use hyper::header::Header;
 	use test;
 	#[test]
 	fn test_header_extensions() {
@@ -148,9 +154,8 @@ mod tests {
 	fn bench_header_extensions_format(b: &mut test::Bencher) {
 		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
 		let val: WebSocketExtensions = Header::parse_header(&value[..]).unwrap();
-		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			format!("{}", fmt);
+			format!("{}", val);
 		});
 	}
 }

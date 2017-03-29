@@ -110,8 +110,10 @@ impl<S> WsUpgrade<S>
             .unwrap_or(&[])
     }
 
-    pub fn extensions(&self) -> Option<&[Extension]> {
-        self.request.headers.get::<WebSocketExtensions>().map(|e| e.0.as_slice())
+    pub fn extensions(&self) -> &[Extension] {
+        self.request.headers.get::<WebSocketExtensions>()
+            .map(|e| e.0.as_slice())
+            .unwrap_or(&[])
     }
 
     pub fn key(&self) -> Option<&[u8; 16]> {

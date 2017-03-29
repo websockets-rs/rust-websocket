@@ -83,7 +83,7 @@ impl HeaderFormat for WebSocketKey {
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use hyper::header::{Header, HeaderFormatter};
+	use hyper::header::Header;
 	use test;
 	#[test]
 	fn test_header_key() {
@@ -114,9 +114,8 @@ mod tests {
 	fn bench_header_key_format(b: &mut test::Bencher) {
 		let value = vec![b"QUFBQUFBQUFBQUFBQUFBQQ==".to_vec()];
 		let val: WebSocketKey = Header::parse_header(&value[..]).unwrap();
-		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			format!("{}", fmt);
+			format!("{}", val.serialize());
 		});
 	}
 }

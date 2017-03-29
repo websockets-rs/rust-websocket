@@ -88,7 +88,8 @@ mod tests {
 	  use test;
 	  use std::str::FromStr;
 	  use header::{Headers, WebSocketKey};
-	  use hyper::header::{Header, HeaderFormatter};
+	  use hyper::header::Header;
+
 	  #[test]
 	  fn test_header_accept() {
 		    let key = FromStr::from_str("dGhlIHNhbXBsZSBub25jZQ==").unwrap();
@@ -118,9 +119,8 @@ mod tests {
 	  fn bench_header_accept_format(b: &mut test::Bencher) {
 		    let value = vec![b"s3pPLMBiTxaQ9kYGzzhZRbK+xOo=".to_vec()];
 		    let val: WebSocketAccept = Header::parse_header(&value[..]).unwrap();
-		    let fmt = HeaderFormatter(&val);
 		    b.iter(|| {
-			      format!("{}", fmt);
+			      format!("{}", val.serialize());
 		    });
 	  }
 }

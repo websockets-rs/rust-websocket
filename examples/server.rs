@@ -3,7 +3,6 @@ extern crate websocket;
 use std::thread;
 use websocket::{Server, Message};
 use websocket::message::Type;
-use websocket::header::WebSocketProtocol;
 
 // TODO: I think the .reject() call is only for malformed packets
 // there should be an easy way to accept the socket with the given protocols

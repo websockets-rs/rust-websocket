@@ -32,10 +32,16 @@ impl HeaderFormat for Origin {
 	}
 }
 
+impl fmt::Display for Origin {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        self.fmt_header(fmt)
+	  }
+}
+
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use hyper::header::{Header, HeaderFormatter};
+	use hyper::header::Header;
 	use test;
 	#[test]
 	fn test_header_origin() {
@@ -59,9 +65,8 @@ mod tests {
 	fn bench_header_origin_format(b: &mut test::Bencher) {
 		let value = vec![b"foobar".to_vec()];
 		let val: Origin = Header::parse_header(&value[..]).unwrap();
-		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			format!("{}", fmt);
+			format!("{}", val);
 		});
 	}
 }

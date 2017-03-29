@@ -46,10 +46,16 @@ impl HeaderFormat for WebSocketVersion {
 	}
 }
 
+impl fmt::Display for WebSocketVersion {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        self.fmt_header(fmt)
+	  }
+}
+
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use hyper::header::{Header, HeaderFormatter};
+	use hyper::header::Header;
 	use test;
 	#[test]
 	fn test_websocket_version() {
@@ -73,9 +79,8 @@ mod tests {
 	fn bench_header_version_format(b: &mut test::Bencher) {
 		let value = vec![b"13".to_vec()];
 		let val: WebSocketVersion = Header::parse_header(&value[..]).unwrap();
-		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			format!("{}", fmt);
+			format!("{}", val);
 		});
 	}
 }

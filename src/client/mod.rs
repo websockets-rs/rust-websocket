@@ -1,9 +1,6 @@
 //! Contains the WebSocket client.
 extern crate url;
 
-use std::borrow::{
-    Cow,
-};
 use std::net::TcpStream;
 use std::net::SocketAddr;
 use std::io::Result as IoResult;
