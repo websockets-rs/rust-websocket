@@ -12,7 +12,6 @@ use ws::receiver::{MessageIterator, DataFrameIterator};
 use stream::{AsTcpStream, Stream};
 pub use stream::Shutdown;
 
-// TODO: buffer the readers
 pub struct Reader<R>
 	where R: Read
 {

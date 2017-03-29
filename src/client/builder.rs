@@ -231,7 +231,6 @@ impl<'u> ClientBuilder<'u> {
 		self.connect_on(ssl_stream)
 	}
 
-	// TODO: refactor and split apart into two parts, for when evented happens
 	pub fn connect_on<S>(&mut self, mut stream: S) -> WebSocketResult<Client<S>>
 		where S: Stream
 	{
@@ -272,7 +271,7 @@ impl<'u> ClientBuilder<'u> {
 		try!(write!(stream.writer(), "{}\r\n", self.headers));
 
 		// wait for a response
-		// TODO: we should buffer it all, how to set up stream for this?
+		// TODO: some extra data might get lost with this reader, try to avoid #72
 		let response = try!(parse_response(&mut BufReader::new(stream.reader())));
 		let status = StatusCode::from_u16(response.subject.0);
 
