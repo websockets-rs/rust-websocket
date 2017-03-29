@@ -19,12 +19,15 @@ license = "MIT"
 [dependencies]
 hyper = "^0.10"
 unicase = "^1.0"
-openssl = "^0.9.10"
 url = "^1.0"
 rustc-serialize = "^0.3"
 bitflags = "^0.8"
 rand = "^0.3"
 byteorder = "^1.0"
+sha1 = "^0.2"
+openssl = { version = "^0.9.10", optional = true }
 
 [features]
+default = ["ssl"]
+ssl = ["openssl"]
 nightly = ["hyper/nightly"]

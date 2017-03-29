@@ -1,5 +1,4 @@
 extern crate hyper;
-extern crate openssl;
 
 use hyper::net::{
 	  NetworkStream,

@@ -7,34 +7,11 @@ use std::borrow::{
 use std::net::TcpStream;
 use std::net::SocketAddr;
 use std::io::Result as IoResult;
-use std::io::{
-    Write,
-};
 
 use self::url::{
     Url,
     ParseError,
-    Position,
 };
-use openssl::ssl::{
-    SslContext,
-    SslMethod,
-    SslStream,
-};
-use hyper::buffer::BufReader;
-use hyper::status::StatusCode;
-use hyper::http::h1::parse_response;
-use hyper::version::HttpVersion;
-use hyper::header::{
-    Headers,
-    Host,
-    Connection,
-    ConnectionOption,
-    Upgrade,
-    Protocol,
-    ProtocolName,
-};
-use unicase::UniCase;
 
 use ws;
 use ws::sender::Sender as SenderTrait;
@@ -43,22 +20,10 @@ use ws::receiver::{
     MessageIterator,
 };
 use ws::receiver::Receiver as ReceiverTrait;
-use header::extensions::Extension;
-use header::{
-    WebSocketAccept,
-    WebSocketKey,
-    WebSocketVersion,
-    WebSocketProtocol,
-    WebSocketExtensions,
-    Origin,
-};
 use result::{
-    WSUrlErrorKind,
     WebSocketResult,
-    WebSocketError,
 };
 use stream::{
-    BoxedNetworkStream,
     AsTcpStream,
     Stream,
     Splittable,

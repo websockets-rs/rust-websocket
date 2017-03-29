@@ -5,10 +5,13 @@ use std::str::Utf8Error;
 use std::error::Error;
 use std::convert::From;
 use std::fmt;
-use openssl::error::ErrorStack as SslError;
-use openssl::ssl::HandshakeError as SslHandshakeError;
 use hyper::Error as HttpError;
 use url::ParseError;
+
+#[cfg(feature="ssl")]
+use openssl::error::ErrorStack as SslError;
+#[cfg(feature="ssl")]
+use openssl::ssl::HandshakeError as SslHandshakeError;
 
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
@@ -35,10 +38,13 @@ pub enum WebSocketError {
     /// A WebSocket URL error
     WebSocketUrlError(WSUrlErrorKind),
 	  /// An SSL error
+    #[cfg(feature="ssl")]
 	  SslError(SslError),
     /// an ssl handshake failure
+    #[cfg(feature="ssl")]
     SslHandshakeFailure,
     /// an ssl handshake interruption
+    #[cfg(feature="ssl")]
     SslHandshakeInterruption,
 	  /// A UTF-8 error
 	  Utf8Error(Utf8Error),
@@ -63,8 +69,11 @@ impl Error for WebSocketError {
 			      WebSocketError::IoError(_) => "I/O failure",
 			      WebSocketError::HttpError(_) => "HTTP failure",
 			      WebSocketError::UrlError(_) => "URL failure",
+            #[cfg(feature="ssl")]
 			      WebSocketError::SslError(_) => "SSL failure",
+            #[cfg(feature="ssl")]
             WebSocketError::SslHandshakeFailure => "SSL Handshake failure",
+            #[cfg(feature="ssl")]
             WebSocketError::SslHandshakeInterruption => "SSL Handshake interrupted",
 			      WebSocketError::Utf8Error(_) => "UTF-8 failure",
             WebSocketError::WebSocketUrlError(_) => "WebSocket URL failure",
@@ -76,6 +85,7 @@ impl Error for WebSocketError {
 			      WebSocketError::IoError(ref error) => Some(error),
 			      WebSocketError::HttpError(ref error) => Some(error),
 			      WebSocketError::UrlError(ref error) => Some(error),
+            #[cfg(feature="ssl")]
 			      WebSocketError::SslError(ref error) => Some(error),
 			      WebSocketError::Utf8Error(ref error) => Some(error),
             WebSocketError::WebSocketUrlError(ref error) => Some(error),
@@ -105,12 +115,14 @@ impl From<ParseError> for WebSocketError {
 	  }
 }
 
+#[cfg(feature="ssl")]
 impl From<SslError> for WebSocketError {
 	  fn from(err: SslError) -> WebSocketError {
 		    WebSocketError::SslError(err)
 	  }
 }
 
+#[cfg(feature="ssl")]
 impl<T> From<SslHandshakeError<T>> for WebSocketError {
 	  fn from(err: SslHandshakeError<T>) -> WebSocketError {
         match err {

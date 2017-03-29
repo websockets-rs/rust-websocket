@@ -23,14 +23,15 @@ use hyper::header::{
     ProtocolName,
 };
 use unicase::UniCase;
-use openssl::error::ErrorStack as SslError;
+#[cfg(feature="ssl")]
 use openssl::ssl::{
-    SslContext,
     SslMethod,
     SslStream,
     SslConnector,
     SslConnectorBuilder,
 };
+#[cfg(feature="ssl")]
+use stream::BoxedNetworkStream;
 use header::extensions::Extension;
 use header::{
     WebSocketAccept,
@@ -46,11 +47,7 @@ use result::{
     WebSocketError,
 };
 use stream::{
-    BoxedNetworkStream,
-    AsTcpStream,
     Stream,
-    Splittable,
-    Shutdown,
 };
 use super::Client;
 
@@ -201,6 +198,7 @@ impl<'u> ClientBuilder<'u> {
         Ok(tcp_stream)
     }
 
+    #[cfg(feature="ssl")]
     fn wrap_ssl(&self,
                 tcp_stream: TcpStream,
                 connector: Option<SslConnector>
@@ -218,6 +216,7 @@ impl<'u> ClientBuilder<'u> {
         Ok(ssl_stream)
     }
 
+    #[cfg(feature="ssl")]
     pub fn connect(&mut self,
                    ssl_config: Option<SslConnector>
     ) -> WebSocketResult<Client<BoxedNetworkStream>> {
@@ -238,6 +237,7 @@ impl<'u> ClientBuilder<'u> {
         self.connect_on(tcp_stream)
     }
 
+    #[cfg(feature="ssl")]
     pub fn connect_secure(&mut self,
                           ssl_config: Option<SslConnector>
     ) -> WebSocketResult<Client<SslStream<TcpStream>>> {
@@ -298,7 +298,7 @@ impl<'u> ClientBuilder<'u> {
             WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid")
         ));
 
-        if response.headers.get() != Some(&(try!(WebSocketAccept::new(key)))) {
+        if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
             return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
         }
 

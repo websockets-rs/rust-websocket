@@ -4,19 +4,13 @@ use std::net::{
 	  ToSocketAddrs,
 	  TcpListener,
 	  TcpStream,
-	  Shutdown,
 };
 use std::io::{
 	  self,
-	  Read,
-	  Write,
 };
-use std::borrow::Cow;
-use std::ops::Deref;
 use std::convert::Into;
+#[cfg(feature="ssl")]
 use openssl::ssl::{
-	  SslContext,
-	  SslMethod,
 	  SslStream,
     SslAcceptor,
 };
@@ -53,6 +47,7 @@ pub struct NoSslAcceptor;
 /// is running over SSL or not.
 pub trait OptionalSslAcceptor: Clone {}
 impl OptionalSslAcceptor for NoSslAcceptor {}
+#[cfg(feature="ssl")]
 impl OptionalSslAcceptor for SslAcceptor {}
 
 /// Represents a WebSocket server which can work with either normal (non-secure) connections, or secure WebSocket connections.
@@ -141,6 +136,7 @@ impl<S> Server<S>
 	  }
 }
 
+#[cfg(feature="ssl")]
 impl Server<SslAcceptor> {
 	  /// Bind this Server to this socket, utilising the given SslContext
 	  pub fn bind_secure<A>(addr: A, acceptor: Option<SslAcceptor>) -> io::Result<Self>
@@ -196,6 +192,7 @@ impl Server<SslAcceptor> {
     }
 }
 
+#[cfg(feature="ssl")]
 impl Iterator for Server<SslAcceptor> {
 	  type Item = WsUpgrade<SslStream<TcpStream>>;
 

@@ -10,6 +10,7 @@ use std::io::{
 };
 pub use std::net::TcpStream;
 pub use std::net::Shutdown;
+#[cfg(feature="ssl")]
 pub use openssl::ssl::{
 	  SslStream,
 	  SslContext,
@@ -152,6 +153,7 @@ impl AsTcpStream for TcpStream {
     }
 }
 
+#[cfg(feature="ssl")]
 impl AsTcpStream for SslStream<TcpStream> {
     fn as_tcp(&self) -> &TcpStream {
         self.get_ref()
