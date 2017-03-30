@@ -27,6 +27,8 @@ impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 
 		let (_, method, headers, uri, version, reader) =
 			self.0.deconstruct();
+
+		// TODO: some extra data might get lost with this reader, try to avoid #72
 		let stream = reader.into_inner().get_mut();
 
 		Ok(WsUpgrade {

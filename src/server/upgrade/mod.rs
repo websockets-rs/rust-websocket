@@ -7,7 +7,6 @@ use std::net::TcpStream;
 use std::io;
 use std::io::Result as IoResult;
 use std::io::Error as IoError;
-use std::io::Write;
 use std::fmt::{self, Formatter, Display};
 use stream::{Stream, AsTcpStream};
 use header::extensions::Extension;
@@ -147,11 +146,8 @@ impl<S> WsUpgrade<S>
 	}
 
 	fn send(&mut self, status: StatusCode) -> IoResult<()> {
-		try!(write!(self.stream.writer(),
-		            "{} {}\r\n",
-		            self.request.version,
-		            status));
-		try!(write!(self.stream.writer(), "{}\r\n", self.headers));
+		try!(write!(&mut self.stream, "{} {}\r\n", self.request.version, status));
+		try!(write!(&mut self.stream, "{}\r\n", self.headers));
 		Ok(())
 	}
 }
@@ -194,7 +190,8 @@ impl<S> IntoWs for S
 
 	fn into_ws(mut self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
 		let request = {
-			let mut reader = BufReader::new(self.reader());
+			// TODO: some extra data might get lost with this reader, try to avoid #72
+			let mut reader = BufReader::new(&mut self);
 			parse_request(&mut reader)
 		};
 

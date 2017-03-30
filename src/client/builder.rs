@@ -1,5 +1,4 @@
 use std::borrow::Cow;
-use std::io::Write;
 use std::net::TcpStream;
 pub use url::{Url, ParseError};
 use url::Position;
@@ -12,12 +11,11 @@ use unicase::UniCase;
 #[cfg(feature="ssl")]
 use openssl::ssl::{SslMethod, SslStream, SslConnector, SslConnectorBuilder};
 #[cfg(feature="ssl")]
-use stream::BoxedNetworkStream;
 use header::extensions::Extension;
 use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
              WebSocketExtensions, Origin};
 use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
-use stream::Stream;
+use stream::{Stream, NetworkStream};
 use super::Client;
 
 /// Build clients with a builder-style API
@@ -182,13 +180,14 @@ impl<'u> ClientBuilder<'u> {
 	pub fn connect(
 		&mut self,
 		ssl_config: Option<SslConnector>,
-	) -> WebSocketResult<Client<BoxedNetworkStream>> {
+	) -> WebSocketResult<Client<Box<NetworkStream>>> {
 		let tcp_stream = try!(self.establish_tcp(None));
 
-		let boxed_stream = if self.url.scheme() == "wss" {
-			BoxedNetworkStream(Box::new(try!(self.wrap_ssl(tcp_stream, ssl_config))))
+		let boxed_stream: Box<NetworkStream> = if
+			self.url.scheme() == "wss" {
+			Box::new(try!(self.wrap_ssl(tcp_stream, ssl_config)))
 		} else {
-			BoxedNetworkStream(Box::new(tcp_stream))
+			Box::new(tcp_stream)
 		};
 
 		self.connect_on(boxed_stream)
@@ -248,12 +247,12 @@ impl<'u> ClientBuilder<'u> {
 		}
 
 		// send request
-		try!(write!(stream.writer(), "GET {} {}\r\n", resource, self.version));
-		try!(write!(stream.writer(), "{}\r\n", self.headers));
+		try!(write!(stream, "GET {} {}\r\n", resource, self.version));
+		try!(write!(stream, "{}\r\n", self.headers));
 
 		// wait for a response
 		// TODO: some extra data might get lost with this reader, try to avoid #72
-		let response = try!(parse_response(&mut BufReader::new(stream.reader())));
+		let response = try!(parse_response(&mut BufReader::new(&mut stream)));
 		let status = StatusCode::from_u16(response.subject.0);
 
 		// validate

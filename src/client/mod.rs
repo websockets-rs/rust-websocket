@@ -128,7 +128,7 @@ impl<S> Client<S>
 	pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
 		where D: DataFrameable
 	{
-		self.sender.send_dataframe(self.stream.writer(), dataframe)
+		self.sender.send_dataframe(&mut self.stream, dataframe)
 	}
 
 	/// Sends a single message to the remote endpoint.
@@ -136,17 +136,17 @@ impl<S> Client<S>
 		where M: ws::Message<'m, D>,
 		      D: DataFrameable
 	{
-		self.sender.send_message(self.stream.writer(), message)
+		self.sender.send_message(&mut self.stream, message)
 	}
 
 	/// Reads a single data frame from the remote endpoint.
 	pub fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
-		self.receiver.recv_dataframe(self.stream.reader())
+		self.receiver.recv_dataframe(&mut self.stream)
 	}
 
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, S::Reader> {
-		self.receiver.incoming_dataframes(self.stream.reader())
+	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, S> {
+		self.receiver.incoming_dataframes(&mut self.stream)
 	}
 
 	/// Reads a single message from this receiver.
@@ -154,7 +154,7 @@ impl<S> Client<S>
 		where M: ws::Message<'m, DataFrame, DataFrameIterator = I>,
 		      I: Iterator<Item = DataFrame>
 	{
-		self.receiver.recv_message(self.stream.reader())
+		self.receiver.recv_message(&mut self.stream)
 	}
 
 	pub fn headers(&self) -> &Headers {
@@ -229,12 +229,11 @@ impl<S> Client<S>
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a, M, D>(&'a mut self,)
-		-> MessageIterator<'a, Receiver, D, M, S::Reader>
+	pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Receiver, D, M, S>
 		where M: ws::Message<'a, D>,
 		      D: DataFrameable
 	{
-		self.receiver.incoming_messages(self.stream.reader())
+		self.receiver.incoming_messages(&mut self.stream)
 	}
 }
 
