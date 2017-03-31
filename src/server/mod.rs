@@ -5,7 +5,7 @@ use std::convert::Into;
 #[cfg(feature="ssl")]
 use openssl::ssl::{SslStream, SslAcceptor};
 use stream::Stream;
-use self::upgrade::{WsUpgrade, IntoWs};
+use self::upgrade::{WsUpgrade, IntoWs, Buffer};
 pub use self::upgrade::{Request, HyperIntoWsError};
 
 pub mod upgrade;
@@ -15,6 +15,7 @@ pub struct InvalidConnection<S>
 {
 	pub stream: Option<S>,
 	pub parsed: Option<Request>,
+	pub buffer: Option<Buffer>,
 	pub error: HyperIntoWsError,
 }
 
@@ -150,6 +151,7 @@ impl Server<SslAcceptor> {
 				return Err(InvalidConnection {
 				               stream: None,
 				               parsed: None,
+				               buffer: None,
 				               error: e.into(),
 				           })
 			}
@@ -161,6 +163,7 @@ impl Server<SslAcceptor> {
 				return Err(InvalidConnection {
 				               stream: None,
 				               parsed: None,
+				               buffer: None,
 				               error: io::Error::new(io::ErrorKind::Other, err).into(),
 				           })
 			}
@@ -168,10 +171,11 @@ impl Server<SslAcceptor> {
 
 		match stream.into_ws() {
 			Ok(u) => Ok(u),
-			Err((s, r, e)) => {
+			Err((s, r, b, e)) => {
 				Err(InvalidConnection {
 				        stream: Some(s),
 				        parsed: r,
+				        buffer: b,
 				        error: e.into(),
 				    })
 			}
@@ -213,6 +217,7 @@ impl Server<NoSslAcceptor> {
 				return Err(InvalidConnection {
 				               stream: None,
 				               parsed: None,
+				               buffer: None,
 				               error: e.into(),
 				           })
 			}
@@ -220,10 +225,11 @@ impl Server<NoSslAcceptor> {
 
 		match stream.into_ws() {
 			Ok(u) => Ok(u),
-			Err((s, r, e)) => {
+			Err((s, r, b, e)) => {
 				Err(InvalidConnection {
 				        stream: Some(s),
 				        parsed: r,
+				        buffer: b,
 				        error: e.into(),
 				    })
 			}

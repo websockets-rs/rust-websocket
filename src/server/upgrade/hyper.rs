@@ -1,7 +1,7 @@
 extern crate hyper;
 
 use hyper::net::NetworkStream;
-use super::{IntoWs, WsUpgrade};
+use super::{IntoWs, WsUpgrade, Buffer};
 
 pub use hyper::http::h1::Incoming;
 pub use hyper::method::Method;
@@ -28,12 +28,18 @@ impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 		let (_, method, headers, uri, version, reader) =
 			self.0.deconstruct();
 
-		// TODO: some extra data might get lost with this reader, try to avoid #72
-		let stream = reader.into_inner().get_mut();
+		let reader = reader.into_inner();
+		let (buf, pos, cap) = reader.take_buf();
+		let stream = reader.get_mut();
 
 		Ok(WsUpgrade {
 		       headers: Headers::new(),
 		       stream: stream,
+		       buffer: Some(Buffer {
+		                        buf: buf,
+		                        pos: pos,
+		                        cap: cap,
+		                    }),
 		       request: Incoming {
 		           version: version,
 		           headers: headers,

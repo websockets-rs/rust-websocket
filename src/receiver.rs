@@ -3,6 +3,8 @@
 use std::io::Read;
 use std::io::Result as IoResult;
 
+use hyper::buffer::BufReader;
+
 use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
 use ws;
@@ -15,7 +17,7 @@ pub use stream::Shutdown;
 pub struct Reader<R>
 	where R: Read
 {
-	pub stream: R,
+	pub stream: BufReader<R>,
 	pub receiver: Receiver,
 }
 
@@ -28,7 +30,7 @@ impl<R> Reader<R>
 	}
 
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, R> {
+	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, BufReader<R>> {
 		self.receiver.incoming_dataframes(&mut self.stream)
 	}
 
@@ -40,7 +42,8 @@ impl<R> Reader<R>
 		self.receiver.recv_message(&mut self.stream)
 	}
 
-	pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Receiver, D, M, R>
+	pub fn incoming_messages<'a, M, D>(&'a mut self,)
+		-> MessageIterator<'a, Receiver, D, M, BufReader<R>>
 		where M: ws::Message<'a, D>,
 		      D: DataFrameable
 	{
@@ -54,13 +57,13 @@ impl<S> Reader<S>
 	/// Closes the receiver side of the connection, will cause all pending and future IO to
 	/// return immediately with an appropriate value.
 	pub fn shutdown(&self) -> IoResult<()> {
-		self.stream.as_tcp().shutdown(Shutdown::Read)
+		self.stream.get_ref().as_tcp().shutdown(Shutdown::Read)
 	}
 
 	/// Shuts down both Sender and Receiver, will cause all pending and future IO to
 	/// return immediately with an appropriate value.
 	pub fn shutdown_all(&self) -> IoResult<()> {
-		self.stream.as_tcp().shutdown(Shutdown::Both)
+		self.stream.get_ref().as_tcp().shutdown(Shutdown::Both)
 	}
 }
 

@@ -10,12 +10,13 @@ use hyper::header::{Headers, Host, Connection, ConnectionOption, Upgrade, Protoc
 use unicase::UniCase;
 #[cfg(feature="ssl")]
 use openssl::ssl::{SslMethod, SslStream, SslConnector, SslConnectorBuilder};
-#[cfg(feature="ssl")]
 use header::extensions::Extension;
 use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
              WebSocketExtensions, Origin};
 use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
-use stream::{Stream, NetworkStream};
+#[cfg(feature="ssl")]
+use stream::NetworkStream;
+use stream::Stream;
 use super::Client;
 
 /// Build clients with a builder-style API
@@ -251,8 +252,8 @@ impl<'u> ClientBuilder<'u> {
 		try!(write!(stream, "{}\r\n", self.headers));
 
 		// wait for a response
-		// TODO: some extra data might get lost with this reader, try to avoid #72
-		let response = try!(parse_response(&mut BufReader::new(&mut stream)));
+		let mut reader = BufReader::new(stream);
+		let response = try!(parse_response(&mut reader));
 		let status = StatusCode::from_u16(response.subject.0);
 
 		// validate
@@ -285,6 +286,6 @@ impl<'u> ClientBuilder<'u> {
 			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'"));
 		}
 
-		Ok(Client::unchecked(stream, response.headers))
+		Ok(Client::unchecked(reader, response.headers))
 	}
 }

@@ -17,7 +17,7 @@ keywords = ["websocket", "websockets", "rfc6455"]
 license = "MIT"
 
 [dependencies]
-hyper = "^0.10"
+hyper = { git = "https://github.com/hyperium/hyper.git", branch = "0.10.x" }
 unicase = "^1.0"
 url = "^1.0"
 rustc-serialize = "^0.3"

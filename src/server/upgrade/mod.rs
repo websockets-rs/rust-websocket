@@ -27,6 +27,12 @@ pub use self::real_hyper::header::{Headers, Upgrade, Protocol, ProtocolName, Con
 
 pub mod hyper;
 
+pub struct Buffer {
+	pub buf: Vec<u8>,
+	pub pos: usize,
+	pub cap: usize,
+}
+
 /// Intermediate representation of a half created websocket session.
 /// Should be used to examine the client's handshake
 /// accept the protocols requested, route the path, etc.
@@ -39,6 +45,7 @@ pub struct WsUpgrade<S>
 	pub headers: Headers,
 	pub stream: S,
 	pub request: Request,
+	pub buffer: Option<Buffer>,
 }
 
 impl<S> WsUpgrade<S>
@@ -94,7 +101,12 @@ impl<S> WsUpgrade<S>
 			return Err((self.stream, e));
 		}
 
-		Ok(Client::unchecked(self.stream, self.headers))
+		let stream = match self.buffer {
+			Some(Buffer { buf, pos, cap }) => BufReader::from_parts(self.stream, buf, pos, cap),
+			None => BufReader::new(self.stream),
+		};
+
+		Ok(Client::unchecked(stream, self.headers))
 	}
 
 	pub fn reject(self) -> Result<S, (S, IoError)> {
@@ -186,29 +198,34 @@ impl<S> IntoWs for S
     where S: Stream
 {
 	type Stream = S;
-	type Error = (Self, Option<Request>, HyperIntoWsError);
+	type Error = (S, Option<Request>, Option<Buffer>, HyperIntoWsError);
 
-	fn into_ws(mut self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
-		let request = {
-			// TODO: some extra data might get lost with this reader, try to avoid #72
-			let mut reader = BufReader::new(&mut self);
-			parse_request(&mut reader)
-		};
+	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
+		let mut reader = BufReader::new(self);
+		let request = parse_request(&mut reader);
+
+		let (stream, buf, pos, cap) = reader.into_parts();
+		let buffer = Some(Buffer {
+		                      buf: buf,
+		                      cap: cap,
+		                      pos: pos,
+		                  });
 
 		let request = match request {
 			Ok(r) => r,
-			Err(e) => return Err((self, None, e.into())),
+			Err(e) => return Err((stream, None, buffer, e.into())),
 		};
 
 		match validate(&request.subject.0, &request.version, &request.headers) {
 			Ok(_) => {
 				Ok(WsUpgrade {
 				       headers: Headers::new(),
-				       stream: self,
+				       stream: stream,
 				       request: request,
+				       buffer: buffer,
 				   })
 			}
-			Err(e) => Err((self, Some(request), e)),
+			Err(e) => Err((stream, Some(request), buffer, e)),
 		}
 	}
 }
@@ -226,6 +243,7 @@ impl<S> IntoWs for RequestStreamPair<S>
 				       headers: Headers::new(),
 				       stream: self.0,
 				       request: self.1,
+				       buffer: None,
 				   })
 			}
 			Err(e) => Err((self.0, self.1, e)),

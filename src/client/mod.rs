@@ -4,7 +4,9 @@ extern crate url;
 use std::net::TcpStream;
 use std::net::SocketAddr;
 use std::io::Result as IoResult;
+use std::io::{Read, Write};
 use hyper::header::Headers;
+use hyper::buffer::BufReader;
 
 use ws;
 use ws::sender::Sender as SenderTrait;
@@ -56,7 +58,7 @@ pub use self::builder::{ClientBuilder, Url, ParseError};
 pub struct Client<S>
 	where S: Stream
 {
-	pub stream: S,
+	stream: BufReader<S>,
 	headers: Headers,
 	sender: Sender,
 	receiver: Receiver,
@@ -66,13 +68,13 @@ impl Client<TcpStream> {
 	/// Shuts down the sending half of the client connection, will cause all pending
 	/// and future IO to return immediately with an appropriate value.
 	pub fn shutdown_sender(&self) -> IoResult<()> {
-		self.stream.as_tcp().shutdown(Shutdown::Write)
+		self.stream.get_ref().as_tcp().shutdown(Shutdown::Write)
 	}
 
 	/// Shuts down the receiving half of the client connection, will cause all pending
 	/// and future IO to return immediately with an appropriate value.
 	pub fn shutdown_receiver(&self) -> IoResult<()> {
-		self.stream.as_tcp().shutdown(Shutdown::Read)
+		self.stream.get_ref().as_tcp().shutdown(Shutdown::Read)
 	}
 }
 
@@ -82,27 +84,27 @@ impl<S> Client<S>
 	/// Shuts down the client connection, will cause all pending and future IO to
 	/// return immediately with an appropriate value.
 	pub fn shutdown(&self) -> IoResult<()> {
-		self.stream.as_tcp().shutdown(Shutdown::Both)
+		self.stream.get_ref().as_tcp().shutdown(Shutdown::Both)
 	}
 
 	/// See `TcpStream.peer_addr()`.
 	pub fn peer_addr(&self) -> IoResult<SocketAddr> {
-		self.stream.as_tcp().peer_addr()
+		self.stream.get_ref().as_tcp().peer_addr()
 	}
 
 	/// See `TcpStream.local_addr()`.
 	pub fn local_addr(&self) -> IoResult<SocketAddr> {
-		self.stream.as_tcp().local_addr()
+		self.stream.get_ref().as_tcp().local_addr()
 	}
 
 	/// See `TcpStream.set_nodelay()`.
 	pub fn set_nodelay(&mut self, nodelay: bool) -> IoResult<()> {
-		self.stream.as_tcp().set_nodelay(nodelay)
+		self.stream.get_ref().as_tcp().set_nodelay(nodelay)
 	}
 
 	/// Changes whether the stream is in nonblocking mode.
 	pub fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
-		self.stream.as_tcp().set_nonblocking(nonblocking)
+		self.stream.get_ref().as_tcp().set_nonblocking(nonblocking)
 	}
 }
 
@@ -113,7 +115,7 @@ impl<S> Client<S>
 	/// **without sending any handshake** this is meant to only be used with
 	/// a stream that has a websocket connection already set up.
 	/// If in doubt, don't use this!
-	pub fn unchecked(stream: S, headers: Headers) -> Self {
+	pub fn unchecked(stream: BufReader<S>, headers: Headers) -> Self {
 		Client {
 			headers: headers,
 			stream: stream,
@@ -128,7 +130,7 @@ impl<S> Client<S>
 	pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
 		where D: DataFrameable
 	{
-		self.sender.send_dataframe(&mut self.stream, dataframe)
+		self.sender.send_dataframe(self.stream.get_mut(), dataframe)
 	}
 
 	/// Sends a single message to the remote endpoint.
@@ -136,7 +138,7 @@ impl<S> Client<S>
 		where M: ws::Message<'m, D>,
 		      D: DataFrameable
 	{
-		self.sender.send_message(&mut self.stream, message)
+		self.sender.send_message(self.stream.get_mut(), message)
 	}
 
 	/// Reads a single data frame from the remote endpoint.
@@ -145,7 +147,7 @@ impl<S> Client<S>
 	}
 
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, S> {
+	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, BufReader<S>> {
 		self.receiver.incoming_dataframes(&mut self.stream)
 	}
 
@@ -180,15 +182,20 @@ impl<S> Client<S>
 	}
 
 	pub fn stream_ref(&self) -> &S {
-		&self.stream
+		self.stream.get_ref()
 	}
 
-	pub fn stream_ref_mut(&mut self) -> &mut S {
+	pub fn writer_mut(&mut self) -> &mut Write {
+		self.stream.get_mut()
+	}
+
+	pub fn reader_mut(&mut self) -> &mut Read {
 		&mut self.stream
 	}
 
-	pub fn into_stream(self) -> S {
-		self.stream
+	pub fn into_stream(self) -> (S, Option<(Vec<u8>, usize, usize)>) {
+		let (stream, buf, pos, cap) = self.stream.into_parts();
+		(stream, Some((buf, pos, cap)))
 	}
 
 	/// Returns an iterator over incoming messages.
@@ -229,7 +236,8 @@ impl<S> Client<S>
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Receiver, D, M, S>
+	pub fn incoming_messages<'a, M, D>(&'a mut self,)
+		-> MessageIterator<'a, Receiver, D, M, BufReader<S>>
 		where M: ws::Message<'a, D>,
 		      D: DataFrameable
 	{
@@ -269,9 +277,10 @@ impl<S> Client<S>
 	pub fn split
 		(self,)
 		 -> IoResult<(Reader<<S as Splittable>::Reader>, Writer<<S as Splittable>::Writer>)> {
-		let (read, write) = try!(self.stream.split());
+		let (stream, buf, pos, cap) = self.stream.into_parts();
+		let (read, write) = try!(stream.split());
 		Ok((Reader {
-		        stream: read,
+		        stream: BufReader::from_parts(read, buf, pos, cap),
 		        receiver: self.receiver,
 		    },
 		    Writer {
