@@ -17,7 +17,6 @@ keywords = ["websocket", "websockets", "rfc6455"]
 license = "MIT"
 
 [dependencies]
-hyper = { git = "https://github.com/hyperium/hyper.git", branch = "0.10.x" }
 unicase = "^1.0"
 url = "^1.0"
 rustc-serialize = "^0.3"
@@ -26,6 +25,11 @@ rand = "^0.3"
 byteorder = "^1.0"
 sha1 = "^0.2"
 openssl = { version = "^0.9.10", optional = true }
+
+[dependencies.hyper]
+git = "https://github.com/hyperium/hyper.git"
+branch = "0.10.x"
+rev = "78551dd040e2ab46e833af355c92fe87aa026244"
 
 [features]
 default = ["ssl"]
