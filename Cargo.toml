@@ -28,7 +28,6 @@ openssl = { version = "^0.9.10", optional = true }
 
 [dependencies.hyper]
 git = "https://github.com/hyperium/hyper.git"
-branch = "0.10.x"
 rev = "78551dd040e2ab46e833af355c92fe87aa026244"
 
 [features]
