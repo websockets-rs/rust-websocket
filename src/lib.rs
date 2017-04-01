@@ -38,7 +38,7 @@
 //! level. Their usage is explained in the module documentation.
 extern crate hyper;
 extern crate unicase;
-extern crate url;
+pub extern crate url;
 extern crate rustc_serialize as serialize;
 extern crate rand;
 extern crate byteorder;

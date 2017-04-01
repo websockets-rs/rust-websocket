@@ -1,7 +1,5 @@
 //! Allows you to take an existing request or stream of data and convert it into a
 //! WebSocket client.
-extern crate hyper as real_hyper;
-
 use std::error::Error;
 use std::net::TcpStream;
 use std::io;
@@ -15,21 +13,32 @@ use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
 use client::Client;
 
 use unicase::UniCase;
-use self::real_hyper::status::StatusCode;
-pub use self::real_hyper::http::h1::Incoming;
-pub use self::real_hyper::method::Method;
-pub use self::real_hyper::version::HttpVersion;
-pub use self::real_hyper::uri::RequestUri;
-pub use self::real_hyper::buffer::BufReader;
-pub use self::real_hyper::http::h1::parse_request;
-pub use self::real_hyper::header::{Headers, Upgrade, Protocol, ProtocolName, Connection,
-                                   ConnectionOption};
+use hyper::status::StatusCode;
+use hyper::http::h1::Incoming;
+use hyper::method::Method;
+use hyper::version::HttpVersion;
+use hyper::uri::RequestUri;
+use hyper::buffer::BufReader;
+use hyper::http::h1::parse_request;
+use hyper::header::{Headers, Upgrade, Protocol, ProtocolName, Connection, ConnectionOption};
 
-pub mod hyper;
+pub mod from_hyper;
 
+/// This crate uses buffered readers to read in the handshake quickly, in order to
+/// interface with other use cases that don't use buffered readers the buffered readers
+/// is deconstructed when it is returned to the user and given as the underlying
+/// reader and the buffer.
+///
+/// This struct represents bytes that have already been read in from the stream.
+/// A slice of valid data in this buffer can be obtained by: `&buf[pos..cap]`.
 pub struct Buffer {
+	/// the contents of the buffered stream data
 	pub buf: Vec<u8>,
+	/// the current position of cursor in the buffer
+	/// Any data before `pos` has already been read and parsed.
 	pub pos: usize,
+	/// the last location of valid data
+	/// Any data after `cap` is not valid.
 	pub cap: usize,
 }
 
@@ -37,20 +46,25 @@ pub struct Buffer {
 /// Should be used to examine the client's handshake
 /// accept the protocols requested, route the path, etc.
 ///
-/// Users should then call `accept` or `deny` to complete the handshake
+/// Users should then call `accept` or `reject` to complete the handshake
 /// and start a session.
 pub struct WsUpgrade<S>
 	where S: Stream
 {
+	/// The headers that will be used in the handshake response.
 	pub headers: Headers,
+	/// The stream that will be used to read from / write to.
 	pub stream: S,
+	/// The handshake request, filled with useful metadata.
 	pub request: Request,
+	/// Some buffered data from the stream, if it exists.
 	pub buffer: Option<Buffer>,
 }
 
 impl<S> WsUpgrade<S>
     where S: Stream
 {
+	/// Select a protocol to use in the handshake response.
 	pub fn use_protocol<P>(mut self, protocol: P) -> Self
 		where P: Into<String>
 	{
@@ -61,6 +75,7 @@ impl<S> WsUpgrade<S>
 		self
 	}
 
+	/// Select an extension to use in the handshake response.
 	pub fn use_extension(mut self, extension: Extension) -> Self {
 		upsert_header!(self.headers; WebSocketExtensions; {
             Some(protos) => protos.0.push(extension),
@@ -69,6 +84,7 @@ impl<S> WsUpgrade<S>
 		self
 	}
 
+	/// Select multiple extensions to use in the connection
 	pub fn use_extensions<I>(mut self, extensions: I) -> Self
 		where I: IntoIterator<Item = Extension>
 	{
@@ -81,10 +97,15 @@ impl<S> WsUpgrade<S>
 		self
 	}
 
+	/// Accept the handshake request and send a response,
+	/// if nothing goes wrong a client will be created.
 	pub fn accept(self) -> Result<Client<S>, (S, IoError)> {
 		self.accept_with(&Headers::new())
 	}
 
+	/// Accept the handshake request and send a response while
+	/// adding on a few headers. These headers are added before the required
+	/// headers are, so some might be overwritten.
 	pub fn accept_with(mut self, custom_headers: &Headers) -> Result<Client<S>, (S, IoError)> {
 		self.headers.extend(custom_headers.iter());
 		self.headers
@@ -109,10 +130,12 @@ impl<S> WsUpgrade<S>
 		Ok(Client::unchecked(stream, self.headers))
 	}
 
+	/// Reject the client's request to make a websocket connection.
 	pub fn reject(self) -> Result<S, (S, IoError)> {
 		self.reject_with(&Headers::new())
 	}
-
+	/// Reject the client's request to make a websocket connection
+	/// and send extra headers.
 	pub fn reject_with(mut self, headers: &Headers) -> Result<S, (S, IoError)> {
 		self.headers.extend(headers.iter());
 		match self.send(StatusCode::BadRequest) {
@@ -121,10 +144,12 @@ impl<S> WsUpgrade<S>
 		}
 	}
 
+	/// Drop the connection without saying anything.
 	pub fn drop(self) {
 		::std::mem::drop(self);
 	}
 
+	/// A list of protocols requested from the client.
 	pub fn protocols(&self) -> &[String] {
 		self.request
 		    .headers
@@ -133,6 +158,7 @@ impl<S> WsUpgrade<S>
 		    .unwrap_or(&[])
 	}
 
+	/// A list of extensions requested from the client.
 	pub fn extensions(&self) -> &[Extension] {
 		self.request
 		    .headers
@@ -141,20 +167,19 @@ impl<S> WsUpgrade<S>
 		    .unwrap_or(&[])
 	}
 
+	/// The client's websocket accept key.
 	pub fn key(&self) -> Option<&[u8; 16]> {
 		self.request.headers.get::<WebSocketKey>().map(|k| &k.0)
 	}
 
+	/// The client's websocket version.
 	pub fn version(&self) -> Option<&WebSocketVersion> {
 		self.request.headers.get::<WebSocketVersion>()
 	}
 
+	/// Origin of the client
 	pub fn origin(&self) -> Option<&str> {
 		self.request.headers.get::<Origin>().map(|o| &o.0 as &str)
-	}
-
-	pub fn into_stream(self) -> S {
-		self.stream
 	}
 
 	fn send(&mut self, status: StatusCode) -> IoResult<()> {
@@ -167,6 +192,8 @@ impl<S> WsUpgrade<S>
 impl<S> WsUpgrade<S>
     where S: Stream + AsTcpStream
 {
+	/// Get a handle to the underlying TCP stream, useful to be able to set
+	/// TCP options, etc.
 	pub fn tcp_stream(&self) -> &TcpStream {
 		self.stream.as_tcp()
 	}
@@ -181,8 +208,36 @@ impl<S> WsUpgrade<S>
 /// Otherwise the original stream is returned along with an error.
 ///
 /// Note: the stream is owned because the websocket client expects to own its stream.
+///
+/// This is already implemented for all Streams, which means all types with Read + Write.
+///
+/// # Example
+///
+/// ```rust,no_run
+/// use std::net::TcpListener;
+/// use std::net::TcpStream;
+/// use websocket::server::upgrade::IntoWs;
+/// use websocket::Client;
+///
+/// let listener = TcpListener::bind("127.0.0.1:80").unwrap();
+///
+/// for stream in listener.incoming().filter_map(Result::ok) {
+///     let mut client: Client<TcpStream> = match stream.into_ws() {
+/// 		    Ok(upgrade) => {
+///             match upgrade.accept() {
+///                 Ok(client) => client,
+///                 Err(_) => panic!(),
+///             }
+///         },
+/// 		    Err(_) => panic!(),
+///     };
+/// }
+/// ```
 pub trait IntoWs {
+	/// The type of stream this upgrade process is working with (TcpStream, etc.)
 	type Stream: Stream;
+	/// An error value in case the stream is not asking for a websocket connection
+	/// or something went wrong. It is common to also include the stream here.
 	type Error;
 	/// Attempt to parse the start of a Websocket handshake, later with the  returned
 	/// `WsUpgrade` struct, call `accept to start a websocket client, and `reject` to
@@ -191,7 +246,11 @@ pub trait IntoWs {
 }
 
 
+/// A typical request from hyper
 pub type Request = Incoming<(Method, RequestUri)>;
+/// If you have your requests separate from your stream you can use this struct
+/// to upgrade the connection based on the request given
+/// (the request should be a handshake).
 pub struct RequestStreamPair<S: Stream>(pub S, pub Request);
 
 impl<S> IntoWs for S
@@ -251,21 +310,30 @@ impl<S> IntoWs for RequestStreamPair<S>
 	}
 }
 
+/// Errors that can occur when one tries to upgrade a connection to a
+/// websocket connection.
 #[derive(Debug)]
 pub enum HyperIntoWsError {
+	/// The HTTP method in a valid websocket upgrade request must be GET
 	MethodNotGet,
+	/// Currently HTTP 2 is not supported
 	UnsupportedHttpVersion,
+	/// Currently only WebSocket13 is supported (RFC6455)
 	UnsupportedWebsocketVersion,
+	/// A websocket upgrade request must contain a key
 	NoSecWsKeyHeader,
+	/// A websocket upgrade request must ask to upgrade to a `websocket`
 	NoWsUpgradeHeader,
+	/// A websocket upgrade request must contain an `Upgrade` header
 	NoUpgradeHeader,
+	/// A websocket upgrade request's `Connection` header must be `Upgrade`
 	NoWsConnectionHeader,
+	/// A websocket upgrade request must contain a `Connection` header
 	NoConnectionHeader,
-	UnknownNetworkStream,
 	/// IO error from reading the underlying socket
 	Io(io::Error),
 	/// Error while parsing an incoming request
-	Parsing(self::real_hyper::error::Error),
+	Parsing(::hyper::error::Error),
 }
 
 impl Display for HyperIntoWsError {
@@ -286,7 +354,6 @@ impl Error for HyperIntoWsError {
 			&NoUpgradeHeader => "Missing Upgrade WebSocket header",
 			&NoWsConnectionHeader => "Invalid Connection WebSocket header",
 			&NoConnectionHeader => "Missing Connection WebSocket header",
-			&UnknownNetworkStream => "Cannot downcast to known impl of NetworkStream",
 			&Io(ref e) => e.description(),
 			&Parsing(ref e) => e.description(),
 		}
@@ -307,13 +374,13 @@ impl From<io::Error> for HyperIntoWsError {
 	}
 }
 
-impl From<real_hyper::error::Error> for HyperIntoWsError {
-	fn from(err: real_hyper::error::Error) -> Self {
+impl From<::hyper::error::Error> for HyperIntoWsError {
+	fn from(err: ::hyper::error::Error) -> Self {
 		HyperIntoWsError::Parsing(err)
 	}
 }
 
-pub fn validate(
+fn validate(
 	method: &Method,
 	version: &HttpVersion,
 	headers: &Headers,

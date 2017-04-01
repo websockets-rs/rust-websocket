@@ -10,6 +10,8 @@ use result::{WebSocketResult, WebSocketError};
 
 const INVALID_EXTENSION: &'static str = "Invalid Sec-WebSocket-Extensions extension name";
 
+// TODO: check if extension name is valid according to spec
+
 /// Represents a Sec-WebSocket-Extensions header
 #[derive(PartialEq, Clone, Debug)]
 pub struct WebSocketExtensions(pub Vec<Extension>);

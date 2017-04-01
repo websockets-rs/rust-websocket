@@ -4,6 +4,8 @@ use hyper;
 use std::fmt;
 use std::ops::Deref;
 
+// TODO: only allow valid protocol names to be added
+
 /// Represents a Sec-WebSocket-Protocol header
 #[derive(PartialEq, Clone, Debug)]
 pub struct WebSocketProtocol(pub Vec<String>);

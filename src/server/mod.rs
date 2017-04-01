@@ -10,15 +10,31 @@ pub use self::upgrade::{Request, HyperIntoWsError};
 
 pub mod upgrade;
 
+/// When a sever tries to accept a connection many things can go wrong.
+///
+/// This struct is all the information that is recovered from a failed
+/// websocket handshake, in case one wants to use the connection for something
+/// else (such as HTTP).
 pub struct InvalidConnection<S>
 	where S: Stream
 {
+	/// if the stream was successfully setup it will be included here
+	/// on a failed connection.
 	pub stream: Option<S>,
+	/// the parsed request. **This is a normal HTTP request** meaning you can
+	/// simply run this server and handle both HTTP and Websocket connections.
+	/// If you already have a server you want to use, checkout the
+	/// `server::upgrade` module to integrate this crate with your server.
 	pub parsed: Option<Request>,
+	/// the buffered data that was already taken from the stream
 	pub buffer: Option<Buffer>,
+	/// the cause of the failed websocket connection setup
 	pub error: HyperIntoWsError,
 }
 
+/// Either the stream was established and it sent a websocket handshake
+/// which represents the `Ok` variant, or there was an error (this is the
+/// `Err` variant).
 pub type AcceptResult<S> = Result<WsUpgrade<S>, InvalidConnection<S>>;
 
 /// Marker struct for a struct not being secure
@@ -39,7 +55,7 @@ impl OptionalSslAcceptor for SslAcceptor {}
 /// This is a convenient way to implement WebSocket servers, however
 /// it is possible to use any sendable Reader and Writer to obtain
 /// a WebSocketClient, so if needed, an alternative server implementation can be used.
-///#Non-secure Servers
+///# Non-secure Servers
 ///
 /// ```no_run
 ///extern crate websocket;
@@ -63,7 +79,7 @@ impl OptionalSslAcceptor for SslAcceptor {}
 /// # }
 /// ```
 ///
-///#Secure Servers
+///# Secure Servers
 /// ```no_run
 ///extern crate websocket;
 ///extern crate openssl;
@@ -106,10 +122,21 @@ impl OptionalSslAcceptor for SslAcceptor {}
 ///}
 /// # }
 /// ```
+///
+/// # A Hyper Server
+/// This crates comes with hyper integration out of the box, you can create a hyper
+/// server and serve websocket and HTTP **on the same port!**
+/// check out the docs over at `websocket::server::upgrade::from_hyper` for an example.
+///
+/// # A Custom Server
+/// So you don't want to use any of our server implementations? That's O.K.
+/// All it takes is implementing the `IntoWs` trait for your server's streams,
+/// then calling `.into_ws()` on them.
+/// check out the docs over at `websocket::server::upgrade` for more.
 pub struct Server<S>
 	where S: OptionalSslAcceptor
 {
-	pub listener: TcpListener,
+	listener: TcpListener,
 	ssl_acceptor: S,
 }
 

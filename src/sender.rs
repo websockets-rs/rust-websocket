@@ -9,8 +9,14 @@ use ws;
 use ws::sender::Sender as SenderTrait;
 pub use stream::Shutdown;
 
+/// A writer that bundles a stream with a serializer to send the messages.
+/// This is used in the client's `.split()` function as the writing component.
+///
+/// It can also be useful to use a websocket connection without a handshake.
 pub struct Writer<W> {
+	/// The stream that websocket messages will be written to
 	pub stream: W,
+	/// The serializer that will be used to serialize the messages
 	pub sender: Sender,
 }
 

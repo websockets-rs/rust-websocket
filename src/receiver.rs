@@ -14,10 +14,14 @@ use ws::receiver::{MessageIterator, DataFrameIterator};
 use stream::{AsTcpStream, Stream};
 pub use stream::Shutdown;
 
+/// This reader bundles an existing stream with a parsing algorithm.
+/// It is used by the client in its `.split()` function as the reading component.
 pub struct Reader<R>
 	where R: Read
 {
+	/// the stream to be read from
 	pub stream: BufReader<R>,
+	/// the parser to parse bytes into messages
 	pub receiver: Receiver,
 }
 
@@ -42,6 +46,8 @@ impl<R> Reader<R>
 		self.receiver.recv_message(&mut self.stream)
 	}
 
+	/// An iterator over incoming messsages.
+	/// This iterator will block until new messages arrive and will never halt.
 	pub fn incoming_messages<'a, M, D>(&'a mut self,)
 		-> MessageIterator<'a, Receiver, D, M, BufReader<R>>
 		where M: ws::Message<'a, D>,

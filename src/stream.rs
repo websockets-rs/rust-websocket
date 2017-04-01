@@ -15,14 +15,25 @@ pub trait Stream: Read + Write {}
 
 impl<S> Stream for S where S: Read + Write {}
 
+/// a `Stream` that can also be used as a borrow to a `TcpStream`
+/// this is useful when you want to set `TcpStream` options on a
+/// `Stream` like `nonblocking`.
 pub trait NetworkStream: Read + Write + AsTcpStream {}
 
 impl<S> NetworkStream for S where S: Read + Write + AsTcpStream {}
 
+/// some streams can be split up into separate reading and writing components
+/// `TcpStream` is an example. This trait marks this ability so one can split
+/// up the client into two parts.
+///
+/// Notice however that this is not possible to do with SSL.
 pub trait Splittable {
+	/// The reading component of this type
 	type Reader: Read;
+	/// The writing component of this type
 	type Writer: Write;
 
+	/// Split apart this type into a reading and writing component.
 	fn split(self) -> io::Result<(Self::Reader, Self::Writer)>;
 }
 
@@ -47,7 +58,10 @@ impl Splittable for TcpStream {
 	}
 }
 
+/// The ability access a borrow to an underlying TcpStream,
+/// so one can set options on the stream such as `nonblocking`.
 pub trait AsTcpStream {
+	/// Get a borrow of the TcpStream
 	fn as_tcp(&self) -> &TcpStream;
 }
 
@@ -72,6 +86,10 @@ impl<T> AsTcpStream for Box<T>
 	}
 }
 
+/// If you would like to combine an input stream and an output stream into a single
+/// stream to talk websockets over then this is the struct for you!
+///
+/// This is useful if you want to use different mediums for different directions.
 pub struct ReadWritePair<R, W>(pub R, pub W)
 	where R: Read,
 	      W: Write;

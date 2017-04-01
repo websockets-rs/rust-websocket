@@ -15,7 +15,7 @@ use ws::receiver::Receiver as ReceiverTrait;
 use result::WebSocketResult;
 use stream::{AsTcpStream, Stream, Splittable, Shutdown};
 use dataframe::DataFrame;
-use header::{WebSocketProtocol, WebSocketExtensions, Origin};
+use header::{WebSocketProtocol, WebSocketExtensions};
 use header::extensions::Extension;
 
 use ws::dataframe::DataFrame as DataFrameable;
@@ -29,18 +29,17 @@ pub use self::builder::{ClientBuilder, Url, ParseError};
 
 /// Represents a WebSocket client, which can send and receive messages/data frames.
 ///
-/// `D` is the data frame type, `S` is the type implementing `Sender<D>` and `R`
-/// is the type implementing `Receiver<D>`.
+/// The client just wraps around a `Stream` (which is something that can be read from
+/// and written to) and handles the websocket protocol. TCP or SSL over TCP is common,
+/// but any stream can be used.
 ///
-/// For most cases, the data frame type will be `dataframe::DataFrame`, the Sender
-/// type will be `client::Sender<stream::WebSocketStream>` and the receiver type
-/// will be `client::Receiver<stream::WebSocketStream>`.
-///
-/// A `Client` can be split into a `Sender` and a `Receiver` which can then be moved
+/// A `Client` can also be split into a `Reader` and a `Writer` which can then be moved
 /// to different threads, often using a send loop and receiver loop concurrently,
 /// as shown in the client example in `examples/client.rs`.
+/// This is only possible for streams that implement the `Splittable` trait, which
+/// currently is only TCP streams. (it is unsafe to duplicate an SSL stream)
 ///
-///#Connecting to a Server
+///# Connecting to a Server
 ///
 ///```no_run
 ///extern crate websocket;
@@ -48,8 +47,10 @@ pub use self::builder::{ClientBuilder, Url, ParseError};
 ///
 ///use websocket::{ClientBuilder, Message};
 ///
-///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
-///                     .connect(None).unwrap();
+///let mut client = ClientBuilder::new("ws://127.0.0.1:1234")
+///    .unwrap()
+///    .connect_insecure()
+///    .unwrap();
 ///
 ///let message = Message::text("Hello, World!");
 ///client.send_message(&message).unwrap(); // Send message
@@ -87,17 +88,20 @@ impl<S> Client<S>
 		self.stream.get_ref().as_tcp().shutdown(Shutdown::Both)
 	}
 
-	/// See `TcpStream.peer_addr()`.
+	/// See [`TcpStream::peer_addr`]
+	/// (https://doc.rust-lang.org/std/net/struct.TcpStream.html#method.peer_addr).
 	pub fn peer_addr(&self) -> IoResult<SocketAddr> {
 		self.stream.get_ref().as_tcp().peer_addr()
 	}
 
-	/// See `TcpStream.local_addr()`.
+	/// See [`TcpStream::local_addr`]
+	/// (https://doc.rust-lang.org/std/net/struct.TcpStream.html#method.local_addr).
 	pub fn local_addr(&self) -> IoResult<SocketAddr> {
 		self.stream.get_ref().as_tcp().local_addr()
 	}
 
-	/// See `TcpStream.set_nodelay()`.
+	/// See [`TcpStream::set_nodelay`]
+	/// (https://doc.rust-lang.org/std/net/struct.TcpStream.html#method.set_nodelay).
 	pub fn set_nodelay(&mut self, nodelay: bool) -> IoResult<()> {
 		self.stream.get_ref().as_tcp().set_nodelay(nodelay)
 	}
@@ -115,6 +119,7 @@ impl<S> Client<S>
 	/// **without sending any handshake** this is meant to only be used with
 	/// a stream that has a websocket connection already set up.
 	/// If in doubt, don't use this!
+	#[doc(hidden)]
 	pub fn unchecked(stream: BufReader<S>, headers: Headers) -> Self {
 		Client {
 			headers: headers,
@@ -159,10 +164,27 @@ impl<S> Client<S>
 		self.receiver.recv_message(&mut self.stream)
 	}
 
+	/// Access the headers that were sent in the server's handshake response.
+	/// This is a catch all for headers other than protocols and extensions.
 	pub fn headers(&self) -> &Headers {
 		&self.headers
 	}
 
+	/// **If you supplied a protocol, you must check that it was accepted by
+	/// the server** using this function.
+	/// This is not done automatically because the terms of accepting a protocol
+	/// can get complicated, especially if some protocols depend on others, etc.
+	///
+	/// ```rust,no_run
+	/// # use websocket::ClientBuilder;
+	/// let mut client = ClientBuilder::new("wss://test.fysh.in").unwrap()
+	///     .add_protocol("xmpp")
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// // be sure to check the protocol is there!
+	/// assert!(client.protocols().iter().any(|p| p as &str == "xmpp"));
+	/// ```
 	pub fn protocols(&self) -> &[String] {
 		self.headers
 		    .get::<WebSocketProtocol>()
@@ -170,6 +192,9 @@ impl<S> Client<S>
 		    .unwrap_or(&[])
 	}
 
+	/// If you supplied a protocol, be sure to check if it was accepted by the
+	/// server here. Since no extensions are implemented out of the box yet, using
+	/// one will require its own implementation.
 	pub fn extensions(&self) -> &[Extension] {
 		self.headers
 		    .get::<WebSocketExtensions>()
@@ -177,22 +202,84 @@ impl<S> Client<S>
 		    .unwrap_or(&[])
 	}
 
-	pub fn origin(&self) -> Option<&str> {
-		self.headers.get::<Origin>().map(|o| &o.0 as &str)
-	}
-
+	/// Get a reference to the stream.
+	/// Useful to be able to set options on the stream.
+	///
+	/// ```rust,no_run
+	/// # use websocket::ClientBuilder;
+	/// let mut client = ClientBuilder::new("ws://double.down").unwrap()
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// client.stream_ref().set_ttl(60).unwrap();
+	/// ```
 	pub fn stream_ref(&self) -> &S {
 		self.stream.get_ref()
 	}
 
+	/// Get a handle to the writable portion of this stream.
+	/// This can be used to write custom extensions.
+	///
+	/// ```rust,no_run
+	/// # use websocket::ClientBuilder;
+	/// use websocket::Message;
+	/// use websocket::ws::sender::Sender as SenderTrait;
+	/// use websocket::sender::Sender;
+	///
+	/// let mut client = ClientBuilder::new("ws://the.room").unwrap()
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// let message = Message::text("Oh hi, Mark.");
+	/// let mut sender = Sender::new(true);
+	/// let mut buf = Vec::new();
+	///
+	/// sender.send_message(&mut buf, &message);
+	///
+	/// /* transform buf somehow */
+	///
+	/// client.writer_mut().write_all(&buf);
+	/// ```
 	pub fn writer_mut(&mut self) -> &mut Write {
 		self.stream.get_mut()
 	}
 
+	/// Get a handle to the readable portion of this stream.
+	/// This can be used to transform raw bytes before they
+	/// are read in.
+	///
+	/// ```rust,no_run
+	/// # use websocket::ClientBuilder;
+	/// use std::io::Cursor;
+	/// use websocket::Message;
+	/// use websocket::ws::receiver::Receiver as ReceiverTrait;
+	/// use websocket::receiver::Receiver;
+	///
+	/// let mut client = ClientBuilder::new("ws://the.room").unwrap()
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// let mut receiver = Receiver::new(false);
+	/// let mut buf = Vec::new();
+	///
+	/// client.reader_mut().read_to_end(&mut buf);
+	///
+	/// /* transform buf somehow */
+	///
+	/// let mut buf_reader = Cursor::new(&mut buf);
+	/// let message: Message = receiver.recv_message(&mut buf_reader).unwrap();
+	/// ```
 	pub fn reader_mut(&mut self) -> &mut Read {
 		&mut self.stream
 	}
 
+	/// Deconstruct the client into its underlying stream and
+	/// maybe some of the buffer that was already read from the stream.
+	/// The client uses a buffered reader to read in messages, so some
+	/// bytes might already be read from the stream when this is called,
+	/// these buffered bytes are returned in the form
+	///
+	/// `(byte_buffer: Vec<u8>, buffer_capacity: usize, buffer_position: usize)`
 	pub fn into_stream(self) -> (S, Option<(Vec<u8>, usize, usize)>) {
 		let (stream, buf, pos, cap) = self.stream.into_parts();
 		(stream, Some((buf, pos, cap)))

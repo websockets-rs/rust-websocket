@@ -11,6 +11,7 @@ use result::WebSocketResult;
 
 /// A trait for receiving data frames and messages.
 pub trait Receiver: Sized {
+	/// The type of dataframe that incoming messages will be serialized to.
 	type F: DataFrame;
 
 	/// Reads a single data frame from this receiver.
