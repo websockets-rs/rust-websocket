@@ -13,9 +13,9 @@ script:
 
 after_success:
   - >
-    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo apt-get install python-unittest2 && sudo pip install autobahntestsuite
+    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo pip install ghp-import urllib3[secure]
   - >
-    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo pip install ghp-import
+    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo apt-get install python-unittest2 && sudo pip install autobahntestsuite
   - >
     [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && {
     echo "Running Autobahn TestSuite for client" ;
