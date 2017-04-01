@@ -30,7 +30,7 @@ fn main() {
 	// Start listening for WebSocket connections
 	let ws_server = Server::bind("127.0.0.1:2794").unwrap();
 
-	for connection in ws_server {
+	for connection in ws_server.filter_map(Result::ok) {
 		// Spawn a new thread for each connection.
 		thread::spawn(move || {
 			if !connection.protocols().contains(&"rust-websocket".to_string()) {

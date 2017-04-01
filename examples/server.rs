@@ -7,7 +7,7 @@ use websocket::message::Type;
 fn main() {
 	let server = Server::bind("127.0.0.1:2794").unwrap();
 
-	for request in server {
+	for request in server.filter_map(Result::ok) {
 		// Spawn a new thread for each connection.
 		thread::spawn(move || {
 			if !request.protocols().contains(&"rust-websocket".to_string()) {

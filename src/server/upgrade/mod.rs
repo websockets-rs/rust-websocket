@@ -31,6 +31,7 @@ pub mod from_hyper;
 ///
 /// This struct represents bytes that have already been read in from the stream.
 /// A slice of valid data in this buffer can be obtained by: `&buf[pos..cap]`.
+#[derive(Debug)]
 pub struct Buffer {
 	/// the contents of the buffered stream data
 	pub buf: Vec<u8>,
@@ -415,7 +416,7 @@ fn validate(
 	fn check_connection_header(headers: &Vec<ConnectionOption>) -> bool {
 		for header in headers {
 			if let &ConnectionOption::ConnectionHeader(ref h) = header {
-				if h as &str == "upgrade" {
+				if UniCase(h as &str) == UniCase("upgrade") {
 					return true;
 				}
 			}

@@ -8,7 +8,8 @@ use websocket::message::Type;
 fn main() {
 	let server = Server::bind("127.0.0.1:9002").unwrap();
 
-	for connection in server {
+	for connection in server.filter_map(Result::ok) {
+
 		thread::spawn(move || {
 			let client = connection.accept().unwrap();
 

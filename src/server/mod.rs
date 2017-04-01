@@ -65,7 +65,7 @@ impl OptionalSslAcceptor for SslAcceptor {}
 ///
 ///let server = Server::bind("127.0.0.1:1234").unwrap();
 ///
-///for connection in server {
+///for connection in server.filter_map(Result::ok) {
 ///    // Spawn a new thread for each connection.
 ///    thread::spawn(move || {
 ///		   let mut client = connection.accept().unwrap();
@@ -109,7 +109,7 @@ impl OptionalSslAcceptor for SslAcceptor {}
 ///
 ///let server = Server::bind_secure("127.0.0.1:1234", acceptor).unwrap();
 ///
-///for connection in server {
+///for connection in server.filter_map(Result::ok) {
 ///    // Spawn a new thread for each connection.
 ///    thread::spawn(move || {
 ///		   let mut client = connection.accept().unwrap();
@@ -220,10 +220,10 @@ impl Server<SslAcceptor> {
 
 #[cfg(feature="ssl")]
 impl Iterator for Server<SslAcceptor> {
-	type Item = WsUpgrade<SslStream<TcpStream>>;
+	type Item = AcceptResult<SslStream<TcpStream>>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-		self.accept().ok()
+		Some(self.accept())
 	}
 }
 
@@ -265,9 +265,9 @@ impl Server<NoSslAcceptor> {
 }
 
 impl Iterator for Server<NoSslAcceptor> {
-	type Item = WsUpgrade<TcpStream>;
+	type Item = AcceptResult<TcpStream>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-		self.accept().ok()
+		Some(self.accept())
 	}
 }
