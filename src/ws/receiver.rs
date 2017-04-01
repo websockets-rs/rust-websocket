@@ -3,90 +3,108 @@
 //! Also provides iterators over data frames and messages.
 //! See the `ws` module documentation for more information.
 
+use std::io::Read;
 use std::marker::PhantomData;
 use ws::Message;
 use ws::dataframe::DataFrame;
 use result::WebSocketResult;
 
 /// A trait for receiving data frames and messages.
-pub trait Receiver<F>: Sized
-where F: DataFrame {
+pub trait Receiver: Sized {
+	/// The type of dataframe that incoming messages will be serialized to.
+	type F: DataFrame;
+
 	/// Reads a single data frame from this receiver.
-	fn recv_dataframe(&mut self) -> WebSocketResult<F>;
+	fn recv_dataframe<R>(&mut self, reader: &mut R) -> WebSocketResult<Self::F> where R: Read;
+
 	/// Returns the data frames that constitute one message.
-	fn recv_message_dataframes(&mut self) -> WebSocketResult<Vec<F>>;
+	fn recv_message_dataframes<R>(&mut self, reader: &mut R) -> WebSocketResult<Vec<Self::F>>
+		where R: Read;
 
 	/// Returns an iterator over incoming data frames.
-	fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Self, F> {
+	fn incoming_dataframes<'a, R>(&'a mut self, reader: &'a mut R) -> DataFrameIterator<'a, Self, R>
+		where R: Read
+	{
 		DataFrameIterator {
+			reader: reader,
 			inner: self,
-			_dataframe: PhantomData
 		}
 	}
+
 	/// Reads a single message from this receiver.
-	fn recv_message<'m, D, M, I>(&mut self) -> WebSocketResult<M>
-	where M: Message<'m, D, DataFrameIterator = I>,
-          I: Iterator<Item = D>,
-          D: DataFrame
-    {
-		let dataframes = try!(self.recv_message_dataframes());
+	fn recv_message<'m, D, M, I, R>(&mut self, reader: &mut R) -> WebSocketResult<M>
+		where M: Message<'m, D, DataFrameIterator = I>,
+		      I: Iterator<Item = D>,
+		      D: DataFrame,
+		      R: Read
+	{
+		let dataframes = try!(self.recv_message_dataframes(reader));
 		Message::from_dataframes(dataframes)
 	}
 
 	/// Returns an iterator over incoming messages.
-	fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, Self, D, F, M>
-	where M: Message<'a, D>, D: DataFrame {
+	fn incoming_messages<'a, M, D, R>(
+		&'a mut self,
+		reader: &'a mut R,
+	) -> MessageIterator<'a, Self, D, M, R>
+		where M: Message<'a, D>,
+		      D: DataFrame,
+		      R: Read
+	{
 		MessageIterator {
+			reader: reader,
 			inner: self,
 			_dataframe: PhantomData,
-            _receiver: PhantomData,
 			_message: PhantomData,
 		}
 	}
 }
 
 /// An iterator over data frames from a Receiver.
-pub struct DataFrameIterator<'a, R, D>
-where R: 'a + Receiver<D>, D: DataFrame {
-	inner: &'a mut R,
-	_dataframe: PhantomData<D>
+pub struct DataFrameIterator<'a, Recv, R>
+	where Recv: 'a + Receiver,
+	      R: 'a + Read
+{
+	reader: &'a mut R,
+	inner: &'a mut Recv,
 }
 
-impl<'a, R, D> Iterator for DataFrameIterator<'a, R, D>
-where R: 'a + Receiver<D>, D: DataFrame {
-
-	type Item = WebSocketResult<D>;
+impl<'a, Recv, R> Iterator for DataFrameIterator<'a, Recv, R>
+	where Recv: 'a + Receiver,
+	      R: Read
+{
+	type Item = WebSocketResult<Recv::F>;
 
 	/// Get the next data frame from the receiver. Always returns `Some`.
-	fn next(&mut self) -> Option<WebSocketResult<D>> {
-		Some(self.inner.recv_dataframe())
+	fn next(&mut self) -> Option<WebSocketResult<Recv::F>> {
+		Some(self.inner.recv_dataframe(self.reader))
 	}
 }
 
 /// An iterator over messages from a Receiver.
-pub struct MessageIterator<'a, R, D, F, M>
-where R: 'a + Receiver<F>,
-      M: Message<'a, D>,
-      D: DataFrame,
-      F: DataFrame,
+pub struct MessageIterator<'a, Recv, D, M, R>
+	where Recv: 'a + Receiver,
+	      M: Message<'a, D>,
+	      D: DataFrame,
+	      R: 'a + Read
 {
-	inner: &'a mut R,
+	reader: &'a mut R,
+	inner: &'a mut Recv,
 	_dataframe: PhantomData<D>,
 	_message: PhantomData<M>,
-    _receiver: PhantomData<F>,
 }
 
-impl<'a, R, D, F, M, I> Iterator for MessageIterator<'a, R, D, F, M>
-where R: 'a + Receiver<F>,
-      M: Message<'a, D, DataFrameIterator = I>,
-	  I: Iterator<Item = D>,
-	  D: DataFrame,
-      F: DataFrame,
+impl<'a, Recv, D, M, I, R> Iterator for MessageIterator<'a, Recv, D, M, R>
+	where Recv: 'a + Receiver,
+	      M: Message<'a, D, DataFrameIterator = I>,
+	      I: Iterator<Item = D>,
+	      D: DataFrame,
+	      R: Read
 {
 	type Item = WebSocketResult<M>;
 
 	/// Get the next message from the receiver. Always returns `Some`.
 	fn next(&mut self) -> Option<WebSocketResult<M>> {
-		Some(self.inner.recv_message())
+		Some(self.inner.recv_message(self.reader))
 	}
 }

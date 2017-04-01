@@ -2,8 +2,8 @@ extern crate websocket;
 extern crate rustc_serialize as serialize;
 
 use std::str::from_utf8;
-use websocket::client::request::Url;
-use websocket::{Client, Message, Sender, Receiver};
+use websocket::ClientBuilder;
+use websocket::Message;
 use websocket::message::Type;
 use serialize::json;
 
@@ -20,22 +20,18 @@ fn main() {
 	let case_count = get_case_count(addr.clone());
 
 	while current_case_id <= case_count {
-		let url = addr.clone() + "/runCase?case=" + &current_case_id.to_string()[..] + "&agent=" + agent;
+		let case_id = current_case_id;
+		current_case_id += 1;
+		let url = addr.clone() + "/runCase?case=" + &case_id.to_string()[..] + "&agent=" + agent;
 
-		let ws_uri = Url::parse(&url[..]).unwrap();
-		let request = Client::connect(ws_uri).unwrap();
-		let response = request.send().unwrap();
-		match response.validate() {
-			Ok(()) => (),
-			Err(e) => {
-				println!("{:?}", e);
-				current_case_id += 1;
-				continue;
-			}
-		}
-		let (mut sender, mut receiver) = response.begin().split();
+		let client = ClientBuilder::new(&url)
+			.unwrap()
+			.connect_insecure()
+			.unwrap();
 
-		println!("Executing test case: {}/{}", current_case_id, case_count);
+		let (mut receiver, mut sender) = client.split().unwrap();
+
+		println!("Executing test case: {}/{}", case_id, case_count);
 
 		for message in receiver.incoming_messages() {
 			let message: Message = match message {
@@ -49,7 +45,7 @@ fn main() {
 
 			match message.opcode {
 				Type::Text => {
-                    let response = Message::text(from_utf8(&*message.payload).unwrap());
+					let response = Message::text(from_utf8(&*message.payload).unwrap());
 					sender.send_message(&response).unwrap();
 				}
 				Type::Binary => {
@@ -65,8 +61,6 @@ fn main() {
 				_ => (),
 			}
 		}
-
-		current_case_id += 1;
 	}
 
 	update_reports(addr.clone(), agent);
@@ -74,17 +68,16 @@ fn main() {
 
 fn get_case_count(addr: String) -> usize {
 	let url = addr + "/getCaseCount";
-	let ws_uri = Url::parse(&url[..]).unwrap();
-	let request = Client::connect(ws_uri).unwrap();
-	let response = request.send().unwrap();
-	match response.validate() {
-		Ok(()) => (),
+
+	let client = match ClientBuilder::new(&url).unwrap().connect_insecure() {
+		Ok(c) => c,
 		Err(e) => {
 			println!("{:?}", e);
 			return 0;
 		}
-	}
-	let (mut sender, mut receiver) = response.begin().split();
+	};
+
+	let (mut receiver, mut sender) = client.split().unwrap();
 
 	let mut count = 0;
 
@@ -93,7 +86,8 @@ fn get_case_count(addr: String) -> usize {
 			Ok(message) => message,
 			Err(e) => {
 				println!("Error: {:?}", e);
-				let _ = sender.send_message(&Message::close_because(1002, "".to_string()));
+				let _ =
+					sender.send_message(&Message::close_because(1002, "".to_string()));
 				break;
 			}
 		};
@@ -118,17 +112,16 @@ fn get_case_count(addr: String) -> usize {
 
 fn update_reports(addr: String, agent: &str) {
 	let url = addr + "/updateReports?agent=" + agent;
-	let ws_uri = Url::parse(&url[..]).unwrap();
-	let request = Client::connect(ws_uri).unwrap();
-	let response = request.send().unwrap();
-	match response.validate() {
-		Ok(()) => (),
+
+	let client = match ClientBuilder::new(&url).unwrap().connect_insecure() {
+		Ok(c) => c,
 		Err(e) => {
 			println!("{:?}", e);
 			return;
 		}
-	}
-	let (mut sender, mut receiver) = response.begin().split();
+	};
+
+	let (mut receiver, mut sender) = client.split().unwrap();
 
 	println!("Updating reports...");
 

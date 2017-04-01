@@ -38,11 +38,13 @@
 //! level. Their usage is explained in the module documentation.
 extern crate hyper;
 extern crate unicase;
-extern crate url;
+pub extern crate url;
 extern crate rustc_serialize as serialize;
-extern crate openssl;
 extern crate rand;
 extern crate byteorder;
+extern crate sha1;
+#[cfg(feature="ssl")]
+extern crate openssl;
 
 #[macro_use]
 extern crate bitflags;
@@ -50,13 +52,33 @@ extern crate bitflags;
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
 
-pub use self::client::Client;
+pub use self::client::{Client, ClientBuilder};
 pub use self::server::Server;
 pub use self::dataframe::DataFrame;
 pub use self::message::Message;
-pub use self::stream::WebSocketStream;
+pub use self::stream::Stream;
 pub use self::ws::Sender;
 pub use self::ws::Receiver;
+
+macro_rules! upsert_header {
+    ($headers:expr; $header:ty; {
+        Some($pat:pat) => $some_match:expr,
+        None => $default:expr
+    }) => {{
+        match $headers.has::<$header>() {
+            true => {
+                match $headers.get_mut::<$header>() {
+                    Some($pat) => { $some_match; },
+                    None => (),
+                };
+            }
+            false => {
+                $headers.set($default);
+            },
+        };
+    }}
+}
+
 
 pub mod ws;
 pub mod client;

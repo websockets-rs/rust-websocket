@@ -1,24 +1,61 @@
 //! Provides an implementation of a WebSocket server
-use std::net::{SocketAddr, ToSocketAddrs, TcpListener};
-use std::net::Shutdown;
-use std::io::{Read, Write};
+use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream};
 use std::io;
-pub use self::request::Request;
-pub use self::response::Response;
+use std::convert::Into;
+#[cfg(feature="ssl")]
+use openssl::ssl::{SslStream, SslAcceptor};
+use stream::Stream;
+use self::upgrade::{WsUpgrade, IntoWs, Buffer};
+pub use self::upgrade::{Request, HyperIntoWsError};
 
-use stream::WebSocketStream;
+pub mod upgrade;
 
-use openssl::ssl::SslContext;
-use openssl::ssl::SslStream;
-
-pub mod request;
-pub mod response;
-
-/// Represents a WebSocket server which can work with either normal (non-secure) connections, or secure WebSocket connections.
+/// When a sever tries to accept a connection many things can go wrong.
 ///
-/// This is a convenient way to implement WebSocket servers, however it is possible to use any sendable Reader and Writer to obtain
+/// This struct is all the information that is recovered from a failed
+/// websocket handshake, in case one wants to use the connection for something
+/// else (such as HTTP).
+pub struct InvalidConnection<S>
+	where S: Stream
+{
+	/// if the stream was successfully setup it will be included here
+	/// on a failed connection.
+	pub stream: Option<S>,
+	/// the parsed request. **This is a normal HTTP request** meaning you can
+	/// simply run this server and handle both HTTP and Websocket connections.
+	/// If you already have a server you want to use, checkout the
+	/// `server::upgrade` module to integrate this crate with your server.
+	pub parsed: Option<Request>,
+	/// the buffered data that was already taken from the stream
+	pub buffer: Option<Buffer>,
+	/// the cause of the failed websocket connection setup
+	pub error: HyperIntoWsError,
+}
+
+/// Either the stream was established and it sent a websocket handshake
+/// which represents the `Ok` variant, or there was an error (this is the
+/// `Err` variant).
+pub type AcceptResult<S> = Result<WsUpgrade<S>, InvalidConnection<S>>;
+
+/// Marker struct for a struct not being secure
+#[derive(Clone)]
+pub struct NoSslAcceptor;
+/// Trait that is implemented over NoSslAcceptor and SslAcceptor that
+/// serves as a generic bound to make a struct with.
+/// Used in the Server to specify impls based on wether the server
+/// is running over SSL or not.
+pub trait OptionalSslAcceptor: Clone {}
+impl OptionalSslAcceptor for NoSslAcceptor {}
+#[cfg(feature="ssl")]
+impl OptionalSslAcceptor for SslAcceptor {}
+
+/// Represents a WebSocket server which can work with either normal
+/// (non-secure) connections, or secure WebSocket connections.
+///
+/// This is a convenient way to implement WebSocket servers, however
+/// it is possible to use any sendable Reader and Writer to obtain
 /// a WebSocketClient, so if needed, an alternative server implementation can be used.
-///#Non-secure Servers
+///# Non-secure Servers
 ///
 /// ```no_run
 ///extern crate websocket;
@@ -31,9 +68,7 @@ pub mod response;
 ///for connection in server {
 ///    // Spawn a new thread for each connection.
 ///    thread::spawn(move || {
-///		   let request = connection.unwrap().read_request().unwrap(); // Get the request
-///		   let response = request.accept(); // Form a response
-///		   let mut client = response.send().unwrap(); // Send the response
+///		   let mut client = connection.accept().unwrap();
 ///
 ///		   let message = Message::text("Hello, client!");
 ///		   let _ = client.send_message(&message);
@@ -44,28 +79,40 @@ pub mod response;
 /// # }
 /// ```
 ///
-///#Secure Servers
+///# Secure Servers
 /// ```no_run
 ///extern crate websocket;
 ///extern crate openssl;
 ///# fn main() {
 ///use std::thread;
-///use std::path::Path;
+///use std::io::Read;
+///use std::fs::File;
 ///use websocket::{Server, Message};
-///use openssl::ssl::{SslContext, SslMethod};
-///use openssl::x509::X509FileType;
+///use openssl::pkcs12::Pkcs12;
+///use openssl::ssl::{SslMethod, SslAcceptorBuilder, SslStream};
 ///
-///let mut context = SslContext::new(SslMethod::Tlsv1).unwrap();
-///let _ = context.set_certificate_file(&(Path::new("cert.pem")), X509FileType::PEM);
-///let _ = context.set_private_key_file(&(Path::new("key.pem")), X509FileType::PEM);
-///let server = Server::bind_secure("127.0.0.1:1234", &context).unwrap();
+///// In this example we retrieve our keypair and certificate chain from a PKCS #12 archive,
+///// but but they can also be retrieved from, for example, individual PEM- or DER-formatted
+///// files. See the documentation for the `PKey` and `X509` types for more details.
+///let mut file = File::open("identity.pfx").unwrap();
+///let mut pkcs12 = vec![];
+///file.read_to_end(&mut pkcs12).unwrap();
+///let pkcs12 = Pkcs12::from_der(&pkcs12).unwrap();
+///let identity = pkcs12.parse("password123").unwrap();
+///
+///let acceptor = SslAcceptorBuilder::mozilla_intermediate(SslMethod::tls(),
+///                                                        &identity.pkey,
+///                                                        &identity.cert,
+///                                                        &identity.chain)
+///                   .unwrap()
+///                   .build();
+///
+///let server = Server::bind_secure("127.0.0.1:1234", acceptor).unwrap();
 ///
 ///for connection in server {
 ///    // Spawn a new thread for each connection.
 ///    thread::spawn(move || {
-///		   let request = connection.unwrap().read_request().unwrap(); // Get the request
-///		   let response = request.accept(); // Form a response
-///		   let mut client = response.send().unwrap(); // Send the response
+///		   let mut client = connection.accept().unwrap();
 ///
 ///		   let message = Message::text("Hello, client!");
 ///		   let _ = client.send_message(&message);
@@ -75,95 +122,152 @@ pub mod response;
 ///}
 /// # }
 /// ```
-pub struct Server<'a> {
-	inner: TcpListener,
-	context: Option<&'a SslContext>,
+///
+/// # A Hyper Server
+/// This crates comes with hyper integration out of the box, you can create a hyper
+/// server and serve websocket and HTTP **on the same port!**
+/// check out the docs over at `websocket::server::upgrade::from_hyper` for an example.
+///
+/// # A Custom Server
+/// So you don't want to use any of our server implementations? That's O.K.
+/// All it takes is implementing the `IntoWs` trait for your server's streams,
+/// then calling `.into_ws()` on them.
+/// check out the docs over at `websocket::server::upgrade` for more.
+pub struct Server<S>
+	where S: OptionalSslAcceptor
+{
+	listener: TcpListener,
+	ssl_acceptor: S,
 }
 
-impl<'a> Server<'a> {
-	/// Bind this Server to this socket
-	pub fn bind<T: ToSocketAddrs>(addr: T) -> io::Result<Server<'a>> {
-		Ok(Server {
-			inner: try!(TcpListener::bind(&addr)),
-			context: None,
-		})
-	}
-	/// Bind this Server to this socket, utilising the given SslContext
-	pub fn bind_secure<T: ToSocketAddrs>(addr: T, context: &'a SslContext) -> io::Result<Server<'a>> {
-		Ok(Server {
-			inner: try!(TcpListener::bind(&addr)),
-			context: Some(context),
-		})
-	}
+impl<S> Server<S>
+    where S: OptionalSslAcceptor
+{
 	/// Get the socket address of this server
 	pub fn local_addr(&self) -> io::Result<SocketAddr> {
-		self.inner.local_addr()
+		self.listener.local_addr()
 	}
 
 	/// Create a new independently owned handle to the underlying socket.
-	pub fn try_clone(&self) -> io::Result<Server<'a>> {
-		let inner = try!(self.inner.try_clone());
+	pub fn try_clone(&self) -> io::Result<Server<S>> {
+		let inner = try!(self.listener.try_clone());
 		Ok(Server {
-			inner: inner,
-			context: self.context
-		})
+		       listener: inner,
+		       ssl_acceptor: self.ssl_acceptor.clone(),
+		   })
+	}
+}
+
+#[cfg(feature="ssl")]
+impl Server<SslAcceptor> {
+	/// Bind this Server to this socket, utilising the given SslContext
+	pub fn bind_secure<A>(addr: A, acceptor: SslAcceptor) -> io::Result<Self>
+		where A: ToSocketAddrs
+	{
+		Ok(Server {
+		       listener: try!(TcpListener::bind(&addr)),
+		       ssl_acceptor: acceptor,
+		   })
 	}
 
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
-	pub fn accept(&mut self) -> io::Result<Connection<WebSocketStream, WebSocketStream>> {
-		let stream = try!(self.inner.accept()).0;
-		let wsstream = match self.context {
-			Some(context) => {
-				let sslstream = match SslStream::accept(context, stream) {
-					Ok(s) => s,
-					Err(err) => {
-						return Err(io::Error::new(io::ErrorKind::Other, err));
-					}
-				};
-				WebSocketStream::Ssl(sslstream)
+	pub fn accept(&mut self) -> AcceptResult<SslStream<TcpStream>> {
+		let stream = match self.listener.accept() {
+			Ok(s) => s.0,
+			Err(e) => {
+				return Err(InvalidConnection {
+				               stream: None,
+				               parsed: None,
+				               buffer: None,
+				               error: e.into(),
+				           })
 			}
-			None => { WebSocketStream::Tcp(stream) }
 		};
-		Ok(Connection(try!(wsstream.try_clone()), try!(wsstream.try_clone())))
+
+		let stream = match self.ssl_acceptor.accept(stream) {
+			Ok(s) => s,
+			Err(err) => {
+				return Err(InvalidConnection {
+				               stream: None,
+				               parsed: None,
+				               buffer: None,
+				               error: io::Error::new(io::ErrorKind::Other, err).into(),
+				           })
+			}
+		};
+
+		match stream.into_ws() {
+			Ok(u) => Ok(u),
+			Err((s, r, b, e)) => {
+				Err(InvalidConnection {
+				        stream: Some(s),
+				        parsed: r,
+				        buffer: b,
+				        error: e.into(),
+				    })
+			}
+		}
 	}
 
-    /// Changes whether the Server is in nonblocking mode.
-    ///
-    /// If it is in nonblocking mode, accept() will return an error instead of blocking when there
-    /// are no incoming connections.
-    pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
-        self.inner.set_nonblocking(nonblocking)
-    }
+	/// Changes whether the Server is in nonblocking mode.
+	///
+	/// If it is in nonblocking mode, accept() will return an error instead of blocking when there
+	/// are no incoming connections.
+	pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
+		self.listener.set_nonblocking(nonblocking)
+	}
 }
 
-impl<'a> Iterator for Server<'a> {
-	type Item = io::Result<Connection<WebSocketStream, WebSocketStream>>;
+#[cfg(feature="ssl")]
+impl Iterator for Server<SslAcceptor> {
+	type Item = WsUpgrade<SslStream<TcpStream>>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
-		Some(self.accept())
+		self.accept().ok()
 	}
 }
 
-/// Represents a connection to the server that has not been processed yet.
-pub struct Connection<R: Read, W: Write>(R, W);
+impl Server<NoSslAcceptor> {
+	/// Bind this Server to this socket
+	pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<Self> {
+		Ok(Server {
+		       listener: try!(TcpListener::bind(&addr)),
+		       ssl_acceptor: NoSslAcceptor,
+		   })
+	}
 
-impl<R: Read, W: Write> Connection<R, W> {
-	/// Process this connection and read the request.
-	pub fn read_request(self) -> io::Result<Request<R, W>> {
-		match Request::read(self.0, self.1) {
-			Ok(result) => { Ok(result) },
-			Err(err) => {
-				Err(io::Error::new(io::ErrorKind::InvalidInput, err))
+	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
+	pub fn accept(&mut self) -> AcceptResult<TcpStream> {
+		let stream = match self.listener.accept() {
+			Ok(s) => s.0,
+			Err(e) => {
+				return Err(InvalidConnection {
+				               stream: None,
+				               parsed: None,
+				               buffer: None,
+				               error: e.into(),
+				           })
+			}
+		};
+
+		match stream.into_ws() {
+			Ok(u) => Ok(u),
+			Err((s, r, b, e)) => {
+				Err(InvalidConnection {
+				        stream: Some(s),
+				        parsed: r,
+				        buffer: b,
+				        error: e.into(),
+				    })
 			}
 		}
 	}
 }
 
-impl Connection<WebSocketStream, WebSocketStream> {
-    /// Shuts down the currennt connection in the specified way.
-    /// All future IO calls to this connection will return immediately with an appropriate
-    /// return value.
-    pub fn shutdown(&mut self, how: Shutdown) -> io::Result<()> {
-        self.0.shutdown(how)
-    }
+impl Iterator for Server<NoSslAcceptor> {
+	type Item = WsUpgrade<TcpStream>;
+
+	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
+		self.accept().ok()
+	}
 }

@@ -1,0 +1,8 @@
+hard_tabs = true
+array_layout = "Block"
+fn_args_layout = "Block"
+chain_indent = "Visual"
+chain_one_line_max = 100
+take_source_hints = true
+write_mode = "Overwrite"
+

@@ -8,6 +8,10 @@ use std::str::FromStr;
 use std::ops::Deref;
 use result::{WebSocketResult, WebSocketError};
 
+const INVALID_EXTENSION: &'static str = "Invalid Sec-WebSocket-Extensions extension name";
+
+// TODO: check if extension name is valid according to spec
+
 /// Represents a Sec-WebSocket-Extensions header
 #[derive(PartialEq, Clone, Debug)]
 pub struct WebSocketExtensions(pub Vec<Extension>);
@@ -15,9 +19,9 @@ pub struct WebSocketExtensions(pub Vec<Extension>);
 impl Deref for WebSocketExtensions {
 	type Target = Vec<Extension>;
 
-    fn deref<'a>(&'a self) -> &'a Vec<Extension> {
-        &self.0
-    }
+	fn deref<'a>(&'a self) -> &'a Vec<Extension> {
+		&self.0
+	}
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -26,7 +30,7 @@ pub struct Extension {
 	/// The name of this extension
 	pub name: String,
 	/// The parameters for this extension
-	pub params: Vec<Parameter>
+	pub params: Vec<Parameter>,
 }
 
 impl Extension {
@@ -34,43 +38,42 @@ impl Extension {
 	pub fn new(name: String) -> Extension {
 		Extension {
 			name: name,
-			params: Vec::new()
+			params: Vec::new(),
 		}
 	}
 }
 
 impl FromStr for Extension {
 	type Err = WebSocketError;
-	
+
 	fn from_str(s: &str) -> WebSocketResult<Extension> {
 		let mut ext = s.split(';').map(|x| x.trim());
 		Ok(Extension {
-			name: match ext.next() {
-				Some(x) => x.to_string(),
-				None => return Err(WebSocketError::ProtocolError(
-					"Invalid Sec-WebSocket-Extensions extension name"
-				)),
-			},
-			params: ext.map(|x| {
-				let mut pair = x.splitn(1, '=').map(|x| x.trim().to_string());
-				
-				Parameter {
-					name: pair.next().unwrap(),
-					value: pair.next()
-				}
-			}).collect()
-		})
+		       name: match ext.next() {
+		           Some(x) => x.to_string(),
+		           None => return Err(WebSocketError::ProtocolError(INVALID_EXTENSION)),
+		       },
+		       params: ext.map(|x| {
+			                       let mut pair = x.splitn(1, '=').map(|x| x.trim().to_string());
+
+			                       Parameter {
+			                           name: pair.next().unwrap(),
+			                           value: pair.next(),
+			                       }
+			                      })
+		                  .collect(),
+		   })
 	}
 }
 
 impl fmt::Display for Extension {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "{}", self.name));
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		try!(write!(f, "{}", self.name));
 		for param in self.params.iter() {
 			try!(write!(f, "; {}", param));
 		}
 		Ok(())
-    }
+	}
 }
 
 #[derive(PartialEq, Clone, Debug)]
@@ -79,7 +82,7 @@ pub struct Parameter {
 	/// The name of this parameter
 	pub name: String,
 	/// The value of this parameter, if any
-	pub value: Option<String>
+	pub value: Option<String>,
 }
 
 impl Parameter {
@@ -87,20 +90,20 @@ impl Parameter {
 	pub fn new(name: String, value: Option<String>) -> Parameter {
 		Parameter {
 			name: name,
-			value: value
+			value: value,
 		}
 	}
 }
 
 impl fmt::Display for Parameter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        try!(write!(f, "{}", self.name));
+	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+		try!(write!(f, "{}", self.name));
 		match self.value {
 			Some(ref x) => try!(write!(f, "={}", x)),
 			None => (),
 		}
 		Ok(())
-    }
+	}
 }
 
 impl Header for WebSocketExtensions {
@@ -120,37 +123,44 @@ impl HeaderFormat for WebSocketExtensions {
 	}
 }
 
+impl fmt::Display for WebSocketExtensions {
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+		self.fmt_header(fmt)
+	}
+}
+
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use hyper::header::{Header, HeaderFormatter};
+	use hyper::header::Header;
 	use test;
 	#[test]
 	fn test_header_extensions() {
 		use header::Headers;
 		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
 		let extensions: WebSocketExtensions = Header::parse_header(&value[..]).unwrap();
-		
+
 		let mut headers = Headers::new();
 		headers.set(extensions);
-		
-		assert_eq!(&headers.to_string()[..], "Sec-WebSocket-Extensions: foo, bar; baz; qux=quux\r\n");
+
+		assert_eq!(&headers.to_string()[..],
+		           "Sec-WebSocket-Extensions: foo, bar; baz; qux=quux\r\n");
 	}
 	#[bench]
 	fn bench_header_extensions_parse(b: &mut test::Bencher) {
 		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
 		b.iter(|| {
-			let mut extensions: WebSocketExtensions = Header::parse_header(&value[..]).unwrap();
-			test::black_box(&mut extensions);
-		});
+			       let mut extensions: WebSocketExtensions = Header::parse_header(&value[..])
+			           .unwrap();
+			       test::black_box(&mut extensions);
+			      });
 	}
 	#[bench]
 	fn bench_header_extensions_format(b: &mut test::Bencher) {
 		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
 		let val: WebSocketExtensions = Header::parse_header(&value[..]).unwrap();
-		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			format!("{}", fmt);
-		});
+			       format!("{}", val);
+			      });
 	}
 }

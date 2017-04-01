@@ -5,9 +5,13 @@ use std::str::Utf8Error;
 use std::error::Error;
 use std::convert::From;
 use std::fmt;
-use openssl::ssl::error::SslError;
 use hyper::Error as HttpError;
 use url::ParseError;
+
+#[cfg(feature="ssl")]
+use openssl::error::ErrorStack as SslError;
+#[cfg(feature="ssl")]
+use openssl::ssl::HandshakeError as SslHandshakeError;
 
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
@@ -31,10 +35,17 @@ pub enum WebSocketError {
 	HttpError(HttpError),
 	/// A URL parsing error
 	UrlError(ParseError),
-    /// A WebSocket URL error
-    WebSocketUrlError(WSUrlErrorKind),
+	/// A WebSocket URL error
+	WebSocketUrlError(WSUrlErrorKind),
 	/// An SSL error
+	#[cfg(feature="ssl")]
 	SslError(SslError),
+	/// an ssl handshake failure
+	#[cfg(feature="ssl")]
+	SslHandshakeFailure,
+	/// an ssl handshake interruption
+	#[cfg(feature="ssl")]
+	SslHandshakeInterruption,
 	/// A UTF-8 error
 	Utf8Error(Utf8Error),
 }
@@ -50,7 +61,7 @@ impl fmt::Display for WebSocketError {
 impl Error for WebSocketError {
 	fn description(&self) -> &str {
 		match *self {
-            WebSocketError::ProtocolError(_) => "WebSocket protocol error",
+			WebSocketError::ProtocolError(_) => "WebSocket protocol error",
 			WebSocketError::RequestError(_) => "WebSocket request error",
 			WebSocketError::ResponseError(_) => "WebSocket response error",
 			WebSocketError::DataFrameError(_) => "WebSocket data frame error",
@@ -58,9 +69,14 @@ impl Error for WebSocketError {
 			WebSocketError::IoError(_) => "I/O failure",
 			WebSocketError::HttpError(_) => "HTTP failure",
 			WebSocketError::UrlError(_) => "URL failure",
-			WebSocketError::SslError(_) => "SSL failure",
+			#[cfg(feature="ssl")]
+			      WebSocketError::SslError(_) => "SSL failure",
+			#[cfg(feature="ssl")]
+            WebSocketError::SslHandshakeFailure => "SSL Handshake failure",
+			#[cfg(feature="ssl")]
+            WebSocketError::SslHandshakeInterruption => "SSL Handshake interrupted",
 			WebSocketError::Utf8Error(_) => "UTF-8 failure",
-            WebSocketError::WebSocketUrlError(_) => "WebSocket URL failure",
+			WebSocketError::WebSocketUrlError(_) => "WebSocket URL failure",
 		}
 	}
 
@@ -69,9 +85,10 @@ impl Error for WebSocketError {
 			WebSocketError::IoError(ref error) => Some(error),
 			WebSocketError::HttpError(ref error) => Some(error),
 			WebSocketError::UrlError(ref error) => Some(error),
-			WebSocketError::SslError(ref error) => Some(error),
+			#[cfg(feature="ssl")]
+			      WebSocketError::SslError(ref error) => Some(error),
 			WebSocketError::Utf8Error(ref error) => Some(error),
-            WebSocketError::WebSocketUrlError(ref error) => Some(error),
+			WebSocketError::WebSocketUrlError(ref error) => Some(error),
 			_ => None,
 		}
 	}
@@ -98,9 +115,21 @@ impl From<ParseError> for WebSocketError {
 	}
 }
 
+#[cfg(feature="ssl")]
 impl From<SslError> for WebSocketError {
 	fn from(err: SslError) -> WebSocketError {
 		WebSocketError::SslError(err)
+	}
+}
+
+#[cfg(feature="ssl")]
+impl<T> From<SslHandshakeError<T>> for WebSocketError {
+	fn from(err: SslHandshakeError<T>) -> WebSocketError {
+		match err {
+			SslHandshakeError::SetupFailure(err) => WebSocketError::SslError(err),
+			SslHandshakeError::Failure(_) => WebSocketError::SslHandshakeFailure,
+			SslHandshakeError::Interrupted(_) => WebSocketError::SslHandshakeInterruption,
+		}
 	}
 }
 
@@ -111,33 +140,36 @@ impl From<Utf8Error> for WebSocketError {
 }
 
 impl From<WSUrlErrorKind> for WebSocketError {
-    fn from(err: WSUrlErrorKind) -> WebSocketError {
-        WebSocketError::WebSocketUrlError(err)
-    }
+	fn from(err: WSUrlErrorKind) -> WebSocketError {
+		WebSocketError::WebSocketUrlError(err)
+	}
 }
 
 /// Represents a WebSocket URL error
 #[derive(Debug)]
 pub enum WSUrlErrorKind {
-    /// Fragments are not valid in a WebSocket URL
-    CannotSetFragment,
-    /// The scheme provided is invalid for a WebSocket
-    InvalidScheme,
+	/// Fragments are not valid in a WebSocket URL
+	CannotSetFragment,
+	/// The scheme provided is invalid for a WebSocket
+	InvalidScheme,
+	/// There is no hostname or IP address to connect to
+	NoHostName,
 }
 
 impl fmt::Display for WSUrlErrorKind {
-    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-        try!(fmt.write_str("WebSocket Url Error: "));
-        try!(fmt.write_str(self.description()));
-        Ok(())
-    }
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+		try!(fmt.write_str("WebSocket Url Error: "));
+		try!(fmt.write_str(self.description()));
+		Ok(())
+	}
 }
 
 impl Error for WSUrlErrorKind {
-    fn description(&self) -> &str {
-        match *self {
-            WSUrlErrorKind::CannotSetFragment => "WebSocket URL cannot set fragment",
-            WSUrlErrorKind::InvalidScheme => "WebSocket URL invalid scheme"
-        }
-    }
+	fn description(&self) -> &str {
+		match *self {
+			WSUrlErrorKind::CannotSetFragment => "WebSocket URL cannot set fragment",
+			WSUrlErrorKind::InvalidScheme => "WebSocket URL invalid scheme",
+			WSUrlErrorKind::NoHostName => "WebSocket URL no host name provided",
+		}
+	}
 }

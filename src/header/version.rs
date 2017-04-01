@@ -9,18 +9,14 @@ pub enum WebSocketVersion {
 	/// The version of WebSocket defined in RFC6455
 	WebSocket13,
 	/// An unknown version of WebSocket
-	Unknown(String)
+	Unknown(String),
 }
 
 impl fmt::Debug for WebSocketVersion {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		match *self {
-			WebSocketVersion::WebSocket13 => {
-				write!(f, "13")
-			}
-			WebSocketVersion::Unknown(ref value) => {
-				write!(f, "{}", value)
-			}
+			WebSocketVersion::WebSocket13 => write!(f, "13"),
+			WebSocketVersion::Unknown(ref value) => write!(f, "{}", value),
 		}
 	}
 }
@@ -31,12 +27,10 @@ impl Header for WebSocketVersion {
 	}
 
 	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketVersion> {
-		from_one_raw_str(raw).map(|s : String|
-			match &s[..] {
-				"13" => { WebSocketVersion::WebSocket13 }
-				_ => { WebSocketVersion::Unknown(s) }
-			}
-		)
+		from_one_raw_str(raw).map(|s: String| match &s[..] {
+		                              "13" => WebSocketVersion::WebSocket13,
+		                              _ => WebSocketVersion::Unknown(s),
+		                          })
 	}
 }
 
@@ -46,36 +40,41 @@ impl HeaderFormat for WebSocketVersion {
 	}
 }
 
+impl fmt::Display for WebSocketVersion {
+	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+		self.fmt_header(fmt)
+	}
+}
+
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use hyper::header::{Header, HeaderFormatter};
+	use hyper::header::Header;
 	use test;
 	#[test]
 	fn test_websocket_version() {
 		use header::Headers;
-		
+
 		let version = WebSocketVersion::WebSocket13;
 		let mut headers = Headers::new();
 		headers.set(version);
-		
+
 		assert_eq!(&headers.to_string()[..], "Sec-WebSocket-Version: 13\r\n");
 	}
 	#[bench]
 	fn bench_header_version_parse(b: &mut test::Bencher) {
 		let value = vec![b"13".to_vec()];
 		b.iter(|| {
-			let mut version: WebSocketVersion = Header::parse_header(&value[..]).unwrap();
-			test::black_box(&mut version);
-		});
+			       let mut version: WebSocketVersion = Header::parse_header(&value[..]).unwrap();
+			       test::black_box(&mut version);
+			      });
 	}
 	#[bench]
 	fn bench_header_version_format(b: &mut test::Bencher) {
 		let value = vec![b"13".to_vec()];
 		let val: WebSocketVersion = Header::parse_header(&value[..]).unwrap();
-		let fmt = HeaderFormatter(&val);
 		b.iter(|| {
-			format!("{}", fmt);
-		});
+			       format!("{}", val);
+			      });
 	}
 }

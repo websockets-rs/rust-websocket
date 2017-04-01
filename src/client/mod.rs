@@ -1,170 +1,302 @@
 //! Contains the WebSocket client.
+extern crate url;
 
 use std::net::TcpStream;
-use std::marker::PhantomData;
+use std::net::SocketAddr;
 use std::io::Result as IoResult;
+use std::io::{Read, Write};
+use hyper::header::Headers;
+use hyper::buffer::BufReader;
 
 use ws;
-use ws::util::url::ToWebSocketUrlComponents;
+use ws::sender::Sender as SenderTrait;
 use ws::receiver::{DataFrameIterator, MessageIterator};
+use ws::receiver::Receiver as ReceiverTrait;
 use result::WebSocketResult;
-use stream::WebSocketStream;
+use stream::{AsTcpStream, Stream, Splittable, Shutdown};
 use dataframe::DataFrame;
+use header::{WebSocketProtocol, WebSocketExtensions};
+use header::extensions::Extension;
+
 use ws::dataframe::DataFrame as DataFrameable;
+use sender::Sender;
+use receiver::Receiver;
+pub use sender::Writer;
+pub use receiver::Reader;
 
-use openssl::ssl::{SslContext, SslMethod, SslStream};
-
-pub use self::request::Request;
-pub use self::response::Response;
-
-pub use sender::Sender;
-pub use receiver::Receiver;
-
-pub mod request;
-pub mod response;
+pub mod builder;
+pub use self::builder::{ClientBuilder, Url, ParseError};
 
 /// Represents a WebSocket client, which can send and receive messages/data frames.
 ///
-/// `D` is the data frame type, `S` is the type implementing `Sender<D>` and `R`
-/// is the type implementing `Receiver<D>`.
+/// The client just wraps around a `Stream` (which is something that can be read from
+/// and written to) and handles the websocket protocol. TCP or SSL over TCP is common,
+/// but any stream can be used.
 ///
-/// For most cases, the data frame type will be `dataframe::DataFrame`, the Sender
-/// type will be `client::Sender<stream::WebSocketStream>` and the receiver type
-/// will be `client::Receiver<stream::WebSocketStream>`.
-///
-/// A `Client` can be split into a `Sender` and a `Receiver` which can then be moved
+/// A `Client` can also be split into a `Reader` and a `Writer` which can then be moved
 /// to different threads, often using a send loop and receiver loop concurrently,
 /// as shown in the client example in `examples/client.rs`.
+/// This is only possible for streams that implement the `Splittable` trait, which
+/// currently is only TCP streams. (it is unsafe to duplicate an SSL stream)
 ///
-///#Connecting to a Server
+///# Connecting to a Server
 ///
 ///```no_run
 ///extern crate websocket;
 ///# fn main() {
 ///
-///use websocket::{Client, Message};
-///use websocket::client::request::Url;
+///use websocket::{ClientBuilder, Message};
 ///
-///let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-///let request = Client::connect(url).unwrap(); // Connect to the server
-///let response = request.send().unwrap(); // Send the request
-///response.validate().unwrap(); // Ensure the response is valid
-///
-///let mut client = response.begin(); // Get a Client
+///let mut client = ClientBuilder::new("ws://127.0.0.1:1234")
+///    .unwrap()
+///    .connect_insecure()
+///    .unwrap();
 ///
 ///let message = Message::text("Hello, World!");
 ///client.send_message(&message).unwrap(); // Send message
 ///# }
 ///```
-pub struct Client<F, S, R> {
-	sender: S,
-	receiver: R,
-	_dataframe: PhantomData<fn(F)>
+pub struct Client<S>
+	where S: Stream
+{
+	stream: BufReader<S>,
+	headers: Headers,
+	sender: Sender,
+	receiver: Receiver,
 }
 
-impl Client<DataFrame, Sender<WebSocketStream>, Receiver<WebSocketStream>> {
-	/// Connects to the given ws:// or wss:// URL and return a Request to be sent.
-	///
-	/// A connection is established, however the request is not sent to
-	/// the server until a call to ```send()```.
-	pub fn connect<T: ToWebSocketUrlComponents>(components: T) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
-		let context = try!(SslContext::new(SslMethod::Tlsv1));
-		Client::connect_ssl_context(components, &context)
-	}
-	/// Connects to the specified wss:// URL using the given SSL context.
-	///
-	/// If a ws:// URL is supplied, a normal, non-secure connection is established
-	/// and the context parameter is ignored.
-	///
-	/// A connection is established, however the request is not sent to
-	/// the server until a call to ```send()```.
-	pub fn connect_ssl_context<T: ToWebSocketUrlComponents>(components: T, context: &SslContext) -> WebSocketResult<Request<WebSocketStream, WebSocketStream>> {
-		let (host, resource_name, secure) = try!(components.to_components());
-
-		let connection = try!(TcpStream::connect(
-			(&host.hostname[..], host.port.unwrap_or(if secure { 443 } else { 80 }))
-		));
-
-		let stream = if secure {
-			let sslstream = try!(SslStream::connect(context, connection));
-			WebSocketStream::Ssl(sslstream)
-		}
-		else {
-			WebSocketStream::Tcp(connection)
-		};
-
-		Request::new((host, resource_name, secure), try!(stream.try_clone()), stream)
+impl Client<TcpStream> {
+	/// Shuts down the sending half of the client connection, will cause all pending
+	/// and future IO to return immediately with an appropriate value.
+	pub fn shutdown_sender(&self) -> IoResult<()> {
+		self.stream.get_ref().as_tcp().shutdown(Shutdown::Write)
 	}
 
-    /// Shuts down the sending half of the client connection, will cause all pending
-    /// and future IO to return immediately with an appropriate value.
-    pub fn shutdown_sender(&mut self) -> IoResult<()> {
-        self.sender.shutdown()
-    }
-
-    /// Shuts down the receiving half of the client connection, will cause all pending
-    /// and future IO to return immediately with an appropriate value.
-    pub fn shutdown_receiver(&mut self) -> IoResult<()> {
-        self.receiver.shutdown()
-    }
-
-    /// Shuts down the client connection, will cause all pending and future IO to
-    /// return immediately with an appropriate value.
-    pub fn shutdown(&mut self) -> IoResult<()> {
-        self.receiver.shutdown_all()
-    }
+	/// Shuts down the receiving half of the client connection, will cause all pending
+	/// and future IO to return immediately with an appropriate value.
+	pub fn shutdown_receiver(&self) -> IoResult<()> {
+		self.stream.get_ref().as_tcp().shutdown(Shutdown::Read)
+	}
 }
 
-impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
-	/// Creates a Client from the given Sender and Receiver.
-	///
-	/// Essentially the opposite of `Client.split()`.
-	pub fn new(sender: S, receiver: R) -> Client<F, S, R> {
+impl<S> Client<S>
+    where S: AsTcpStream + Stream
+{
+	/// Shuts down the client connection, will cause all pending and future IO to
+	/// return immediately with an appropriate value.
+	pub fn shutdown(&self) -> IoResult<()> {
+		self.stream.get_ref().as_tcp().shutdown(Shutdown::Both)
+	}
+
+	/// See [`TcpStream::peer_addr`]
+	/// (https://doc.rust-lang.org/std/net/struct.TcpStream.html#method.peer_addr).
+	pub fn peer_addr(&self) -> IoResult<SocketAddr> {
+		self.stream.get_ref().as_tcp().peer_addr()
+	}
+
+	/// See [`TcpStream::local_addr`]
+	/// (https://doc.rust-lang.org/std/net/struct.TcpStream.html#method.local_addr).
+	pub fn local_addr(&self) -> IoResult<SocketAddr> {
+		self.stream.get_ref().as_tcp().local_addr()
+	}
+
+	/// See [`TcpStream::set_nodelay`]
+	/// (https://doc.rust-lang.org/std/net/struct.TcpStream.html#method.set_nodelay).
+	pub fn set_nodelay(&mut self, nodelay: bool) -> IoResult<()> {
+		self.stream.get_ref().as_tcp().set_nodelay(nodelay)
+	}
+
+	/// Changes whether the stream is in nonblocking mode.
+	pub fn set_nonblocking(&self, nonblocking: bool) -> IoResult<()> {
+		self.stream.get_ref().as_tcp().set_nonblocking(nonblocking)
+	}
+}
+
+impl<S> Client<S>
+    where S: Stream
+{
+	/// Creates a Client from a given stream
+	/// **without sending any handshake** this is meant to only be used with
+	/// a stream that has a websocket connection already set up.
+	/// If in doubt, don't use this!
+	#[doc(hidden)]
+	pub fn unchecked(stream: BufReader<S>, headers: Headers) -> Self {
 		Client {
-			sender: sender,
-			receiver: receiver,
-			_dataframe: PhantomData
+			headers: headers,
+			stream: stream,
+			// NOTE: these are always true & false, see
+			// https://tools.ietf.org/html/rfc6455#section-5
+			sender: Sender::new(true),
+			receiver: Receiver::new(false),
 		}
 	}
+
 	/// Sends a single data frame to the remote endpoint.
 	pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
-	where D: DataFrameable {
-		self.sender.send_dataframe(dataframe)
+		where D: DataFrameable
+	{
+		self.sender.send_dataframe(self.stream.get_mut(), dataframe)
 	}
+
 	/// Sends a single message to the remote endpoint.
 	pub fn send_message<'m, M, D>(&mut self, message: &'m M) -> WebSocketResult<()>
-	where M: ws::Message<'m, D>, D: DataFrameable {
-		self.sender.send_message(message)
+		where M: ws::Message<'m, D>,
+		      D: DataFrameable
+	{
+		self.sender.send_message(self.stream.get_mut(), message)
 	}
+
 	/// Reads a single data frame from the remote endpoint.
-	pub fn recv_dataframe(&mut self) -> WebSocketResult<F> {
-		self.receiver.recv_dataframe()
+	pub fn recv_dataframe(&mut self) -> WebSocketResult<DataFrame> {
+		self.receiver.recv_dataframe(&mut self.stream)
 	}
+
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, R, F> {
-		self.receiver.incoming_dataframes()
+	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, BufReader<S>> {
+		self.receiver.incoming_dataframes(&mut self.stream)
 	}
+
 	/// Reads a single message from this receiver.
 	pub fn recv_message<'m, M, I>(&mut self) -> WebSocketResult<M>
-	where M: ws::Message<'m, F, DataFrameIterator = I>, I: Iterator<Item = F> {
-		self.receiver.recv_message()
+		where M: ws::Message<'m, DataFrame, DataFrameIterator = I>,
+		      I: Iterator<Item = DataFrame>
+	{
+		self.receiver.recv_message(&mut self.stream)
 	}
+
+	/// Access the headers that were sent in the server's handshake response.
+	/// This is a catch all for headers other than protocols and extensions.
+	pub fn headers(&self) -> &Headers {
+		&self.headers
+	}
+
+	/// **If you supplied a protocol, you must check that it was accepted by
+	/// the server** using this function.
+	/// This is not done automatically because the terms of accepting a protocol
+	/// can get complicated, especially if some protocols depend on others, etc.
+	///
+	/// ```rust,no_run
+	/// # use websocket::ClientBuilder;
+	/// let mut client = ClientBuilder::new("wss://test.fysh.in").unwrap()
+	///     .add_protocol("xmpp")
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// // be sure to check the protocol is there!
+	/// assert!(client.protocols().iter().any(|p| p as &str == "xmpp"));
+	/// ```
+	pub fn protocols(&self) -> &[String] {
+		self.headers
+		    .get::<WebSocketProtocol>()
+		    .map(|p| p.0.as_slice())
+		    .unwrap_or(&[])
+	}
+
+	/// If you supplied a protocol, be sure to check if it was accepted by the
+	/// server here. Since no extensions are implemented out of the box yet, using
+	/// one will require its own implementation.
+	pub fn extensions(&self) -> &[Extension] {
+		self.headers
+		    .get::<WebSocketExtensions>()
+		    .map(|e| e.0.as_slice())
+		    .unwrap_or(&[])
+	}
+
+	/// Get a reference to the stream.
+	/// Useful to be able to set options on the stream.
+	///
+	/// ```rust,no_run
+	/// # use websocket::ClientBuilder;
+	/// let mut client = ClientBuilder::new("ws://double.down").unwrap()
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// client.stream_ref().set_ttl(60).unwrap();
+	/// ```
+	pub fn stream_ref(&self) -> &S {
+		self.stream.get_ref()
+	}
+
+	/// Get a handle to the writable portion of this stream.
+	/// This can be used to write custom extensions.
+	///
+	/// ```rust,no_run
+	/// # use websocket::ClientBuilder;
+	/// use websocket::Message;
+	/// use websocket::ws::sender::Sender as SenderTrait;
+	/// use websocket::sender::Sender;
+	///
+	/// let mut client = ClientBuilder::new("ws://the.room").unwrap()
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// let message = Message::text("Oh hi, Mark.");
+	/// let mut sender = Sender::new(true);
+	/// let mut buf = Vec::new();
+	///
+	/// sender.send_message(&mut buf, &message);
+	///
+	/// /* transform buf somehow */
+	///
+	/// client.writer_mut().write_all(&buf);
+	/// ```
+	pub fn writer_mut(&mut self) -> &mut Write {
+		self.stream.get_mut()
+	}
+
+	/// Get a handle to the readable portion of this stream.
+	/// This can be used to transform raw bytes before they
+	/// are read in.
+	///
+	/// ```rust,no_run
+	/// # use websocket::ClientBuilder;
+	/// use std::io::Cursor;
+	/// use websocket::Message;
+	/// use websocket::ws::receiver::Receiver as ReceiverTrait;
+	/// use websocket::receiver::Receiver;
+	///
+	/// let mut client = ClientBuilder::new("ws://the.room").unwrap()
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// let mut receiver = Receiver::new(false);
+	/// let mut buf = Vec::new();
+	///
+	/// client.reader_mut().read_to_end(&mut buf);
+	///
+	/// /* transform buf somehow */
+	///
+	/// let mut buf_reader = Cursor::new(&mut buf);
+	/// let message: Message = receiver.recv_message(&mut buf_reader).unwrap();
+	/// ```
+	pub fn reader_mut(&mut self) -> &mut Read {
+		&mut self.stream
+	}
+
+	/// Deconstruct the client into its underlying stream and
+	/// maybe some of the buffer that was already read from the stream.
+	/// The client uses a buffered reader to read in messages, so some
+	/// bytes might already be read from the stream when this is called,
+	/// these buffered bytes are returned in the form
+	///
+	/// `(byte_buffer: Vec<u8>, buffer_capacity: usize, buffer_position: usize)`
+	pub fn into_stream(self) -> (S, Option<(Vec<u8>, usize, usize)>) {
+		let (stream, buf, pos, cap) = self.stream.into_parts();
+		(stream, Some((buf, pos, cap)))
+	}
+
 	/// Returns an iterator over incoming messages.
 	///
 	///```no_run
 	///# extern crate websocket;
 	///# fn main() {
-	///use websocket::{Client, Message};
-	///# use websocket::client::request::Url;
-	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-	///# let request = Client::connect(url).unwrap(); // Connect to the server
-	///# let response = request.send().unwrap(); // Send the request
-	///# response.validate().unwrap(); // Ensure the response is valid
+	///use websocket::{ClientBuilder, Message};
 	///
-	///let mut client = response.begin(); // Get a Client
+	///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
+	///                     .connect(None).unwrap();
 	///
 	///for message in client.incoming_messages() {
-    ///    let message: Message = message.unwrap();
+	///    let message: Message = message.unwrap();
 	///    println!("Recv: {:?}", message);
 	///}
 	///# }
@@ -177,44 +309,32 @@ impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	///```no_run
 	///# extern crate websocket;
 	///# fn main() {
-	///use websocket::{Client, Message, Sender, Receiver};
-	///# use websocket::client::request::Url;
-	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-	///# let request = Client::connect(url).unwrap(); // Connect to the server
-	///# let response = request.send().unwrap(); // Send the request
-	///# response.validate().unwrap(); // Ensure the response is valid
+	///use websocket::{ClientBuilder, Message};
 	///
-	///let client = response.begin(); // Get a Client
-	///let (mut sender, mut receiver) = client.split(); // Split the Client
+	///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
+	///                     .connect_insecure().unwrap();
+	///
+	///let (mut receiver, mut sender) = client.split().unwrap();
+	///
 	///for message in receiver.incoming_messages() {
-    ///    let message: Message = message.unwrap();
+	///    let message: Message = message.unwrap();
 	///    // Echo the message back
 	///    sender.send_message(&message).unwrap();
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a, M, D>(&'a mut self) -> MessageIterator<'a, R, D, F, M>
-	where M: ws::Message<'a, D>,
-          D: DataFrameable
-    {
-		self.receiver.incoming_messages()
+	pub fn incoming_messages<'a, M, D>(&'a mut self,)
+		-> MessageIterator<'a, Receiver, D, M, BufReader<S>>
+		where M: ws::Message<'a, D>,
+		      D: DataFrameable
+	{
+		self.receiver.incoming_messages(&mut self.stream)
 	}
-	/// Returns a reference to the underlying Sender.
-	pub fn get_sender(&self) -> &S {
-		&self.sender
-	}
-	/// Returns a reference to the underlying Receiver.
-	pub fn get_receiver(&self) -> &R {
-		&self.receiver
-	}
-	/// Returns a mutable reference to the underlying Sender.
-	pub fn get_mut_sender(&mut self) -> &mut S {
-		&mut self.sender
-	}
-	/// Returns a mutable reference to the underlying Receiver.
-	pub fn get_mut_receiver(&mut self) -> &mut R {
-		&mut self.receiver
-	}
+}
+
+impl<S> Client<S>
+    where S: Splittable + Stream
+{
 	/// Split this client into its constituent Sender and Receiver pair.
 	///
 	/// This allows the Sender and Receiver to be sent to different threads.
@@ -222,21 +342,17 @@ impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	///```no_run
 	///# extern crate websocket;
 	///# fn main() {
-	///use websocket::{Client, Message, Sender, Receiver};
 	///use std::thread;
-	///# use websocket::client::request::Url;
-	///# let url = Url::parse("ws://127.0.0.1:1234").unwrap(); // Get the URL
-	///# let request = Client::connect(url).unwrap(); // Connect to the server
-	///# let response = request.send().unwrap(); // Send the request
-	///# response.validate().unwrap(); // Ensure the response is valid
+	///use websocket::{ClientBuilder, Message};
 	///
-	///let client = response.begin(); // Get a Client
+	///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
+	///                     .connect_insecure().unwrap();
 	///
-	///let (mut sender, mut receiver) = client.split();
+	///let (mut receiver, mut sender) = client.split().unwrap();
 	///
 	///thread::spawn(move || {
 	///    for message in receiver.incoming_messages() {
-    ///        let message: Message = message.unwrap();
+	///        let message: Message = message.unwrap();
 	///        println!("Recv: {:?}", message);
 	///    }
 	///});
@@ -245,7 +361,18 @@ impl<F: DataFrameable, S: ws::Sender, R: ws::Receiver<F>> Client<F, S, R> {
 	///sender.send_message(&message).unwrap();
 	///# }
 	///```
-	pub fn split(self) -> (S, R) {
-		(self.sender, self.receiver)
+	pub fn split
+		(self,)
+		 -> IoResult<(Reader<<S as Splittable>::Reader>, Writer<<S as Splittable>::Writer>)> {
+		let (stream, buf, pos, cap) = self.stream.into_parts();
+		let (read, write) = try!(stream.split());
+		Ok((Reader {
+		        stream: BufReader::from_parts(read, buf, pos, cap),
+		        receiver: self.receiver,
+		    },
+		    Writer {
+		        stream: write,
+		        sender: self.sender,
+		    }))
 	}
 }

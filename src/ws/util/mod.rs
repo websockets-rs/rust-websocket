@@ -2,7 +2,6 @@
 
 pub mod header;
 pub mod mask;
-pub mod url;
 
 use std::str::from_utf8;
 use std::str::Utf8Error;

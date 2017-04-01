@@ -1,30 +1,26 @@
 extern crate websocket;
 
+const CONNECTION: &'static str = "ws://127.0.0.1:2794";
+
 fn main() {
 	use std::thread;
 	use std::sync::mpsc::channel;
 	use std::io::stdin;
 
-	use websocket::{Message, Sender, Receiver};
-    use websocket::message::Type;
-	use websocket::client::request::Url;
-	use websocket::Client;
+	use websocket::Message;
+	use websocket::message::Type;
+	use websocket::client::ClientBuilder;
 
-	let url = Url::parse("ws://127.0.0.1:2794").unwrap();
+	println!("Connecting to {}", CONNECTION);
 
-	println!("Connecting to {}", url);
-
-	let request = Client::connect(url).unwrap();
-
-	let response = request.send().unwrap(); // Send the request and retrieve a response
-
-	println!("Validating response...");
-
-	response.validate().unwrap(); // Validate the response
+	let client = ClientBuilder::new(CONNECTION)
+		.unwrap()
+		.connect_insecure()
+		.unwrap();
 
 	println!("Successfully connected");
 
-	let (mut sender, mut receiver) = response.begin().split();
+	let (mut receiver, mut sender) = client.split().unwrap();
 
 	let (tx, rx) = channel();
 
@@ -45,7 +41,7 @@ fn main() {
 					let _ = sender.send_message(&message);
 					// If it's a close message, just send it and then return.
 					return;
-				},
+				}
 				_ => (),
 			}
 			// Send the message
@@ -77,14 +73,16 @@ fn main() {
 					let _ = tx_1.send(Message::close());
 					return;
 				}
-				Type::Ping => match tx_1.send(Message::pong(message.payload)) {
-					// Send a pong in response
-					Ok(()) => (),
-					Err(e) => {
-						println!("Receive Loop: {:?}", e);
-						return;
+				Type::Ping => {
+					match tx_1.send(Message::pong(message.payload)) {
+						// Send a pong in response
+						Ok(()) => (),
+						Err(e) => {
+							println!("Receive Loop: {:?}", e);
+							return;
+						}
 					}
-				},
+				}
 				// Say what we received
 				_ => println!("Receive Loop: {:?}", message),
 			}

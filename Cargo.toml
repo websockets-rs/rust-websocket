@@ -1,8 +1,8 @@
 [package]
 
 name = "websocket"
-version = "0.17.2"
-authors = ["cyderize <admin@cyderize.org>"]
+version = "0.18.0"
+authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.com>"]
 
 description = "A WebSocket (RFC6455) library for Rust."
 
@@ -17,15 +17,17 @@ keywords = ["websocket", "websockets", "rfc6455"]
 license = "MIT"
 
 [dependencies]
-hyper = ">=0.7, <0.11"
-unicase = "1.0.1"
-openssl = "0.7.6"
-url = "1.0"
-rustc-serialize = "0.3.16"
-bitflags = "0.7"
-rand = "0.3.12"
-byteorder = "1.0"
-net2 = "0.2.17"
+hyper = { git = "https://github.com/hyperium/hyper.git", branch = "0.10.x" }
+unicase = "^1.0"
+url = "^1.0"
+rustc-serialize = "^0.3"
+bitflags = "^0.8"
+rand = "^0.3"
+byteorder = "^1.0"
+sha1 = "^0.2"
+openssl = { version = "^0.9.10", optional = true }
 
 [features]
+default = ["ssl"]
+ssl = ["openssl"]
 nightly = ["hyper/nightly"]
