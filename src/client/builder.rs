@@ -545,7 +545,7 @@ impl<'u> ClientBuilder<'u> {
 			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'"));
 		}
 
-		Ok(Client::unchecked(reader, response.headers))
+		Ok(Client::unchecked(reader, response.headers, true, false))
 	}
 }
 
