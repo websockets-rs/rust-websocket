@@ -128,7 +128,7 @@ impl<S> WsUpgrade<S>
 			None => BufReader::new(self.stream),
 		};
 
-		Ok(Client::unchecked(stream, self.headers))
+		Ok(Client::unchecked(stream, self.headers, false, true))
 	}
 
 	/// Reject the client's request to make a websocket connection.

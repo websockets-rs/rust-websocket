@@ -120,14 +120,19 @@ impl<S> Client<S>
 	/// a stream that has a websocket connection already set up.
 	/// If in doubt, don't use this!
 	#[doc(hidden)]
-	pub fn unchecked(stream: BufReader<S>, headers: Headers) -> Self {
+	pub fn unchecked(
+		stream: BufReader<S>,
+		headers: Headers,
+		out_mask: bool,
+		in_mask: bool,
+	) -> Self {
 		Client {
 			headers: headers,
 			stream: stream,
 			// NOTE: these are always true & false, see
 			// https://tools.ietf.org/html/rfc6455#section-5
-			sender: Sender::new(true),
-			receiver: Receiver::new(false),
+			sender: Sender::new(out_mask),
+			receiver: Receiver::new(in_mask),
 		}
 	}
 
