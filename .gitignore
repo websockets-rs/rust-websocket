@@ -44,3 +44,8 @@ Icon
 .AppleDesktop
 Network Trash Folder
 Temporary Items
+
+# Autobahn Output
+autobahn/client
+autobahn/server
+

@@ -12,24 +12,10 @@ script:
     - cargo bench --features nightly
 
 after_success:
-  - >
-    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo pip install ghp-import urllib3[secure]
-  - >
-    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && sudo apt-get install python-unittest2 && sudo pip install autobahntestsuite
-  - >
-    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && {
-    echo "Running Autobahn TestSuite for client" ;
-    wstest -m fuzzingserver -s ./autobahn/fuzzingserver.json & FUZZINGSERVER_PID=$! ;
-    sleep 10 ;
-    ./target/debug/examples/autobahn-client ;
-    kill -9 ${FUZZINGSERVER_PID} ; }
-  - >
-    [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && {
-    echo "Running Autobahn TestSuite for server" ;
-    ./target/debug/examples/autobahn-server & WSSERVER_PID=$! ;
-    sleep 10 ;
-    wstest -m fuzzingclient -s ./autobahn/fuzzingclient.json ;
-    kill -9 ${WSSERVER_PID} ; }
+  - sudo apt-get install python-unittest2
+  - sudo pip install ghp-import urllib3[secure] autobahntestsuite
+  - echo "Running Autobahn TestSuite for client" && ./scripts/autobahn-client.sh
+  - echo "Running Autobahn TestSuite for server" && ./scripts/autobahn-server.sh
   - >
     [ $TRAVIS_BRANCH = master ] && [ $TRAVIS_PULL_REQUEST = false ] && {
     echo "Building docs and gh-pages" ;
