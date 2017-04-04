@@ -45,6 +45,12 @@ extern crate sha1;
 #[cfg(feature="ssl")]
 extern crate openssl;
 extern crate base64;
+#[cfg(feature="async")]
+extern crate tokio_core;
+#[cfg(feature="async")]
+extern crate tokio_io;
+#[cfg(feature="async")]
+extern crate bytes;
 
 #[macro_use]
 extern crate bitflags;
@@ -86,3 +92,5 @@ pub mod stream;
 pub mod header;
 pub mod receiver;
 pub mod sender;
+#[cfg(feature="async")]
+pub mod codec;

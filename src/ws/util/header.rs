@@ -32,9 +32,7 @@ pub struct DataFrameHeader {
 }
 
 /// Writes a data frame header.
-pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResult<()>
-	where W: Write
-{
+pub fn write_header(writer: &mut Write, header: DataFrameHeader) -> WebSocketResult<()> {
 
 	if header.opcode > 0xF {
 		return Err(WebSocketError::DataFrameError("Invalid data frame opcode"));

@@ -30,17 +30,14 @@ pub trait DataFrame {
 	}
 
 	/// Write the payload to a writer
-	fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
-		where W: Write
-	{
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
 		try!(socket.write_all(&*self.payload()));
 		Ok(())
 	}
 
+	// TODO: the error can probably be changed to an io error
 	/// Writes a DataFrame to a Writer.
-	fn write_to<W>(&self, writer: &mut W, mask: bool) -> WebSocketResult<()>
-		where W: Write
-	{
+	fn write_to(&self, writer: &mut Write, mask: bool) -> WebSocketResult<()> {
 		let mut flags = dfh::DataFrameFlags::empty();
 		if self.is_last() {
 			flags.insert(dfh::FIN);
@@ -110,16 +107,12 @@ impl<'a, D> DataFrame for &'a D
 	}
 
 	#[inline(always)]
-	fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
-		where W: Write
-	{
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
 		D::write_payload(self, socket)
 	}
 
 	#[inline(always)]
-	fn write_to<W>(&self, writer: &mut W, mask: bool) -> WebSocketResult<()>
-		where W: Write
-	{
+	fn write_to(&self, writer: &mut Write, mask: bool) -> WebSocketResult<()> {
 		D::write_to(self, writer, mask)
 	}
 }

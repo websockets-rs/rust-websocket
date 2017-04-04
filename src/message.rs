@@ -25,6 +25,7 @@ pub enum Type {
 	Close = 8,
 }
 
+// TODO: split up message into owned received and borrowed send
 /// Represents a WebSocket message.
 ///
 /// This message also has the ability to not own its payload, and stores its entire payload in
@@ -146,9 +147,7 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 		self.payload.len() + if self.cd_status_code.is_some() { 2 } else { 0 }
 	}
 
-	fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
-		where W: Write
-	{
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
 		if let Some(reason) = self.cd_status_code {
 			try!(socket.write_u16::<BigEndian>(reason));
 		}
@@ -157,6 +156,8 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 	}
 }
 
+// TODO: separate reading writing here, or maybe just make an IntoMessage trait
+// so you can support both owned and borrowed messages
 impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 	type DataFrameIterator = Take<Repeat<&'b Message<'a>>>;
 

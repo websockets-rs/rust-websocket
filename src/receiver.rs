@@ -136,6 +136,7 @@ impl ws::Receiver for Receiver {
 			}
 		}
 
+		// TODO: this is slow, easy fix
 		let buffer = self.buffer.clone();
 		self.buffer.clear();
 

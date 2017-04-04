@@ -129,8 +129,6 @@ impl<S> Client<S>
 		Client {
 			headers: headers,
 			stream: stream,
-			// NOTE: these are always true & false, see
-			// https://tools.ietf.org/html/rfc6455#section-5
 			sender: Sender::new(out_mask),
 			receiver: Receiver::new(in_mask),
 		}
