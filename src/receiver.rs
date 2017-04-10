@@ -39,9 +39,10 @@ impl<R> Reader<R>
 	}
 
 	/// Reads a single message from this receiver.
-	pub fn recv_message<'m, M, I>(&mut self) -> WebSocketResult<M>
-		where M: ws::Message<'m, DataFrame, DataFrameIterator = I>,
-		      I: Iterator<Item = DataFrame>
+	pub fn recv_message<'m, M, D, I>(&mut self) -> WebSocketResult<M>
+		where M: ws::Message<'m, D, DataFrameIterator = I>,
+		      I: Iterator<Item = D>,
+		      D: DataFrameable
 	{
 		self.receiver.recv_message(&mut self.stream)
 	}

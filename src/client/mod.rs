@@ -162,9 +162,22 @@ impl<S> Client<S>
 	}
 
 	/// Reads a single message from this receiver.
-	pub fn recv_message<'m, M, I>(&mut self) -> WebSocketResult<M>
-		where M: ws::Message<'m, DataFrame, DataFrameIterator = I>,
-		      I: Iterator<Item = DataFrame>
+	///
+	/// ```rust,no_run
+	/// use websocket::{ClientBuilder, Message};
+	/// let mut client = ClientBuilder::new("ws://localhost:3000")
+	///     .unwrap()
+	///     .connect_insecure()
+	///     .unwrap();
+	///
+	/// client.send_message(&Message::text("Hello world!")).unwrap();
+	///
+	/// let message: Message = client.recv_message().unwrap();
+	/// ```
+	pub fn recv_message<'m, M, I, D>(&mut self) -> WebSocketResult<M>
+		where M: ws::Message<'m, D, DataFrameIterator = I>,
+		      I: Iterator<Item = D>,
+		      D: DataFrameable
 	{
 		self.receiver.recv_message(&mut self.stream)
 	}
