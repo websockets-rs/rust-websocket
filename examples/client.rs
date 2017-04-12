@@ -15,6 +15,7 @@ fn main() {
 
 	let client = ClientBuilder::new(CONNECTION)
 		.unwrap()
+		.add_protocol("rust-websocket")
 		.connect_insecure()
 		.unwrap();
 
