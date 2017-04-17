@@ -111,7 +111,7 @@ impl Header for WebSocketExtensions {
 	}
 
 	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketExtensions> {
-		from_comma_delimited(raw).map(|vec| WebSocketExtensions(vec))
+		from_comma_delimited(raw).map(WebSocketExtensions)
 	}
 }
 

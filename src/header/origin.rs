@@ -21,7 +21,7 @@ impl Header for Origin {
 	}
 
 	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<Origin> {
-		from_one_raw_str(raw).map(|s| Origin(s))
+		from_one_raw_str(raw).map(Origin)
 	}
 }
 

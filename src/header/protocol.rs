@@ -23,7 +23,7 @@ impl Header for WebSocketProtocol {
 	}
 
 	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketProtocol> {
-		from_comma_delimited(raw).map(|vec| WebSocketProtocol(vec))
+		from_comma_delimited(raw).map(WebSocketProtocol)
 	}
 }
 
