@@ -34,10 +34,8 @@ impl FromStr for WebSocketKey {
 				}
 
 				Ok(WebSocketKey(array))
-			}
-			Err(_) => {
-				return Err(WebSocketError::ProtocolError("Invalid Sec-WebSocket-Accept"));
-			}
+			},
+			Err(_) => Err(WebSocketError::ProtocolError("Invalid Sec-WebSocket-Accept"))
 		}
 	}
 }

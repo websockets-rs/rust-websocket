@@ -35,10 +35,8 @@ impl FromStr for WebSocketAccept {
 					*i = iter.next().unwrap();
 				}
 				Ok(WebSocketAccept(array))
-			}
-			Err(_) => {
-				return Err(WebSocketError::ProtocolError("Invalid Sec-WebSocket-Accept "));
-			}
+			},
+			Err(_) => Err(WebSocketError::ProtocolError("Invalid Sec-WebSocket-Accept "))
 		}
 	}
 }
