@@ -31,7 +31,7 @@ impl FromStr for WebSocketAccept {
 				}
 				let mut array = [0u8; 20];
 				let mut iter = vec.into_iter();
-				for i in array.iter_mut() {
+				for i in &mut array {
 					*i = iter.next().unwrap();
 				}
 				Ok(WebSocketAccept(array))

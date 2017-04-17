@@ -29,7 +29,7 @@ impl FromStr for WebSocketKey {
 				}
 				let mut array = [0u8; 16];
 				let mut iter = vec.into_iter();
-				for i in array.iter_mut() {
+				for i in &mut array {
 					*i = iter.next().unwrap();
 				}
 

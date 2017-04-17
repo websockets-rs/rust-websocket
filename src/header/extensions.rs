@@ -69,7 +69,7 @@ impl FromStr for Extension {
 impl fmt::Display for Extension {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		try!(write!(f, "{}", self.name));
-		for param in self.params.iter() {
+		for param in &self.params {
 			try!(write!(f, "; {}", param));
 		}
 		Ok(())
