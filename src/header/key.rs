@@ -9,7 +9,7 @@ use serialize::base64::{ToBase64, FromBase64, STANDARD};
 use result::{WebSocketResult, WebSocketError};
 
 /// Represents a Sec-WebSocket-Key header.
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Default)]
 pub struct WebSocketKey(pub [u8; 16]);
 
 impl Debug for WebSocketKey {
