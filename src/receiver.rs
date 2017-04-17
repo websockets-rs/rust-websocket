@@ -34,7 +34,7 @@ impl<R> Reader<R>
 	}
 
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, BufReader<R>> {
+	pub fn incoming_dataframes(&mut self) -> DataFrameIterator<Receiver, BufReader<R>> {
 		self.receiver.incoming_dataframes(&mut self.stream)
 	}
 

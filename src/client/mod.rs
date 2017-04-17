@@ -157,7 +157,7 @@ impl<S> Client<S>
 	}
 
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes<'a>(&'a mut self) -> DataFrameIterator<'a, Receiver, BufReader<S>> {
+	pub fn incoming_dataframes(&mut self) -> DataFrameIterator<Receiver, BufReader<S>> {
 		self.receiver.incoming_dataframes(&mut self.stream)
 	}
 

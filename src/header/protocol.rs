@@ -12,7 +12,7 @@ pub struct WebSocketProtocol(pub Vec<String>);
 
 impl Deref for WebSocketProtocol {
 	type Target = Vec<String>;
-	fn deref<'a>(&'a self) -> &'a Vec<String> {
+	fn deref(&self) -> &Vec<String> {
 		&self.0
 	}
 }

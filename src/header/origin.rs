@@ -10,7 +10,7 @@ pub struct Origin(pub String);
 
 impl Deref for Origin {
 	type Target = String;
-	fn deref<'a>(&'a self) -> &'a String {
+	fn deref(&self) -> &String {
 		&self.0
 	}
 }

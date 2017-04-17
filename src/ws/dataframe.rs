@@ -18,11 +18,11 @@ pub trait DataFrame {
 	/// What type of data does this dataframe contain?
 	fn opcode(&self) -> u8;
 	/// Reserved bits of this dataframe
-	fn reserved<'a>(&'a self) -> &'a [bool; 3];
+	fn reserved(&self) -> &[bool; 3];
 	/// Entire payload of the dataframe. If not known then implement
 	/// write_payload as that is the actual method used when sending the
 	/// dataframe over the wire.
-	fn payload<'a>(&'a self) -> Cow<'a, [u8]>;
+	fn payload(&self) -> Cow<[u8]>;
 
 	/// How long (in bytes) is this dataframe's payload
 	fn size(&self) -> usize {
@@ -95,12 +95,12 @@ impl<'a, D> DataFrame for &'a D
 	}
 
 	#[inline(always)]
-	fn reserved<'b>(&'b self) -> &'b [bool; 3] {
+	fn reserved(&self) -> &[bool; 3] {
 		D::reserved(self)
 	}
 
 	#[inline(always)]
-	fn payload<'b>(&'b self) -> Cow<'b, [u8]> {
+	fn payload(&self) -> Cow<[u8]> {
 		D::payload(self)
 	}
 

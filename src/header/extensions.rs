@@ -19,7 +19,7 @@ pub struct WebSocketExtensions(pub Vec<Extension>);
 impl Deref for WebSocketExtensions {
 	type Target = Vec<Extension>;
 
-	fn deref<'a>(&'a self) -> &'a Vec<Extension> {
+	fn deref(&self) -> &Vec<Extension> {
 		&self.0
 	}
 }
