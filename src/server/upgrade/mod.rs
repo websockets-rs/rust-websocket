@@ -413,7 +413,7 @@ fn validate(
 		None => return Err(HyperIntoWsError::NoUpgradeHeader),
 	};
 
-	fn check_connection_header(headers: &Vec<ConnectionOption>) -> bool {
+	fn check_connection_header(headers: &[ConnectionOption]) -> bool {
 		for header in headers {
 			if let ConnectionOption::ConnectionHeader(ref h) = *header {
 				if UniCase(h as &str) == UniCase("upgrade") {
