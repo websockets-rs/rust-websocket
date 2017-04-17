@@ -188,7 +188,7 @@ impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 		       Some(Opcode::Text) => Message::text(try!(bytes_to_string(&data[..]))),
 		       Some(Opcode::Binary) => Message::binary(data),
 		       Some(Opcode::Close) => {
-			       if data.len() > 0 {
+			       if !data.is_empty() {
 			           let status_code = try!((&data[..]).read_u16::<BigEndian>());
 			           let reason = try!(bytes_to_string(&data[2..]));
 			           Message::close_because(status_code, reason)
