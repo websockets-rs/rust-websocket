@@ -346,17 +346,17 @@ impl Display for HyperIntoWsError {
 impl Error for HyperIntoWsError {
 	fn description(&self) -> &str {
 		use self::HyperIntoWsError::*;
-		match self {
-			&MethodNotGet => "Request method must be GET",
-			&UnsupportedHttpVersion => "Unsupported request HTTP version",
-			&UnsupportedWebsocketVersion => "Unsupported WebSocket version",
-			&NoSecWsKeyHeader => "Missing Sec-WebSocket-Key header",
-			&NoWsUpgradeHeader => "Invalid Upgrade WebSocket header",
-			&NoUpgradeHeader => "Missing Upgrade WebSocket header",
-			&NoWsConnectionHeader => "Invalid Connection WebSocket header",
-			&NoConnectionHeader => "Missing Connection WebSocket header",
-			&Io(ref e) => e.description(),
-			&Parsing(ref e) => e.description(),
+		match *self {
+			MethodNotGet => "Request method must be GET",
+			UnsupportedHttpVersion => "Unsupported request HTTP version",
+			UnsupportedWebsocketVersion => "Unsupported WebSocket version",
+			NoSecWsKeyHeader => "Missing Sec-WebSocket-Key header",
+			NoWsUpgradeHeader => "Invalid Upgrade WebSocket header",
+			NoUpgradeHeader => "Missing Upgrade WebSocket header",
+			NoWsConnectionHeader => "Invalid Connection WebSocket header",
+			NoConnectionHeader => "Missing Connection WebSocket header",
+			Io(ref e) => e.description(),
+			Parsing(ref e) => e.description(),
 		}
 	}
 
@@ -415,7 +415,7 @@ fn validate(
 
 	fn check_connection_header(headers: &Vec<ConnectionOption>) -> bool {
 		for header in headers {
-			if let &ConnectionOption::ConnectionHeader(ref h) = header {
+			if let ConnectionOption::ConnectionHeader(ref h) = *header {
 				if UniCase(h as &str) == UniCase("upgrade") {
 					return true;
 				}

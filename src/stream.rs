@@ -67,7 +67,7 @@ pub trait AsTcpStream {
 
 impl AsTcpStream for TcpStream {
 	fn as_tcp(&self) -> &TcpStream {
-		&self
+		self
 	}
 }
 
