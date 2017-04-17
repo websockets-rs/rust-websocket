@@ -65,17 +65,13 @@ macro_rules! upsert_header {
         Some($pat:pat) => $some_match:expr,
         None => $default:expr
     }) => {{
-        match $headers.has::<$header>() {
-            true => {
-                match $headers.get_mut::<$header>() {
-                    Some($pat) => { $some_match; },
-                    None => (),
-                };
+        if $headers.has::<$header>() {
+            if let Some($pat) = $headers.get_mut::<$header>() {
+                $some_match
             }
-            false => {
-                $headers.set($default);
-            },
-        };
+        } else {
+            $headers.set($default);
+        }
     }}
 }
 

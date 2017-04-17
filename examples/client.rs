@@ -37,13 +37,10 @@ fn main() {
 					return;
 				}
 			};
-			match message.opcode {
-				Type::Close => {
-					let _ = sender.send_message(&message);
-					// If it's a close message, just send it and then return.
-					return;
-				}
-				_ => (),
+			if Type::Close == message.opcode {
+				let _ = sender.send_message(&message);
+				// If it's a close message, just send it and then return.
+				return;
 			}
 			// Send the message
 			match sender.send_message(&message) {

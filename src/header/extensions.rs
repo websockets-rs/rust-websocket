@@ -98,9 +98,8 @@ impl Parameter {
 impl fmt::Display for Parameter {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		try!(write!(f, "{}", self.name));
-		match self.value {
-			Some(ref x) => try!(write!(f, "={}", x)),
-			None => (),
+		if let Some(ref x) = self.value {
+			try!(write!(f, "={}", x));
 		}
 		Ok(())
 	}

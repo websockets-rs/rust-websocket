@@ -61,9 +61,8 @@ pub fn write_header<W>(writer: &mut W, header: DataFrameHeader) -> WebSocketResu
 	}
 
 	// Write 'Masking-key'
-	match header.mask {
-		Some(mask) => try!(writer.write_all(&mask)),
-		None => (),
+	if let Some(mask) = header.mask {
+		try!(writer.write_all(&mask))
 	}
 
 	Ok(())
