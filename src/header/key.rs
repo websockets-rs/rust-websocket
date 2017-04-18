@@ -9,7 +9,7 @@ use serialize::base64::{ToBase64, FromBase64, STANDARD};
 use result::{WebSocketResult, WebSocketError};
 
 /// Represents a Sec-WebSocket-Key header.
-#[derive(PartialEq, Clone, Copy)]
+#[derive(PartialEq, Clone, Copy, Default)]
 pub struct WebSocketKey(pub [u8; 16]);
 
 impl Debug for WebSocketKey {
@@ -29,15 +29,13 @@ impl FromStr for WebSocketKey {
 				}
 				let mut array = [0u8; 16];
 				let mut iter = vec.into_iter();
-				for i in array.iter_mut() {
+				for i in &mut array {
 					*i = iter.next().unwrap();
 				}
 
 				Ok(WebSocketKey(array))
 			}
-			Err(_) => {
-				return Err(WebSocketError::ProtocolError("Invalid Sec-WebSocket-Accept"));
-			}
+			Err(_) => Err(WebSocketError::ProtocolError("Invalid Sec-WebSocket-Accept")),
 		}
 	}
 }

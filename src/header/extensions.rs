@@ -19,7 +19,7 @@ pub struct WebSocketExtensions(pub Vec<Extension>);
 impl Deref for WebSocketExtensions {
 	type Target = Vec<Extension>;
 
-	fn deref<'a>(&'a self) -> &'a Vec<Extension> {
+	fn deref(&self) -> &Vec<Extension> {
 		&self.0
 	}
 }
@@ -69,7 +69,7 @@ impl FromStr for Extension {
 impl fmt::Display for Extension {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		try!(write!(f, "{}", self.name));
-		for param in self.params.iter() {
+		for param in &self.params {
 			try!(write!(f, "; {}", param));
 		}
 		Ok(())
@@ -98,9 +98,8 @@ impl Parameter {
 impl fmt::Display for Parameter {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 		try!(write!(f, "{}", self.name));
-		match self.value {
-			Some(ref x) => try!(write!(f, "={}", x)),
-			None => (),
+		if let Some(ref x) = self.value {
+			try!(write!(f, "={}", x));
 		}
 		Ok(())
 	}
@@ -112,7 +111,7 @@ impl Header for WebSocketExtensions {
 	}
 
 	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketExtensions> {
-		from_comma_delimited(raw).map(|vec| WebSocketExtensions(vec))
+		from_comma_delimited(raw).map(WebSocketExtensions)
 	}
 }
 

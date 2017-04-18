@@ -85,12 +85,12 @@ impl DataFrameable for DataFrame {
 	}
 
 	#[inline(always)]
-	fn reserved<'a>(&'a self) -> &'a [bool; 3] {
+	fn reserved(&self) -> &[bool; 3] {
 		&self.reserved
 	}
 
 	#[inline(always)]
-	fn payload<'a>(&'a self) -> Cow<'a, [u8]> {
+	fn payload(&self) -> Cow<[u8]> {
 		Cow::Borrowed(&self.data)
 	}
 }

@@ -12,7 +12,7 @@ pub struct WebSocketProtocol(pub Vec<String>);
 
 impl Deref for WebSocketProtocol {
 	type Target = Vec<String>;
-	fn deref<'a>(&'a self) -> &'a Vec<String> {
+	fn deref(&self) -> &Vec<String> {
 		&self.0
 	}
 }
@@ -23,7 +23,7 @@ impl Header for WebSocketProtocol {
 	}
 
 	fn parse_header(raw: &[Vec<u8>]) -> hyper::Result<WebSocketProtocol> {
-		from_comma_delimited(raw).map(|vec| WebSocketProtocol(vec))
+		from_comma_delimited(raw).map(WebSocketProtocol)
 	}
 }
 

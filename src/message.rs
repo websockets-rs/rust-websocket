@@ -132,11 +132,11 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 	}
 
 	#[inline(always)]
-	fn reserved<'b>(&'b self) -> &'b [bool; 3] {
+	fn reserved(&self) -> &[bool; 3] {
 		FALSE_RESERVED_BITS
 	}
 
-	fn payload<'b>(&'b self) -> Cow<'b, [u8]> {
+	fn payload(&self) -> Cow<[u8]> {
 		let mut buf = Vec::with_capacity(self.size());
 		self.write_payload(&mut buf).ok();
 		Cow::Owned(buf)
@@ -188,7 +188,7 @@ impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 		       Some(Opcode::Text) => Message::text(try!(bytes_to_string(&data[..]))),
 		       Some(Opcode::Binary) => Message::binary(data),
 		       Some(Opcode::Close) => {
-			       if data.len() > 0 {
+			       if !data.is_empty() {
 			           let status_code = try!((&data[..]).read_u16::<BigEndian>());
 			           let reason = try!(bytes_to_string(&data[2..]));
 			           Message::close_because(status_code, reason)
