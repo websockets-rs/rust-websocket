@@ -156,6 +156,14 @@ impl<S> Server<S>
 		       ssl_acceptor: self.ssl_acceptor.clone(),
 		   })
 	}
+
+	/// Changes whether the Server is in nonblocking mode.
+	///
+	/// If it is in nonblocking mode, accept() will return an error instead of blocking when there
+	/// are no incoming connections.
+	pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
+		self.listener.set_nonblocking(nonblocking)
+	}
 }
 
 #[cfg(feature="ssl")]
@@ -207,14 +215,6 @@ impl Server<SslAcceptor> {
 				    })
 			}
 		}
-	}
-
-	/// Changes whether the Server is in nonblocking mode.
-	///
-	/// If it is in nonblocking mode, accept() will return an error instead of blocking when there
-	/// are no incoming connections.
-	pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
-		self.listener.set_nonblocking(nonblocking)
 	}
 }
 
