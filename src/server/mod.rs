@@ -271,3 +271,64 @@ impl Iterator for Server<NoSslAcceptor> {
 		Some(self.accept())
 	}
 }
+
+mod tests {
+	#[test]
+	// test the set_nonblocking() method for Server<SslAcceptor> and Server<NoSslAcceptor>. I have no idea what I'm doing here, I copied some of it from https://doc.rust-lang.org/src/std/net/tcp.rs.html#1413
+	fn set_nonblocking() {
+		macro_rules! t {
+			($e:expr) => {
+				match $e {
+					Ok(t) => t,
+					Err(e) => panic!("received error for `{}`: {}", stringify!($e), e),
+				}
+			}
+		}
+		use super::*;
+		use std::io::Read;
+		use openssl::ssl::{SslMethod, SslAcceptorBuilder};
+		use std::fs::File;
+		use openssl::pkcs12::Pkcs12;
+
+		// Test unsecure server
+
+		let mut server = t!(Server::bind("127.0.0.1:0"));
+
+		// Note that if set_nonblocking() doesn't work, but the following
+		// fails to panic for some reason, then the .accept() method below
+		// will block indefinitely.
+		t!(server.set_nonblocking(true));
+
+		let result = server.accept();
+		match result {
+			// nobody tried to establish a connection, so we expect an error
+            Ok(_) => panic!("expected error"),
+			// do we need to check the type of error? If so, how?
+			_ => {},
+        }
+
+		// Test secure server
+		let mut file = File::open("identity.pfx").unwrap();
+		let mut pkcs12 = vec![];
+		file.read_to_end(&mut pkcs12).unwrap();
+		let pkcs12 = Pkcs12::from_der(&pkcs12).unwrap();
+		let identity = pkcs12.parse("password123").unwrap();
+
+		let acceptor = SslAcceptorBuilder::mozilla_intermediate(SslMethod::tls(),
+                                                       &identity.pkey,
+                                                       &identity.cert,
+                                                       &identity.chain)
+                  .unwrap()
+                  .build();
+		let mut server = t!(Server::bind_secure("127.0.0.1:0", acceptor));
+		t!(server.set_nonblocking(true));
+
+		let result = server.accept();
+		match result {
+            Ok(_) => panic!("expected error"),
+			_ => {},
+        }
+
+	}
+}
+
