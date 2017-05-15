@@ -20,12 +20,15 @@ license = "MIT"
 hyper = "^0.10.6"
 unicase = "^1.0"
 url = "^1.0"
-rustc-serialize = "^0.3"
 bitflags = "^0.8"
 rand = "^0.3"
 byteorder = "^1.0"
 sha1 = "^0.2"
 openssl = { version = "^0.9.10", optional = true }
+base64 = "^0.5"
+
+[dev-dependencies]
+serde_json = "^1.0"
 
 [features]
 default = ["ssl"]
