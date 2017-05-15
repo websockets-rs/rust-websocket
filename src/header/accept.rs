@@ -1,9 +1,9 @@
+use base64;
 use hyper::header::{Header, HeaderFormat};
 use hyper::header::parsing::from_one_raw_str;
 use hyper;
 use std::fmt::{self, Debug};
 use std::str::FromStr;
-use serialize::base64::{ToBase64, FromBase64, STANDARD};
 use header::WebSocketKey;
 use result::{WebSocketResult, WebSocketError};
 use sha1::Sha1;
@@ -24,7 +24,7 @@ impl FromStr for WebSocketAccept {
 	type Err = WebSocketError;
 
 	fn from_str(accept: &str) -> WebSocketResult<WebSocketAccept> {
-		match accept.from_base64() {
+		match base64::decode(accept) {
 			Ok(vec) => {
 				if vec.len() != 20 {
 					return Err(WebSocketError::ProtocolError("Sec-WebSocket-Accept must be 20 bytes"));
@@ -56,7 +56,7 @@ impl WebSocketAccept {
 	/// Return the Base64 encoding of this WebSocketAccept
 	pub fn serialize(&self) -> String {
 		let WebSocketAccept(accept) = *self;
-		accept.to_base64(STANDARD)
+		base64::encode(&accept)
 	}
 }
 

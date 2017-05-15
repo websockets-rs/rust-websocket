@@ -1,11 +1,10 @@
 extern crate websocket;
-extern crate rustc_serialize as serialize;
+extern crate serde_json;
 
 use std::str::from_utf8;
 use websocket::ClientBuilder;
 use websocket::Message;
 use websocket::message::Type;
-use serialize::json;
 
 fn main() {
 	let addr = "ws://127.0.0.1:9001".to_string();
@@ -93,7 +92,7 @@ fn get_case_count(addr: String) -> usize {
 		};
 		match message.opcode {
 			Type::Text => {
-				count = json::decode(from_utf8(&*message.payload).unwrap()).unwrap();
+				count = serde_json::from_str(from_utf8(&*message.payload).unwrap()).unwrap();
 				println!("Will run {} cases...", count);
 			}
 			Type::Close => {
