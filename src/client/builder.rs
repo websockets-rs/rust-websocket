@@ -392,10 +392,10 @@ impl<'u> ClientBuilder<'u> {
 	pub fn connect(
 		&mut self,
 		ssl_config: Option<SslConnector>,
-	) -> WebSocketResult<Client<Box<NetworkStream>>> {
+	) -> WebSocketResult<Client<Box<NetworkStream + Send>>> {
 		let tcp_stream = try!(self.establish_tcp(None));
 
-		let boxed_stream: Box<NetworkStream> = if
+		let boxed_stream: Box<NetworkStream + Send> = if
 			self.url.scheme() == "wss" {
 			Box::new(try!(self.wrap_ssl(tcp_stream, ssl_config)))
 		} else {
