@@ -311,24 +311,17 @@ mod tests {
 	// Some of this is copied from
 	// https://doc.rust-lang.org/src/std/net/tcp.rs.html#1413
 	fn set_nonblocking() {
-		macro_rules! t {
-			($e:expr) => {
-				match $e {
-					Ok(t) => t,
-					Err(e) => panic!("received error for `{}`: {}", stringify!($e), e),
-				}
-			}
-		}
+
 		use super::*;
 
 		// Test unsecure server
 
-		let mut server = t!(Server::bind("127.0.0.1:0"));
+		let mut server = Server::bind("127.0.0.1:0").unwrap();
 
 		// Note that if set_nonblocking() doesn't work, but the following
 		// fails to panic for some reason, then the .accept() method below
 		// will block indefinitely.
-		t!(server.set_nonblocking(true));
+		server.set_nonblocking(true).unwrap();
 
 		let result = server.accept();
 		match result {
