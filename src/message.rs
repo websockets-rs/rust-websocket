@@ -57,10 +57,12 @@ impl<'a> Message<'a> {
 	pub fn text<S>(data: S) -> Self
 		where S: Into<Cow<'a, str>>
 	{
-		Message::new(Type::Text, None, match data.into() {
-			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
-			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
-		})
+		Message::new(Type::Text,
+		             None,
+		             match data.into() {
+		                 Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+		                 Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+		             })
 	}
 
 	/// Create a new WebSocket message with binary data
@@ -82,10 +84,12 @@ impl<'a> Message<'a> {
 	pub fn close_because<S>(code: u16, reason: S) -> Self
 		where S: Into<Cow<'a, str>>
 	{
-		Message::new(Type::Close, Some(code), match reason.into() {
-			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
-			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
-		})
+		Message::new(Type::Close,
+		             Some(code),
+		             match reason.into() {
+		                 Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+		                 Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+		             })
 	}
 
 	/// Create a ping WebSocket message, a pong is usually sent back
@@ -165,7 +169,7 @@ impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
 		where D: ws::dataframe::DataFrame
 	{
 		let opcode = try!(frames.first()
-		                        .ok_or(WebSocketError::ProtocolError("No dataframes provided",),)
+		                        .ok_or(WebSocketError::ProtocolError("No dataframes provided"))
 		                        .map(|d| d.opcode()));
 
 		let mut data = Vec::new();

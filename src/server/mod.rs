@@ -161,40 +161,6 @@ impl<S> Server<S>
 	///
 	/// If it is in nonblocking mode, accept() will return an error instead of blocking when there
 	/// are no incoming connections.
-	///
-	///# Examples
-	///```no_run
-	/// # extern crate websocket;
-	/// # use websocket::Server;
-	/// # fn main() {
-	/// // Suppose we have to work in a single thread, but want to
-	/// // accomplish two unrelated things:
-	/// // (1) Once in a while we want to check if anybody tried to connect to
-	/// // our websocket server, and if so, handle the TcpStream.
-	/// // (2) In between we need to something else, possibly unrelated to networking.
-	///
-	/// let mut server = Server::bind("127.0.0.1:0").unwrap();
-	///
-	/// // Set the server to non-blocking.
-	/// server.set_nonblocking(true);
-	///
-	/// for i in 1..3 {
-	/// 	let result = server.accept();
-	/// 	match result {
-	/// 		Ok(wsupgrade) => {
-	/// 			// Do something with the established TcpStream.
-	/// 		}
-	/// 		_ => {
-	/// 			// Nobody tried to connect, move on.
-	/// 		}
-	/// 	}
-	/// 	// Perform another task. Because we have a non-blocking server,
-	/// 	// this will execute independent of whether someone tried to
-	/// 	// establish a connection.
-	/// 	let two = 1+1;
-	/// }
-	/// # }
-	///```
 	pub fn set_nonblocking(&self, nonblocking: bool) -> io::Result<()> {
 		self.listener.set_nonblocking(nonblocking)
 	}
@@ -308,9 +274,7 @@ impl Iterator for Server<NoSslAcceptor> {
 
 mod tests {
 	#[test]
-	// test the set_nonblocking() method for Server<NoSslAcceptor>.
-	// Some of this is copied from
-	// https://doc.rust-lang.org/src/std/net/tcp.rs.html#1413
+	// test the set_nonblocking() method for Server<NoSslAcceptor>. Some of this is copied from https://doc.rust-lang.org/src/std/net/tcp.rs.html#1413
 	fn set_nonblocking() {
 		macro_rules! t {
 			($e:expr) => {
@@ -334,14 +298,15 @@ mod tests {
 		let result = server.accept();
 		match result {
 			// nobody tried to establish a connection, so we expect an error
-			Ok(_) => panic!("expected error"),
-			Err(e) => {
-				match e.error {
-					HyperIntoWsError::Io(e) => if e.kind() == io::ErrorKind::WouldBlock {},
-					_ => panic!("unexpected error {}"),
-				}
+            Ok(_) => panic!("expected error"),
+			Err(e) => match e.error {
+				HyperIntoWsError::Io(e) => {
+					if e.kind() == io::ErrorKind::WouldBlock {}
+				},
+            	_ => panic!("unexpected error {}"),
 			}
-		}
+        }
 
 	}
 }
+
