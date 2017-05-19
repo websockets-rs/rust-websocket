@@ -1,5 +1,3 @@
-//! TODO: docs
-
 use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::io::Cursor;
@@ -22,22 +20,25 @@ use result::WebSocketError;
  * Dataframes *
  **************/
 
-/// TODO: docs
+#[derive(Clone,PartialEq,Eq,Debug)]
+pub enum Context {
+	Server,
+	Client,
+}
+
 pub struct DataFrameCodec<D> {
-	masked: bool,
+	is_server: bool,
 	frame_type: PhantomData<D>,
 }
 
 impl<D> DataFrameCodec<D> {
-	/// TODO: docs
-	pub fn default(masked: bool) -> DataFrameCodec<DataFrame> {
-		DataFrameCodec::new(masked)
+	pub fn default(context: Context) -> DataFrameCodec<DataFrame> {
+		DataFrameCodec::new(context)
 	}
 
-	/// TODO: docs
-	pub fn new(masked: bool) -> DataFrameCodec<D> {
+	pub fn new(context: Context) -> DataFrameCodec<D> {
 		DataFrameCodec {
-			masked: masked,
+			is_server: context == Context::Server,
 			frame_type: PhantomData,
 		}
 	}
@@ -47,6 +48,7 @@ impl<D> Decoder for DataFrameCodec<D> {
 	type Item = DataFrame;
 	type Error = WebSocketError;
 
+	// TODO: do not retry to read the header on each new data (keep a buffer)
 	fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
 		let (header, bytes_read) = {
 			// we'll make a fake reader and keep track of the bytes read
@@ -70,12 +72,12 @@ impl<D> Decoder for DataFrameCodec<D> {
 			return Ok(None);
 		}
 
-		let body = src.split_off(bytes_read as usize).to_vec();
-		// use up the rest of the buffer since we already copied it to header
-		let _ = src.take();
+		// TODO: using usize is not the right thing here (can be larger)
+		let _ = src.split_to(bytes_read as usize);
+		let body = src.split_to(header.len as usize).to_vec();
 
 		// construct a dataframe
-		Ok(Some(DataFrame::read_dataframe_body(header, body, self.masked)?))
+		Ok(Some(DataFrame::read_dataframe_body(header, body, self.is_server)?))
 	}
 }
 
@@ -88,7 +90,7 @@ impl<D> Encoder for DataFrameCodec<D>
 
 	fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
 		// TODO: check size and grow dst accordingly
-		item.borrow().write_to(&mut dst.writer(), self.masked)
+		item.borrow().write_to(&mut dst.writer(), !self.is_server)
 	}
 }
 
@@ -96,7 +98,6 @@ impl<D> Encoder for DataFrameCodec<D>
  * Messages *
  ************/
 
-/// TODO: docs
 pub struct MessageCodec<'m, M>
 	where M: 'm
 {
@@ -106,19 +107,14 @@ pub struct MessageCodec<'m, M>
 }
 
 impl<'m, M> MessageCodec<'m, M> {
-	/// TODO: docs
-	pub fn default(masked: bool) -> MessageCodec<'m, Message<'m>> {
-		MessageCodec::new(masked)
+	pub fn default(context: Context) -> MessageCodec<'m, Message<'m>> {
+		MessageCodec::new(context)
 	}
 
-	/// TODO: docs
-	pub fn new(masked: bool) -> MessageCodec<'m, M> {
+	pub fn new(context: Context) -> MessageCodec<'m, M> {
 		MessageCodec {
 			buffer: Vec::new(),
-			dataframe_codec: DataFrameCodec {
-				masked: masked,
-				frame_type: PhantomData,
-			},
+			dataframe_codec: DataFrameCodec::new(context),
 			message_type: PhantomData,
 		}
 	}
@@ -156,6 +152,7 @@ impl<'m, M> Decoder for MessageCodec<'m, M>
 
 			if finished {
 				let buffer = mem::replace(&mut self.buffer, Vec::new());
+				println!("Dataframes: {:?}", buffer);
 				return Ok(Some(Message::from_dataframes(buffer)?));
 			}
 		}
@@ -173,7 +170,7 @@ impl<'m, M> Encoder for MessageCodec<'m, M>
 	fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
 		for ref dataframe in item.borrow().dataframes() {
 			// TODO: check size and grow dst accordingly
-			dataframe.write_to(&mut dst.writer(), self.dataframe_codec.masked)?
+			dataframe.write_to(&mut dst.writer(), !self.dataframe_codec.is_server)?
 		}
 		Ok(())
 	}
