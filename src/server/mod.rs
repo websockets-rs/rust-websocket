@@ -179,15 +179,14 @@ impl<S> Server<S>
 	/// server.set_nonblocking(true);
 	///
 	/// for i in 1..3 {
-	/// 	let result = server.accept();
-	/// 	match result {
+	/// 	let result = match server.accept() {
 	/// 		Ok(wsupgrade) => {
 	/// 			// Do something with the established TcpStream.
 	/// 		}
 	/// 		_ => {
 	/// 			// Nobody tried to connect, move on.
 	/// 		}
-	/// 	}
+	/// 	};
 	/// 	// Perform another task. Because we have a non-blocking server,
 	/// 	// this will execute independent of whether someone tried to
 	/// 	// establish a connection.
