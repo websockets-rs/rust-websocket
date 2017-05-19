@@ -57,10 +57,7 @@ impl<D> Decoder for DataFrameCodec<D> {
 			// read header to get the size, bail if not enough
 			let header = match read_header(&mut reader) {
 				Ok(head) => head,
-				// TODO: check if this is the correct error
-				Err(WebSocketError::IoError(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
-					return Ok(None)
-				}
+				Err(WebSocketError::NoDataAvailable) => return Ok(None),
 				Err(e) => return Err(e),
 			};
 
@@ -89,8 +86,12 @@ impl<D> Encoder for DataFrameCodec<D>
 	type Error = WebSocketError;
 
 	fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
-		// TODO: check size and grow dst accordingly
-		item.borrow().write_to(&mut dst.writer(), !self.is_server)
+		let masked = !self.is_server;
+		let frame_size = item.borrow().frame_size(masked);
+		if frame_size > dst.remaining_mut() {
+			dst.reserve(frame_size);
+		}
+		item.borrow().write_to(&mut dst.writer(), masked)
 	}
 }
 
@@ -138,7 +139,7 @@ impl<'m, M> Decoder for MessageCodec<'m, M>
 				}
 				// control frame
 				8...15 => {
-					mem::replace(&mut self.buffer, vec![frame]);
+					return Ok(Some(Message::from_dataframes(vec![frame])?));
 				}
 				// data frame
 				1...7 if !is_first => {
@@ -152,7 +153,6 @@ impl<'m, M> Decoder for MessageCodec<'m, M>
 
 			if finished {
 				let buffer = mem::replace(&mut self.buffer, Vec::new());
-				println!("Dataframes: {:?}", buffer);
 				return Ok(Some(Message::from_dataframes(buffer)?));
 			}
 		}
@@ -168,11 +168,12 @@ impl<'m, M> Encoder for MessageCodec<'m, M>
 	type Error = WebSocketError;
 
 	fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
-		for ref dataframe in item.borrow().dataframes() {
-			// TODO: check size and grow dst accordingly
-			dataframe.write_to(&mut dst.writer(), !self.dataframe_codec.is_server)?
+		let masked = !self.dataframe_codec.is_server;
+		let frame_size = item.borrow().frame_size(masked);
+		if frame_size > dst.remaining_mut() {
+			dst.reserve(frame_size);
 		}
-		Ok(())
+		item.borrow().write_to(&mut dst.writer(), masked)
 	}
 }
 

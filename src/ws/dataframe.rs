@@ -29,6 +29,27 @@ pub trait DataFrame {
 		self.payload().len()
 	}
 
+	/// Get's the size of the entire dataframe in bytes,
+	/// i.e. header and payload.
+	fn frame_size(&self, masked: bool) -> usize {
+		// one byte for the opcode & reserved & fin
+		1
+        // depending on the size of the payload, add the right payload len bytes
+        + match self.size() {
+            s if s <= 125 => 1,
+            s if s <= 65535 => 3,
+            _ => 9,
+        }
+        // add the mask size if there is one
+        + if masked {
+            4
+        } else {
+            0
+        }
+        // finally add the payload len
+        + self.size()
+	}
+
 	/// Write the payload to a writer
 	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
 		try!(socket.write_all(&*self.payload()));
