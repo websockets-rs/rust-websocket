@@ -329,7 +329,7 @@ mod tests {
 			Ok(_) => panic!("expected error"),
 			Err(e) => {
 				match e.error {
-					HyperIntoWsError::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {},
+					HyperIntoWsError::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
 					_ => panic!("unexpected error {}"),
 				}
 			}
