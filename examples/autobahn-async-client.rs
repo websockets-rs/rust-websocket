@@ -4,8 +4,6 @@ extern crate tokio_core;
 extern crate tokio_io;
 extern crate futures;
 
-use std::io;
-use std::str::from_utf8;
 use websocket::ClientBuilder;
 use websocket::Message;
 use websocket::message::Type;
@@ -17,12 +15,7 @@ use tokio_core::net::TcpStream;
 use tokio_core::reactor::Core;
 use tokio_core::reactor::Handle;
 use tokio_io::AsyncRead;
-use tokio_io::AsyncWrite;
 use tokio_io::codec::Framed;
-use tokio_io::codec::FramedRead;
-use tokio_io::codec::FramedWrite;
-use tokio_io::io::WriteHalf;
-use tokio_io::io::ReadHalf;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::Future;
@@ -85,7 +78,7 @@ fn main() {
 				                              .boxed()
 				                       } else {
 				                        stream.send(Message::close())
-				                              .map(|s| Loop::Break(()))
+				                              .map(|_| Loop::Break(()))
 				                              .boxed()
 				                       }
 			                    }
@@ -102,7 +95,7 @@ fn main() {
 			                    }
 			                    Some((Type::Close, _)) => {
 				                    stream.send(Message::close())
-			                              .map(|s| Loop::Break(()))
+			                              .map(|_| Loop::Break(()))
 			                              .boxed()
 			                    }
 			                    Some((Type::Pong, _)) => future::ok(Loop::Continue(stream)).boxed(),
@@ -112,7 +105,8 @@ fn main() {
 				               println!("Error sending or other: {:?}", e);
 				               e
 				              })
-		}));
+		}))
+		    .unwrap();
 	}
 
 	update_reports(addr.clone(), agent, &handle);
@@ -124,7 +118,7 @@ fn get_case_count(addr: String, handle: &Handle) -> usize {
 	connect_ws(&url, &handle)
 		.into_future()
 		.map_err(|e| e.0)
-		.and_then(|(msg, stream)| match msg.map(|m| (m.opcode, m)) {
+		.and_then(|(msg, _)| match msg.map(|m| (m.opcode, m)) {
 		              Some((Type::Text, message)) => {
 			let count = String::from_utf8(message.payload.into_owned()).unwrap();
 			let count: usize = json::decode(&count).unwrap();
@@ -146,9 +140,12 @@ fn update_reports(addr: String, agent: &str, handle: &Handle) {
 
 	println!("Updating reports...");
 
-	sink.send_all(stream.filter(|m| m.opcode == Type::Close)
-	                    .take(1)
-	                    .map(|_| Message::close()));
+	stream.filter(|m| m.opcode == Type::Close)
+	      .take(1)
+	      .map(|_| Message::close())
+	      .forward(sink)
+	      .wait()
+	      .unwrap();
 
 	println!("Reports updated.");
 	println!("Test suite finished!");
