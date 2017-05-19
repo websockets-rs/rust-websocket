@@ -299,8 +299,12 @@ mod tests {
 		match result {
 			// nobody tried to establish a connection, so we expect an error
             Ok(_) => panic!("expected error"),
-			// do we need to check the type of error? If so, how?
-			_ => {},
+			Err(e) => match e.error {
+				HyperIntoWsError::Io(e) => {
+					if e.kind() == io::ErrorKind::WouldBlock {}
+				},
+            	_ => panic!("unexpected error {}"),
+			}
         }
 
 	}
