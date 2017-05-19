@@ -51,6 +51,8 @@ extern crate tokio_core;
 extern crate tokio_io;
 #[cfg(feature="async")]
 extern crate bytes;
+#[cfg(feature="async")]
+extern crate futures;
 
 #[macro_use]
 extern crate bitflags;
@@ -94,3 +96,4 @@ pub mod receiver;
 pub mod sender;
 #[cfg(feature="async")]
 pub mod codec;
+pub mod buffer;

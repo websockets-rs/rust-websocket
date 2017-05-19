@@ -21,6 +21,7 @@ impl<S> Stream for S where S: Read + Write {}
 /// TODO: docs
 #[cfg(feature="async")]
 pub trait AsyncStream: AsyncRead + AsyncWrite {}
+#[cfg(feature="async")]
 impl<S> AsyncStream for S where S: AsyncRead + AsyncWrite {}
 
 /// a `Stream` that can also be used as a borrow to a `TcpStream`

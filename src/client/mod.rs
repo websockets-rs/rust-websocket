@@ -129,8 +129,8 @@ impl<S> Client<S>
 		Client {
 			headers: headers,
 			stream: stream,
-			sender: Sender::new(out_mask),
-			receiver: Receiver::new(in_mask),
+			sender: Sender::new(out_mask), // true
+			receiver: Receiver::new(in_mask), // false
 		}
 	}
 
