@@ -1,6 +1,7 @@
 use std::cmp;
 use std::io::{self, Read, Write, BufRead};
 use std::fmt::Arguments;
+#[cfg(feature="async")]
 use futures::Poll;
 
 #[cfg(feature="async")]

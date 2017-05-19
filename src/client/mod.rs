@@ -1,6 +1,7 @@
 //! Contains the WebSocket client.
 extern crate url;
 
+use std::io;
 use std::net::TcpStream;
 use std::net::SocketAddr;
 use std::io::Result as IoResult;
@@ -26,6 +27,21 @@ pub use receiver::Reader;
 
 pub mod builder;
 pub use self::builder::{ClientBuilder, Url, ParseError};
+
+#[cfg(feature="async")]
+pub use tokio_core::reactor::Handle;
+#[cfg(feature="async")]
+pub use tokio_io::codec::Framed;
+#[cfg(feature="async")]
+use tokio_io::AsyncRead;
+#[cfg(feature="async")]
+use codec::MessageCodec;
+#[cfg(feature="async")]
+use codec::Context;
+#[cfg(feature="async")]
+use message::Message;
+#[cfg(feature="async")]
+use buffer::BufReader as AsyncBufReader;
 
 /// Represents a WebSocket client, which can send and receive messages/data frames.
 ///
@@ -65,6 +81,12 @@ pub struct Client<S>
 	receiver: Receiver,
 }
 
+#[cfg(feature="async")]
+pub type AsyncClient<'m, S> = Framed<AsyncBufReader<S>, MessageCodec<'m, Message<'m>>>;
+
+#[cfg(feature="async")]
+pub type AsyncTcpStream = ::tokio_core::net::TcpStream;
+
 impl Client<TcpStream> {
 	/// Shuts down the sending half of the client connection, will cause all pending
 	/// and future IO to return immediately with an appropriate value.
@@ -76,6 +98,20 @@ impl Client<TcpStream> {
 	/// and future IO to return immediately with an appropriate value.
 	pub fn shutdown_receiver(&self) -> IoResult<()> {
 		self.stream.get_ref().as_tcp().shutdown(Shutdown::Read)
+	}
+
+	#[cfg(feature="async")]
+	pub fn async<'m>(self, handle: &Handle) -> io::Result<AsyncClient<'m, AsyncTcpStream>> {
+		let (stream, buf_data) = self.into_stream();
+
+		let stream = AsyncTcpStream::from_stream(stream, handle)?;
+
+		let buf_stream = match buf_data {
+			Some((buf, pos, cap)) => AsyncBufReader::from_parts(stream, buf, pos, cap),
+			None => AsyncBufReader::new(stream),
+		};
+
+		Ok(buf_stream.framed(<MessageCodec<Message>>::default(Context::Client)))
 	}
 }
 
