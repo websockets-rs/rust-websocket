@@ -30,9 +30,7 @@ fn main() {
 						let response = Message::text(from_utf8(&*message.payload).unwrap());
 						sender.send_message(&response).unwrap()
 					}
-					Type::Binary => {
-						sender.send_message(&Message::binary(message.payload)).unwrap()
-					}
+					Type::Binary => sender.send_message(&Message::binary(message.payload)).unwrap(),
 					Type::Close => {
 						let _ = sender.send_message(&Message::close());
 						return;

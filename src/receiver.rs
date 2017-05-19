@@ -49,7 +49,7 @@ impl<R> Reader<R>
 
 	/// An iterator over incoming messsages.
 	/// This iterator will block until new messages arrive and will never halt.
-	pub fn incoming_messages<'a, M, D>(&'a mut self,)
+	pub fn incoming_messages<'a, M, D>(&'a mut self)
 		-> MessageIterator<'a, Receiver, D, M, BufReader<R>>
 		where M: ws::Message<'a, D>,
 		      D: DataFrameable
@@ -110,7 +110,7 @@ impl ws::Receiver for Receiver {
 			let first = try!(self.recv_dataframe(reader));
 
 			if first.opcode == Opcode::Continuation {
-				return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode"));
+				return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode",),);
 			}
 
 			let finished = first.finished;

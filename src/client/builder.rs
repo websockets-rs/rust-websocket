@@ -520,9 +520,10 @@ impl<'u> ClientBuilder<'u> {
 			return Err(WebSocketError::ResponseError("Status code must be Switching Protocols"));
 		}
 
-		let key = try!(self.headers
-		                   .get::<WebSocketKey>()
-		                   .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid")));
+		let key =
+			try!(self.headers
+			         .get::<WebSocketKey>()
+			         .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid",),));
 
 		if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
 			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));

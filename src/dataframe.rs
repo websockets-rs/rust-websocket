@@ -53,21 +53,21 @@ impl DataFrame {
 		       opcode: Opcode::new(header.opcode).expect("Invalid header opcode!"),
 		       data: match header.mask {
 		           Some(mask) => {
-			if !should_be_masked {
+			           if !should_be_masked {
 				return Err(WebSocketError::DataFrameError("Expected unmasked data frame"));
 			}
-			let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
-			try!(reader.take(header.len).read_to_end(&mut data));
-			mask::mask_data(mask, &data)
-		}
+			           let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
+			           try!(reader.take(header.len).read_to_end(&mut data));
+			           mask::mask_data(mask, &data)
+			          }
 		           None => {
-			if should_be_masked {
-				return Err(WebSocketError::DataFrameError("Expected masked data frame"));
-			}
-			let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
-			try!(reader.take(header.len).read_to_end(&mut data));
-			data
-		}
+			           if should_be_masked {
+				           return Err(WebSocketError::DataFrameError("Expected masked data frame"));
+				          }
+			           let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
+			           try!(reader.take(header.len).read_to_end(&mut data));
+			           data
+			          }
 		       },
 		   })
 	}

@@ -341,7 +341,7 @@ impl<S> Client<S>
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a, M, D>(&'a mut self,)
+	pub fn incoming_messages<'a, M, D>(&'a mut self)
 		-> MessageIterator<'a, Receiver, D, M, BufReader<S>>
 		where M: ws::Message<'a, D>,
 		      D: DataFrameable
@@ -380,7 +380,7 @@ impl<S> Client<S>
 	///# }
 	///```
 	pub fn split
-		(self,)
+		(self)
 		 -> IoResult<(Reader<<S as Splittable>::Reader>, Writer<<S as Splittable>::Writer>)> {
 		let (stream, buf, pos, cap) = self.stream.into_parts();
 		let (read, write) = try!(stream.split());
