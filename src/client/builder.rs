@@ -2,9 +2,14 @@
 
 use std::borrow::Cow;
 use std::net::TcpStream;
+use std::marker::PhantomData;
 pub use url::{Url, ParseError};
 use url::Position;
 use hyper::version::HttpVersion;
+use hyper::http::h1::Incoming;
+use hyper::method::Method;
+use hyper::uri::RequestUri;
+use hyper::http::RawStatus;
 use hyper::status::StatusCode;
 use hyper::buffer::BufReader;
 use hyper::http::h1::parse_response;
@@ -19,8 +24,23 @@ use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
 use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
 #[cfg(feature="ssl")]
 use stream::NetworkStream;
-use stream::Stream;
+use stream::{self, Stream};
+use message::Message;
+
 use super::Client;
+
+#[cfg(feature="async")]
+use super::async;
+#[cfg(feature="async")]
+use tokio_io::{AsyncRead, AsyncWrite};
+#[cfg(feature="async")]
+use tokio_io::codec::Framed;
+#[cfg(feature="async")]
+use futures::{Future, Sink};
+#[cfg(feature="async")]
+use futures::Stream as FutureStream;
+#[cfg(feature="async")]
+pub use codec::{MessageCodec, Context};
 
 /// Build clients with a builder-style API
 /// This makes it easy to create and configure a websocket
@@ -441,6 +461,77 @@ impl<'u> ClientBuilder<'u> {
 		self.connect_on(ssl_stream)
 	}
 
+	fn build_request(&mut self) -> String {
+		// enter host if available (unix sockets don't have hosts)
+		if let Some(host) = self.url.host_str() {
+			self.headers
+			    .set(Host {
+			             hostname: host.to_string(),
+			             port: self.url.port(),
+			         });
+		}
+
+		self.headers
+		    .set(Connection(vec![
+                ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
+            ]));
+
+		self.headers
+		    .set(Upgrade(vec![
+			Protocol {
+				name: ProtocolName::WebSocket,
+				version: None,
+			},
+		]));
+
+		if !self.version_set {
+			self.headers.set(WebSocketVersion::WebSocket13);
+		}
+
+		if !self.key_set {
+			self.headers.set(WebSocketKey::new());
+		}
+
+		// send request
+		let resource = self.url[Position::BeforePath..Position::AfterQuery].to_owned();
+		format!("GET {} {}\r\n{}\r\n", resource, self.version, self.headers)
+	}
+
+	fn validate(&self, response: &Incoming<RawStatus>) -> WebSocketResult<()> {
+		let status = StatusCode::from_u16(response.subject.0);
+
+		if status != StatusCode::SwitchingProtocols {
+			return Err(WebSocketError::ResponseError("Status code must be Switching Protocols"));
+		}
+
+		let key = try!(self.headers
+		                   .get::<WebSocketKey>()
+		                   .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid")));
+
+		if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
+			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
+		}
+
+		if response.headers.get() !=
+		   Some(&(Upgrade(vec![
+			Protocol {
+				name: ProtocolName::WebSocket,
+				version: None,
+			},
+		]))) {
+			return Err(WebSocketError::ResponseError("Upgrade field must be WebSocket"));
+		}
+
+		if self.headers.get() !=
+		   Some(&(Connection(vec![
+                ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string())),
+            ]))) {
+			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'"));
+		}
+
+		Ok(())
+	}
+
 	// TODO: similar ability for server?
 	/// Connects to a websocket server on any stream you would like.
 	/// Possible streams:
@@ -474,78 +565,102 @@ impl<'u> ClientBuilder<'u> {
 	pub fn connect_on<S>(&mut self, mut stream: S) -> WebSocketResult<Client<S>>
 		where S: Stream
 	{
-		let resource = self.url[Position::BeforePath..Position::AfterQuery].to_owned();
-
-		// enter host if available (unix sockets don't have hosts)
-		if let Some(host) = self.url.host_str() {
-			self.headers
-			    .set(Host {
-			             hostname: host.to_string(),
-			             port: self.url.port(),
-			         });
-		}
-
-		self.headers
-		    .set(Connection(vec![
-            ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
-        ]));
-
-		self.headers
-		    .set(Upgrade(vec![
-			Protocol {
-				name: ProtocolName::WebSocket,
-				version: None,
-			},
-		]));
-
-		if !self.version_set {
-			self.headers.set(WebSocketVersion::WebSocket13);
-		}
-
-		if !self.key_set {
-			self.headers.set(WebSocketKey::new());
-		}
-
 		// send request
-		try!(write!(stream, "GET {} {}\r\n", resource, self.version));
-		try!(write!(stream, "{}\r\n", self.headers));
+		stream.write_all(self.build_request().as_bytes())?;
 
 		// wait for a response
 		let mut reader = BufReader::new(stream);
 		let response = try!(parse_response(&mut reader));
-		let status = StatusCode::from_u16(response.subject.0);
 
 		// validate
-		if status != StatusCode::SwitchingProtocols {
-			return Err(WebSocketError::ResponseError("Status code must be Switching Protocols"));
-		}
-
-		let key = try!(self.headers
-		                   .get::<WebSocketKey>()
-		                   .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid")));
-
-		if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
-			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
-		}
-
-		if response.headers.get() !=
-		   Some(&(Upgrade(vec![
-			Protocol {
-				name: ProtocolName::WebSocket,
-				version: None,
-			},
-		]))) {
-			return Err(WebSocketError::ResponseError("Upgrade field must be WebSocket"));
-		}
-
-		if self.headers.get() !=
-		   Some(&(Connection(vec![
-            ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string())),
-        ]))) {
-			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'"));
-		}
+		self.validate(&response);
 
 		Ok(Client::unchecked(reader, response.headers, true, false))
+	}
+
+	#[cfg(feature="async")]
+	pub fn async_connect_on<'m, S>
+		(
+		&mut self,
+		stream: S,
+	) -> Box<Future<Item = (Framed<S, MessageCodec<'m, Message>>, Headers), Error = WebSocketError>>
+		where S: stream::AsyncStream + Send
+	{
+		let close_early = "Connection closed before handshake could complete.";
+		let request = self.build_request();
+		let framed = stream.framed(async_builder::WsHandshakeCodec);
+
+		Box::new(framed
+		      // send request
+          .send(request).map_err(::std::convert::Into::into)
+
+          // wait for a response
+		      .and_then(|stream| stream.into_future().map_err(|e| e.0))
+
+          // validate
+		      .and_then(|(message, stream)| {
+              message
+                  .ok_or(WebSocketError::ProtocolError(close_early))
+                  .and_then(|message| self.validate(&message).map(|_| (message, stream)))
+          })
+
+          // output the final client and metadata
+          .map(|(message, stream)| {
+              let codec = <MessageCodec<Message>>::default(Context::Client);
+              let client = stream.into_inner().framed(codec);
+              (client, message.headers)
+          }));
+      unimplemented!();
+	}
+}
+
+#[cfg(feature="async")]
+mod async_builder {
+	use super::*;
+	use hyper;
+	use std::io::{self, Write};
+	use tokio_io::codec::{Decoder, Encoder};
+	use bytes::BytesMut;
+	use bytes::BufMut;
+
+	pub struct WsHandshakeCodec;
+
+	impl Encoder for WsHandshakeCodec {
+		type Item = String;
+		type Error = io::Error;
+
+		fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
+			let byte_len = item.as_bytes().len();
+			if byte_len > dst.remaining_mut() {
+				dst.reserve(byte_len);
+			}
+			dst.writer().write(item.as_bytes()).map(|_| ())
+		}
+	}
+
+	impl Decoder for WsHandshakeCodec {
+		type Item = Incoming<RawStatus>;
+		type Error = WebSocketError;
+
+		fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+			// check if we get a request from hyper
+			// TODO: this is ineffecient, but hyper does not give us a better way to parse
+			let (response, bytes_read) = {
+				let mut reader = BufReader::new(&*src as &[u8]);
+				let res = match parse_response(&mut reader) {
+					Ok(r) => r,
+					Err(hyper::Error::Io(ref err)) if err.kind() ==
+					                                  io::ErrorKind::UnexpectedEof => return Ok(None),
+					Err(e) => return Err(e.into()),
+				};
+				let (_, _, pos, _) = reader.into_parts();
+				(res, pos)
+			};
+
+			// TODO: check if data get's lost this way
+			src.split_to(bytes_read);
+			Ok(Some(response))
+		}
 	}
 }
 
