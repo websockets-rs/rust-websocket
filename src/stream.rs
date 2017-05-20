@@ -58,25 +58,12 @@ impl<R, W> Splittable for ReadWritePair<R, W>
 	}
 }
 
-#[cfg(not(feature="async"))]
 impl Splittable for TcpStream {
 	type Reader = TcpStream;
 	type Writer = TcpStream;
 
 	fn split(self) -> io::Result<(TcpStream, TcpStream)> {
 		self.try_clone().map(|s| (s, self))
-	}
-}
-
-#[cfg(feature="async")]
-impl<S> Splittable for S
-    where S: AsyncStream
-{
-	type Reader = ReadHalf<S>;
-	type Writer = WriteHalf<S>;
-
-	fn split(self) -> io::Result<(Self::Reader, Self::Writer)> {
-		Ok(self.split())
 	}
 }
 
