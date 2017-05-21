@@ -1,6 +1,6 @@
 //! Module containing the default implementation of data frames.
-use std::io::Read;
-use std::borrow::Cow;
+use std::str::from_utf8;
+use std::io::{Read, Write};
 use result::{WebSocketResult, WebSocketError};
 use ws::dataframe::DataFrame as DataFrameable;
 use ws::util::header::DataFrameHeader;
@@ -108,8 +108,19 @@ impl DataFrameable for DataFrame {
 	}
 
 	#[inline(always)]
-	fn payload(&self) -> Cow<[u8]> {
-		Cow::Borrowed(&self.data)
+	fn size(&self) -> usize {
+		self.data.len()
+	}
+
+	#[inline(always)]
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
+		socket.write_all(self.data.as_slice())?;
+		Ok(())
+	}
+
+	#[inline(always)]
+	fn take_payload(self) -> Vec<u8> {
+		self.data
 	}
 }
 

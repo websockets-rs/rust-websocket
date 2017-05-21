@@ -3,7 +3,6 @@
 //! optomize the memory footprint of a dataframe for their
 //! own needs, and be able to use custom dataframes quickly
 use std::io::Write;
-use std::borrow::Cow;
 use result::WebSocketResult;
 use ws::util::header as dfh;
 use ws::util::mask::Masker;
@@ -18,16 +17,10 @@ pub trait DataFrame {
 	/// What type of data does this dataframe contain?
 	fn opcode(&self) -> u8;
 	/// Reserved bits of this dataframe
-	fn reserved(&self) -> &[bool; 3];
-	/// Entire payload of the dataframe. If not known then implement
-	/// write_payload as that is the actual method used when sending the
-	/// dataframe over the wire.
-	fn payload(&self) -> Cow<[u8]>;
+	fn reserved<'a>(&'a self) -> &'a [bool; 3];
 
 	/// How long (in bytes) is this dataframe's payload
-	fn size(&self) -> usize {
-		self.payload().len()
-	}
+	fn size(&self) -> usize;
 
 	/// Get's the size of the entire dataframe in bytes,
 	/// i.e. header and payload.
@@ -51,12 +44,11 @@ pub trait DataFrame {
 	}
 
 	/// Write the payload to a writer
-	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
-		try!(socket.write_all(&*self.payload()));
-		Ok(())
-	}
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()>;
 
-	// TODO: the error can probably be changed to an io error
+	/// Takes the payload out into a vec
+	fn take_payload(self) -> Vec<u8>;
+
 	/// Writes a DataFrame to a Writer.
 	fn write_to(&self, writer: &mut Write, mask: bool) -> WebSocketResult<()> {
 		let mut flags = dfh::DataFrameFlags::empty();
@@ -96,44 +88,5 @@ pub trait DataFrame {
 		};
 		try!(writer.flush());
 		Ok(())
-	}
-}
-
-impl<'a, D> DataFrame for &'a D
-    where D: DataFrame
-{
-	#[inline(always)]
-	fn is_last(&self) -> bool {
-		D::is_last(self)
-	}
-
-	#[inline(always)]
-	fn opcode(&self) -> u8 {
-		D::opcode(self)
-	}
-
-	#[inline(always)]
-	fn reserved(&self) -> &[bool; 3] {
-		D::reserved(self)
-	}
-
-	#[inline(always)]
-	fn payload(&self) -> Cow<[u8]> {
-		D::payload(self)
-	}
-
-	#[inline(always)]
-	fn size(&self) -> usize {
-		D::size(self)
-	}
-
-	#[inline(always)]
-	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
-		D::write_payload(self, socket)
-	}
-
-	#[inline(always)]
-	fn write_to(&self, writer: &mut Write, mask: bool) -> WebSocketResult<()> {
-		D::write_to(self, writer, mask)
 	}
 }
