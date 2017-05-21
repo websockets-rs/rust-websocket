@@ -7,7 +7,7 @@ use futures::Poll;
 #[cfg(feature="async")]
 use tokio_io::{AsyncWrite, AsyncRead};
 #[cfg(feature="async")]
-use bytes::{Buf, BufMut};
+use bytes::Buf;
 
 pub struct BufReader<R> {
 	inner: R,
