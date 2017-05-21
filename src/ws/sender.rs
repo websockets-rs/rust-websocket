@@ -9,20 +9,23 @@ use result::WebSocketResult;
 
 /// A trait for sending data frames and messages.
 pub trait Sender {
+	fn is_masked(&self) -> bool;
+
 	/// Sends a single data frame using this sender.
 	fn send_dataframe<D, W>(&mut self, writer: &mut W, dataframe: &D) -> WebSocketResult<()>
 		where D: DataFrame,
-		      W: Write;
-
-	/// Sends a single message using this sender.
-	fn send_message<'m, M, D, W>(&mut self, writer: &mut W, message: &'m M) -> WebSocketResult<()>
-		where M: Message<'m, D>,
-		      D: DataFrame,
 		      W: Write
 	{
-		for ref dataframe in message.dataframes() {
-			try!(self.send_dataframe(writer, dataframe));
-		}
+		dataframe.write_to(writer, self.is_masked())?;
+		Ok(())
+	}
+
+	/// Sends a single message using this sender.
+	fn send_message<'m, M, W>(&mut self, writer: &mut W, message: &'m M) -> WebSocketResult<()>
+		where M: Message,
+		      W: Write
+	{
+		message.serialize(writer, self.is_masked())?;
 		Ok(())
 	}
 }

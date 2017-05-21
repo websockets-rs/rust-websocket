@@ -32,9 +32,8 @@ impl<W> Writer<W>
 	}
 
 	/// Sends a single message to the remote endpoint.
-	pub fn send_message<'m, M, D>(&mut self, message: &'m M) -> WebSocketResult<()>
-		where M: ws::Message<'m, D>,
-		      D: DataFrame
+	pub fn send_message<'m, M>(&mut self, message: &'m M) -> WebSocketResult<()>
+		where M: ws::Message
 	{
 		self.sender.send_message(&mut self.stream, message)
 	}
@@ -70,11 +69,7 @@ impl Sender {
 }
 
 impl ws::Sender for Sender {
-	/// Sends a single data frame to the remote endpoint.
-	fn send_dataframe<D, W>(&mut self, writer: &mut W, dataframe: &D) -> WebSocketResult<()>
-		where D: DataFrame,
-		      W: Write
-	{
-		dataframe.write_to(writer, self.mask)
+	fn is_masked(&self) -> bool {
+		self.mask
 	}
 }
