@@ -2,7 +2,6 @@ use std::borrow::Borrow;
 use std::marker::PhantomData;
 use std::io::Cursor;
 use std::mem;
-use std::io;
 
 use tokio_io::codec::Decoder;
 use tokio_io::codec::Encoder;
@@ -10,7 +9,7 @@ use bytes::BytesMut;
 use bytes::BufMut;
 
 use dataframe::DataFrame;
-use message::Message;
+use message::OwnedMessage;
 use ws::dataframe::DataFrame as DataFrameTrait;
 use ws::message::Message as MessageTrait;
 use ws::util::header::read_header;
@@ -78,7 +77,6 @@ impl<D> Decoder for DataFrameCodec<D> {
 	}
 }
 
-// TODO: try to allow encoding of many kinds of dataframes
 impl<D> Encoder for DataFrameCodec<D>
     where D: Borrow<DataFrameTrait>
 {
@@ -99,20 +97,18 @@ impl<D> Encoder for DataFrameCodec<D>
  * Messages *
  ************/
 
-pub struct MessageCodec<'m, M>
-	where M: 'm
+pub struct MessageCodec<M>
+    where M: MessageTrait
 {
 	buffer: Vec<DataFrame>,
 	dataframe_codec: DataFrameCodec<DataFrame>,
-	message_type: PhantomData<fn(&'m M)>,
+	message_type: PhantomData<fn(M)>,
 }
 
-impl<'m, M> MessageCodec<'m, M> {
-	pub fn default(context: Context) -> MessageCodec<'m, Message<'m>> {
-		MessageCodec::new(context)
-	}
-
-	pub fn new(context: Context) -> MessageCodec<'m, M> {
+impl<M> MessageCodec<M>
+    where M: MessageTrait
+{
+	pub fn new(context: Context) -> MessageCodec<M> {
 		MessageCodec {
 			buffer: Vec::new(),
 			dataframe_codec: DataFrameCodec::new(context),
@@ -121,10 +117,10 @@ impl<'m, M> MessageCodec<'m, M> {
 	}
 }
 
-impl<'m, M> Decoder for MessageCodec<'m, M>
-    where M: 'm
+impl<M> Decoder for MessageCodec<M>
+    where M: MessageTrait
 {
-	type Item = Message<'m>;
+	type Item = OwnedMessage;
 	type Error = WebSocketError;
 
 	fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
@@ -139,7 +135,7 @@ impl<'m, M> Decoder for MessageCodec<'m, M>
 				}
 				// control frame
 				8...15 => {
-					return Ok(Some(Message::from_dataframes(vec![frame])?));
+					  return Ok(Some(OwnedMessage::from_dataframes(vec![frame])?));
 				}
 				// data frame
 				1...7 if !is_first => {
@@ -153,7 +149,7 @@ impl<'m, M> Decoder for MessageCodec<'m, M>
 
 			if finished {
 				let buffer = mem::replace(&mut self.buffer, Vec::new());
-				return Ok(Some(Message::from_dataframes(buffer)?));
+				  return Ok(Some(OwnedMessage::from_dataframes(buffer)?));
 			}
 		}
 
@@ -161,19 +157,19 @@ impl<'m, M> Decoder for MessageCodec<'m, M>
 	}
 }
 
-impl<'m, M> Encoder for MessageCodec<'m, M>
-    where M: Borrow<Message<'m>>
+impl<M> Encoder for MessageCodec<M>
+    where M: MessageTrait,
 {
 	type Item = M;
 	type Error = WebSocketError;
 
 	fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
 		let masked = !self.dataframe_codec.is_server;
-		let frame_size = item.borrow().frame_size(masked);
+		let frame_size = item.message_size(masked);
 		if frame_size > dst.remaining_mut() {
 			dst.reserve(frame_size);
 		}
-		item.borrow().write_to(&mut dst.writer(), masked)
+		item.serialize(&mut dst.writer(), masked)
 	}
 }
 
