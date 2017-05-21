@@ -1,7 +1,6 @@
 //! Contains the WebSocket client.
 extern crate url;
 
-use std::io;
 use std::net::TcpStream;
 use std::net::SocketAddr;
 use std::io::Result as IoResult;
@@ -13,6 +12,7 @@ use ws;
 use ws::sender::Sender as SenderTrait;
 use ws::receiver::{DataFrameIterator, MessageIterator};
 use ws::receiver::Receiver as ReceiverTrait;
+use message::OwnedMessage;
 use result::WebSocketResult;
 use stream::{AsTcpStream, Stream, Splittable, Shutdown};
 use dataframe::DataFrame;
@@ -33,13 +33,10 @@ pub mod async {
 	pub use tokio_core::reactor::Handle;
 	pub use tokio_io::codec::Framed;
 	pub use tokio_core::net::TcpStream;
-	use tokio_io::AsyncRead;
 	use codec::MessageCodec;
-	use codec::Context;
-	use message::Message;
-	use buffer::BufReader as AsyncBufReader;
+	use message::OwnedMessage;
 
-	pub type Client<'m, S> = Framed<AsyncBufReader<S>, MessageCodec<'m, Message<'m>>>;
+	pub type Client<S> = Framed<S, MessageCodec<OwnedMessage>>;
 
 }
 
@@ -93,21 +90,6 @@ impl Client<TcpStream> {
 	pub fn shutdown_receiver(&self) -> IoResult<()> {
 		self.stream.get_ref().as_tcp().shutdown(Shutdown::Read)
 	}
-
-	// TODO
-	// #[cfg(feature="async")]
-	// pub fn async<'m>(self, handle: &Handle) -> io::Result<AsyncClient<'m, AsyncTcpStream>> {
-	// 	let (stream, buf_data) = self.into_stream();
-
-	// 	let stream = AsyncTcpStream::from_stream(stream, handle)?;
-
-	// 	let buf_stream = match buf_data {
-	// 		Some((buf, pos, cap)) => AsyncBufReader::from_parts(stream, buf, pos, cap),
-	// 		None => AsyncBufReader::new(stream),
-	// 	};
-
-	// 	Ok(buf_stream.framed(<MessageCodec<Message>>::default(Context::Client)))
-	// }
 }
 
 impl<S> Client<S>
@@ -173,9 +155,8 @@ impl<S> Client<S>
 	}
 
 	/// Sends a single message to the remote endpoint.
-	pub fn send_message<'m, M, D>(&mut self, message: &'m M) -> WebSocketResult<()>
-		where M: ws::Message<'m, D>,
-		      D: DataFrameable
+	pub fn send_message<'m, M>(&mut self, message: &'m M) -> WebSocketResult<()>
+		where M: ws::Message
 	{
 		self.sender.send_message(self.stream.get_mut(), message)
 	}
@@ -203,10 +184,8 @@ impl<S> Client<S>
 	///
 	/// let message: Message = client.recv_message().unwrap();
 	/// ```
-	pub fn recv_message<'m, M, I, D>(&mut self) -> WebSocketResult<M>
-		where M: ws::Message<'m, D, DataFrameIterator = I>,
-		      I: Iterator<Item = D>,
-		      D: DataFrameable
+	pub fn recv_message<'m, I>(&mut self) -> WebSocketResult<OwnedMessage>
+		where I: Iterator<Item = DataFrame>
 	{
 		self.receiver.recv_message(&mut self.stream)
 	}
@@ -370,11 +349,7 @@ impl<S> Client<S>
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a, M, D>(&'a mut self,)
-		-> MessageIterator<'a, Receiver, D, M, BufReader<S>>
-		where M: ws::Message<'a, D>,
-		      D: DataFrameable
-	{
+	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, BufReader<S>> {
 		self.receiver.incoming_messages(&mut self.stream)
 	}
 }

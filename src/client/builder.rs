@@ -2,13 +2,11 @@
 
 use std::borrow::Cow;
 use std::net::TcpStream;
-use std::marker::PhantomData;
+use std::net::ToSocketAddrs;
 pub use url::{Url, ParseError};
 use url::Position;
 use hyper::version::HttpVersion;
 use hyper::http::h1::Incoming;
-use hyper::method::Method;
-use hyper::uri::RequestUri;
 use hyper::http::RawStatus;
 use hyper::status::StatusCode;
 use hyper::buffer::BufReader;
@@ -25,22 +23,27 @@ use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
 #[cfg(feature="ssl")]
 use stream::NetworkStream;
 use stream::{self, Stream};
-use message::Message;
+use message::OwnedMessage;
 
 use super::Client;
 
 #[cfg(feature="async")]
 use super::async;
 #[cfg(feature="async")]
-use tokio_io::{AsyncRead, AsyncWrite};
+use tokio_core::net::TcpStream as AsyncTcpStream;
 #[cfg(feature="async")]
-use tokio_io::codec::Framed;
+use tokio_core::reactor::Handle;
 #[cfg(feature="async")]
 use futures::{Future, Sink};
+#[cfg(feature="async")]
+use futures::future;
 #[cfg(feature="async")]
 use futures::Stream as FutureStream;
 #[cfg(feature="async")]
 pub use codec::{MessageCodec, Context};
+
+pub type AsyncClientNew<S> = Box<Future<Item = (async::Client<S>, Headers),
+                                        Error = WebSocketError>>;
 
 /// Build clients with a builder-style API
 /// This makes it easy to create and configure a websocket
@@ -353,7 +356,7 @@ impl<'u> ClientBuilder<'u> {
 		self.headers.get::<H>()
 	}
 
-	fn establish_tcp(&mut self, secure: Option<bool>) -> WebSocketResult<TcpStream> {
+	fn extract_host_port(&self, secure: Option<bool>) -> WebSocketResult<(&str, u16)> {
 		let port = match (self.url.port(), secure) {
 			(Some(port), _) => port,
 			(None, None) if self.url.scheme() == "wss" => 443,
@@ -366,7 +369,11 @@ impl<'u> ClientBuilder<'u> {
 			None => return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName)),
 		};
 
-		let tcp_stream = try!(TcpStream::connect((host, port)));
+		Ok((host, port))
+	}
+
+	fn establish_tcp(&mut self, secure: Option<bool>) -> WebSocketResult<TcpStream> {
+		let tcp_stream = TcpStream::connect(self.extract_host_port(secure)?)?;
 		Ok(tcp_stream)
 	}
 
@@ -573,24 +580,59 @@ impl<'u> ClientBuilder<'u> {
 		let response = try!(parse_response(&mut reader));
 
 		// validate
-		self.validate(&response);
+		self.validate(&response)?;
 
 		Ok(Client::unchecked(reader, response.headers, true, false))
 	}
 
 	#[cfg(feature="async")]
-	pub fn async_connect_on<'m, S>
-		(
-		&mut self,
-		stream: S,
-	) -> Box<Future<Item = (Framed<S, MessageCodec<'m, Message>>, Headers), Error = WebSocketError>>
-		where S: stream::AsyncStream + Send
+	pub fn async_connect_insecure(self, handle: &Handle) -> AsyncClientNew<AsyncTcpStream> {
+		// get the address to connect to, return an error future if ther's a problem
+		let address = match self.extract_host_port(None).and_then(|p| Ok(p.to_socket_addrs()?)) {
+			Ok(mut s) => {
+				match s.next() {
+					Some(a) => a,
+					None => {
+						let err = WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName);
+						return future::err(err).boxed();
+					}
+				}
+			}
+			Err(e) => return future::err(e).boxed(),
+		};
+
+		// connect a tcp stream
+		let tcp_stream = async::TcpStream::connect(&address, handle);
+
+		let builder = ClientBuilder {
+			url: Cow::Owned(self.url.into_owned()),
+			version: self.version,
+			headers: self.headers,
+			version_set: self.version_set,
+			key_set: self.key_set,
+		};
+
+		Box::new(tcp_stream.map_err(|e| e.into())
+		                   .and_then(move |stream| {
+			                             builder.async_connect_on(stream)
+			                            }))
+	}
+
+	#[cfg(feature="async")]
+	pub fn async_connect_on<S>(self, stream: S) -> AsyncClientNew<S>
+		where S: stream::AsyncStream + Send + 'static
 	{
-		let close_early = "Connection closed before handshake could complete.";
-		let request = self.build_request();
+		let mut builder = ClientBuilder {
+			url: Cow::Owned(self.url.into_owned()),
+			version: self.version,
+			headers: self.headers,
+			version_set: self.version_set,
+			key_set: self.key_set,
+		};
+		let request = builder.build_request();
 		let framed = stream.framed(async_builder::WsHandshakeCodec);
 
-		Box::new(framed
+		let future = framed
 		      // send request
           .send(request).map_err(::std::convert::Into::into)
 
@@ -598,19 +640,21 @@ impl<'u> ClientBuilder<'u> {
 		      .and_then(|stream| stream.into_future().map_err(|e| e.0))
 
           // validate
-		      .and_then(|(message, stream)| {
+		      .and_then(move |(message, stream)| {
               message
-                  .ok_or(WebSocketError::ProtocolError(close_early))
-                  .and_then(|message| self.validate(&message).map(|_| (message, stream)))
+                  .ok_or(WebSocketError::ProtocolError(
+                      "Connection closed before handshake could complete."))
+                  .and_then(|message| builder.validate(&message).map(|_| (message, stream)))
           })
 
           // output the final client and metadata
           .map(|(message, stream)| {
-              let codec = <MessageCodec<Message>>::default(Context::Client);
+              let codec = <MessageCodec<OwnedMessage>>::new(Context::Client);
               let client = stream.into_inner().framed(codec);
               (client, message.headers)
-          }));
-      unimplemented!();
+          });
+
+		Box::new(future)
 	}
 }
 
