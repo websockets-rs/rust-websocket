@@ -17,7 +17,7 @@ pub trait DataFrame {
 	/// What type of data does this dataframe contain?
 	fn opcode(&self) -> u8;
 	/// Reserved bits of this dataframe
-	fn reserved<'a>(&'a self) -> &'a [bool; 3];
+	fn reserved(&self) -> &[bool; 3];
 
 	/// How long (in bytes) is this dataframe's payload
 	fn size(&self) -> usize;

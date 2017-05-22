@@ -321,7 +321,7 @@ impl ws::dataframe::DataFrame for OwnedMessage {
 	}
 
 	#[inline(always)]
-	fn reserved<'b>(&'b self) -> &'b [bool; 3] {
+	fn reserved(&self) -> &[bool; 3] {
 		FALSE_RESERVED_BITS
 	}
 

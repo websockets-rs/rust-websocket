@@ -159,7 +159,7 @@ impl<S> Client<S>
 	}
 
 	/// Sends a single message to the remote endpoint.
-	pub fn send_message<'m, M>(&mut self, message: &'m M) -> WebSocketResult<()>
+	pub fn send_message<M>(&mut self, message: &M) -> WebSocketResult<()>
 		where M: ws::Message
 	{
 		self.sender.send_message(self.stream.get_mut(), message)
@@ -188,7 +188,7 @@ impl<S> Client<S>
 	///
 	/// let message: Message = client.recv_message().unwrap();
 	/// ```
-	pub fn recv_message<'m, I>(&mut self) -> WebSocketResult<OwnedMessage>
+	pub fn recv_message<I>(&mut self) -> WebSocketResult<OwnedMessage>
 		where I: Iterator<Item = DataFrame>
 	{
 		self.receiver.recv_message(&mut self.stream)

@@ -15,7 +15,7 @@ impl<S> WsUpgrade<S>
 	}
 
 	pub fn async_accept_with(
-		mut self,
+		self,
 		custom_headers: &Headers,
 	) -> Result<ClientNew<S>, (S, io::Error)> {
 		unimplemented!();
@@ -25,7 +25,7 @@ impl<S> WsUpgrade<S>
 		unimplemented!();
 	}
 
-	pub fn async_reject_with(mut self, headers: &Headers) -> Result<S, (S, io::Error)> {
+	pub fn async_reject_with(self, headers: &Headers) -> Result<S, (S, io::Error)> {
 		unimplemented!();
 	}
 }

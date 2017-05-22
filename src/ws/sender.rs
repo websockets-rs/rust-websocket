@@ -21,7 +21,7 @@ pub trait Sender {
 	}
 
 	/// Sends a single message using this sender.
-	fn send_message<'m, M, W>(&mut self, writer: &mut W, message: &'m M) -> WebSocketResult<()>
+	fn send_message<M, W>(&mut self, writer: &mut W, message: &M) -> WebSocketResult<()>
 		where M: Message,
 		      W: Write
 	{

@@ -32,7 +32,7 @@ impl<W> Writer<W>
 	}
 
 	/// Sends a single message to the remote endpoint.
-	pub fn send_message<'m, M>(&mut self, message: &'m M) -> WebSocketResult<()>
+	pub fn send_message<M>(&mut self, message: &M) -> WebSocketResult<()>
 		where M: ws::Message
 	{
 		self.sender.send_message(&mut self.stream, message)

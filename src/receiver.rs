@@ -39,7 +39,7 @@ impl<R> Reader<R>
 	}
 
 	/// Reads a single message from this receiver.
-	pub fn recv_message<'m, I>(&mut self) -> WebSocketResult<OwnedMessage>
+	pub fn recv_message<I>(&mut self) -> WebSocketResult<OwnedMessage>
 		where I: Iterator<Item = DataFrame>
 	{
 		self.receiver.recv_message(&mut self.stream)

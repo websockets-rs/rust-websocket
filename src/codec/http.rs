@@ -13,7 +13,6 @@ use hyper::buffer::BufReader;
 use tokio_io::codec::{Decoder, Encoder};
 use bytes::BytesMut;
 use bytes::BufMut;
-use result::WebSocketError;
 
 #[derive(Copy, Clone, Debug)]
 pub struct HttpClientCodec;
