@@ -27,6 +27,7 @@ sha1 = "^0.2"
 futures = { version = "^0.1", optional = true }
 tokio-core = { version = "0.1.7", optional = true }
 tokio-io = { version = "0.1.1", optional = true }
+tokio-tls = { version = "^0.1", optional = true }
 bytes = { version = "^0.4", optional = true }
 native-tls = { version = "^0.1.2", optional = true }
 base64 = "^0.5"
@@ -39,7 +40,8 @@ git = "https://github.com/illegalprime/tokio-io.git"
 rev = "18be60c56b0e932265a9e0301d14d5084577ca33"
 
 [features]
-default = ["ssl", "async"]
+default = ["ssl", "async", "async-ssl"]
 ssl = ["native-tls"]
 nightly = ["hyper/nightly"]
 async = ["tokio-core", "tokio-io", "bytes", "futures"]
+async-ssl = ["native-tls", "tokio-tls", "async"]

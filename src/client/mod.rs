@@ -36,6 +36,8 @@ pub mod async {
 	pub use tokio_core::net::TcpStream;
 	pub use futures::Future;
 	use codec::ws::MessageCodec;
+	#[cfg(feature="async-ssl")]
+	pub use tokio_tls::TlsStream;
 
 	pub type Client<S> = Framed<S, MessageCodec<OwnedMessage>>;
 

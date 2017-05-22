@@ -43,7 +43,7 @@ extern crate rand;
 extern crate byteorder;
 extern crate sha1;
 extern crate base64;
-#[cfg(feature="ssl")]
+#[cfg(any(feature="ssl", feature="async-ssl"))]
 extern crate native_tls;
 #[cfg(feature="async")]
 extern crate tokio_core;
@@ -53,6 +53,8 @@ extern crate tokio_io;
 extern crate bytes;
 #[cfg(feature="async")]
 extern crate futures;
+#[cfg(feature="async-ssl")]
+extern crate tokio_tls;
 
 #[macro_use]
 extern crate bitflags;

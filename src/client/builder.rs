@@ -16,7 +16,7 @@ use hyper::http::h1::parse_response;
 use hyper::header::{Headers, Header, HeaderFormat, Host, Connection, ConnectionOption, Upgrade,
                     Protocol, ProtocolName};
 use unicase::UniCase;
-#[cfg(feature="ssl")]
+#[cfg(any(feature="ssl", feature="async-ssl"))]
 use native_tls::{TlsStream, TlsConnector};
 use header::extensions::Extension;
 use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
@@ -31,13 +31,16 @@ use super::Client;
 #[cfg(feature="async")]
 mod async_imports {
 	pub use super::super::async;
-	pub use tokio_core::net::TcpStream as AsyncTcpStream;
+	pub use tokio_core::net::TcpStreamNew;
 	pub use tokio_core::reactor::Handle;
 	pub use futures::{Future, Sink};
 	pub use futures::future;
 	pub use futures::Stream as FutureStream;
 	pub use codec::ws::{MessageCodec, Context};
+	#[cfg(feature="async-ssl")]
+	pub use tokio_tls::TlsConnectorExt;
 }
+#[cfg(feature="async")]
 use self::async_imports::*;
 
 
@@ -472,27 +475,25 @@ impl<'u> ClientBuilder<'u> {
 		Ok(Client::unchecked(reader, response.headers, true, false))
 	}
 
-	// TODO: add timeout option for connecting
-	// TODO: add conveniences like .response_to_pings, .send_close, etc.
-	#[cfg(feature="async")]
-	pub fn async_connect_insecure(self, handle: &Handle) -> async::ClientNew<AsyncTcpStream> {
-		// get the address to connect to, return an error future if ther's a problem
-		let address =
-			match self.extract_host_port(Some(false)).and_then(|p| Ok(p.to_socket_addrs()?)) {
-				Ok(mut s) => {
-					match s.next() {
-						Some(a) => a,
-						None => {
-							let err = WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName);
-							return future::err(err).boxed();
-						}
-					}
-				}
-				Err(e) => return future::err(e).boxed(),
-			};
+	#[cfg(feature="async-ssl")]
+	pub fn async_connect_secure(
+		self,
+		ssl_config: Option<TlsConnector>,
+		handle: &Handle,
+	) -> async::ClientNew<async::TlsStream<async::TcpStream>> {
+		// connect to the tcp stream
+		let tcp_stream = match self.async_tcpstream(handle) {
+			Ok(t) => t,
+			Err(e) => return future::err(e).boxed(),
+		};
 
-		// connect a tcp stream
-		let tcp_stream = async::TcpStream::connect(&address, handle);
+		// configure the tls connection
+		let (host, connector) = {
+			match self.extract_host_ssl_conn(ssl_config) {
+				Ok((h, conn)) => (h.to_string(), conn),
+				Err(e) => return future::err(e).boxed(),
+			}
+		};
 
 		let builder = ClientBuilder {
 			url: Cow::Owned(self.url.into_owned()),
@@ -502,10 +503,40 @@ impl<'u> ClientBuilder<'u> {
 			key_set: self.key_set,
 		};
 
-		Box::new(tcp_stream.map_err(|e| e.into())
-		                   .and_then(move |stream| {
-			                             builder.async_connect_on(stream)
-			                            }))
+		// put it all together
+		let future =
+			tcp_stream.map_err(|e| e.into())
+			          .and_then(move |s| {
+				                    connector.connect_async(&host, s).map_err(|e| e.into())
+				                   })
+			          .and_then(move |stream| {
+				                    builder.async_connect_on(stream)
+				                   });
+		Box::new(future)
+	}
+
+	// TODO: add timeout option for connecting
+	// TODO: add conveniences like .response_to_pings, .send_close, etc.
+	#[cfg(feature="async")]
+	pub fn async_connect_insecure(self, handle: &Handle) -> async::ClientNew<async::TcpStream> {
+		let tcp_stream = match self.async_tcpstream(handle) {
+			Ok(t) => t,
+			Err(e) => return future::err(e).boxed(),
+		};
+
+		let builder = ClientBuilder {
+			url: Cow::Owned(self.url.into_owned()),
+			version: self.version,
+			headers: self.headers,
+			version_set: self.version_set,
+			key_set: self.key_set,
+		};
+
+		let future = tcp_stream.map_err(|e| e.into())
+		                       .and_then(move |stream| {
+			                                 builder.async_connect_on(stream)
+			                                });
+		Box::new(future)
 	}
 
 	#[cfg(feature="async")]
@@ -551,6 +582,26 @@ impl<'u> ClientBuilder<'u> {
           });
 
 		Box::new(future)
+	}
+
+	#[cfg(feature="async")]
+	fn async_tcpstream(&self, handle: &Handle) -> WebSocketResult<TcpStreamNew> {
+		// get the address to connect to, return an error future if ther's a problem
+		let address =
+			match self.extract_host_port(Some(false)).and_then(|p| Ok(p.to_socket_addrs()?)) {
+				Ok(mut s) => {
+					match s.next() {
+						Some(a) => a,
+						None => {
+							return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName));
+						}
+					}
+				}
+				Err(e) => return Err(e.into()),
+			};
+
+		// connect a tcp stream
+		Ok(async::TcpStream::connect(&address, handle))
 	}
 
 	fn build_request(&mut self) -> String {
@@ -644,12 +695,11 @@ impl<'u> ClientBuilder<'u> {
 		Ok(TcpStream::connect(self.extract_host_port(secure)?)?)
 	}
 
-	#[cfg(feature="ssl")]
-	fn wrap_ssl(
+	#[cfg(any(feature="ssl", feature="async-ssl"))]
+	fn extract_host_ssl_conn(
 		&self,
-		tcp_stream: TcpStream,
 		connector: Option<TlsConnector>,
-	) -> WebSocketResult<TlsStream<TcpStream>> {
+	) -> WebSocketResult<(&str, TlsConnector)> {
 		let host = match self.url.host_str() {
 			Some(h) => h,
 			None => return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName)),
@@ -658,7 +708,16 @@ impl<'u> ClientBuilder<'u> {
 			Some(c) => c,
 			None => TlsConnector::builder()?.build()?,
 		};
+		Ok((host, connector))
+	}
 
+	#[cfg(feature="ssl")]
+	fn wrap_ssl(
+		&self,
+		tcp_stream: TcpStream,
+		connector: Option<TlsConnector>,
+	) -> WebSocketResult<TlsStream<TcpStream>> {
+		let (host, connector) = self.extract_host_ssl_conn(connector)?;
 		let ssl_stream = try!(connector.connect(host, tcp_stream));
 		Ok(ssl_stream)
 	}
