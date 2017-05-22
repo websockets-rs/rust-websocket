@@ -9,9 +9,9 @@ use hyper::Error as HttpError;
 use url::ParseError;
 
 #[cfg(feature="ssl")]
-use openssl::error::ErrorStack as SslError;
+use native_tls::Error as TlsError;
 #[cfg(feature="ssl")]
-use openssl::ssl::HandshakeError as SslHandshakeError;
+use native_tls::HandshakeError as TlsHandshakeError;
 
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
@@ -39,13 +39,13 @@ pub enum WebSocketError {
 	WebSocketUrlError(WSUrlErrorKind),
 	/// An SSL error
 	#[cfg(feature="ssl")]
-	SslError(SslError),
+	TlsError(TlsError),
 	/// an ssl handshake failure
 	#[cfg(feature="ssl")]
-	SslHandshakeFailure,
+	TlsHandshakeFailure,
 	/// an ssl handshake interruption
 	#[cfg(feature="ssl")]
-	SslHandshakeInterruption,
+	TlsHandshakeInterruption,
 	/// A UTF-8 error
 	Utf8Error(Utf8Error),
 }
@@ -70,11 +70,11 @@ impl Error for WebSocketError {
 			WebSocketError::HttpError(_) => "HTTP failure",
 			WebSocketError::UrlError(_) => "URL failure",
 			#[cfg(feature="ssl")]
-			      WebSocketError::SslError(_) => "SSL failure",
+			      WebSocketError::TlsError(_) => "TLS failure",
 			#[cfg(feature="ssl")]
-            WebSocketError::SslHandshakeFailure => "SSL Handshake failure",
+            WebSocketError::TlsHandshakeFailure => "TLS Handshake failure",
 			#[cfg(feature="ssl")]
-            WebSocketError::SslHandshakeInterruption => "SSL Handshake interrupted",
+            WebSocketError::TlsHandshakeInterruption => "TLS Handshake interrupted",
 			WebSocketError::Utf8Error(_) => "UTF-8 failure",
 			WebSocketError::WebSocketUrlError(_) => "WebSocket URL failure",
 		}
@@ -86,7 +86,7 @@ impl Error for WebSocketError {
 			WebSocketError::HttpError(ref error) => Some(error),
 			WebSocketError::UrlError(ref error) => Some(error),
 			#[cfg(feature="ssl")]
-			      WebSocketError::SslError(ref error) => Some(error),
+			      WebSocketError::TlsError(ref error) => Some(error),
 			WebSocketError::Utf8Error(ref error) => Some(error),
 			WebSocketError::WebSocketUrlError(ref error) => Some(error),
 			_ => None,
@@ -116,19 +116,18 @@ impl From<ParseError> for WebSocketError {
 }
 
 #[cfg(feature="ssl")]
-impl From<SslError> for WebSocketError {
-	fn from(err: SslError) -> WebSocketError {
-		WebSocketError::SslError(err)
+impl From<TlsError> for WebSocketError {
+	fn from(err: TlsError) -> WebSocketError {
+		WebSocketError::TlsError(err)
 	}
 }
 
 #[cfg(feature="ssl")]
-impl<T> From<SslHandshakeError<T>> for WebSocketError {
-	fn from(err: SslHandshakeError<T>) -> WebSocketError {
+impl<T> From<TlsHandshakeError<T>> for WebSocketError {
+	fn from(err: TlsHandshakeError<T>) -> WebSocketError {
 		match err {
-			SslHandshakeError::SetupFailure(err) => WebSocketError::SslError(err),
-			SslHandshakeError::Failure(_) => WebSocketError::SslHandshakeFailure,
-			SslHandshakeError::Interrupted(_) => WebSocketError::SslHandshakeInterruption,
+			TlsHandshakeError::Failure(_) => WebSocketError::TlsHandshakeFailure,
+			TlsHandshakeError::Interrupted(_) => WebSocketError::TlsHandshakeInterruption,
 		}
 	}
 }

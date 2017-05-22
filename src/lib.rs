@@ -42,9 +42,9 @@ pub extern crate url;
 extern crate rand;
 extern crate byteorder;
 extern crate sha1;
-#[cfg(feature="ssl")]
-extern crate openssl;
 extern crate base64;
+#[cfg(feature="ssl")]
+extern crate native_tls;
 #[cfg(feature="async")]
 extern crate tokio_core;
 #[cfg(feature="async")]

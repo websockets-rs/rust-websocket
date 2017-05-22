@@ -17,7 +17,7 @@ use hyper::header::{Headers, Header, HeaderFormat, Host, Connection, ConnectionO
                     Protocol, ProtocolName};
 use unicase::UniCase;
 #[cfg(feature="ssl")]
-use openssl::ssl::{SslMethod, SslStream, SslConnector, SslConnectorBuilder};
+use native_tls::{TlsStream, TlsConnector};
 use header::extensions::Extension;
 use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
              WebSocketExtensions, Origin};
@@ -374,7 +374,7 @@ impl<'u> ClientBuilder<'u> {
 	#[cfg(feature="ssl")]
 	pub fn connect(
 		&mut self,
-		ssl_config: Option<SslConnector>,
+		ssl_config: Option<TlsConnector>,
 	) -> WebSocketResult<Client<Box<NetworkStream + Send>>> {
 		let tcp_stream = try!(self.establish_tcp(None));
 
@@ -415,8 +415,8 @@ impl<'u> ClientBuilder<'u> {
 	#[cfg(feature="ssl")]
 	pub fn connect_secure(
 		&mut self,
-		ssl_config: Option<SslConnector>,
-	) -> WebSocketResult<Client<SslStream<TcpStream>>> {
+		ssl_config: Option<TlsConnector>,
+	) -> WebSocketResult<Client<TlsStream<TcpStream>>> {
 		let tcp_stream = try!(self.establish_tcp(Some(true)));
 
 		let ssl_stream = try!(self.wrap_ssl(tcp_stream, ssl_config));
@@ -648,15 +648,15 @@ impl<'u> ClientBuilder<'u> {
 	fn wrap_ssl(
 		&self,
 		tcp_stream: TcpStream,
-		connector: Option<SslConnector>,
-	) -> WebSocketResult<SslStream<TcpStream>> {
+		connector: Option<TlsConnector>,
+	) -> WebSocketResult<TlsStream<TcpStream>> {
 		let host = match self.url.host_str() {
 			Some(h) => h,
 			None => return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName)),
 		};
 		let connector = match connector {
 			Some(c) => c,
-			None => try!(SslConnectorBuilder::new(SslMethod::tls())).build(),
+			None => TlsConnector::builder()?.build()?,
 		};
 
 		let ssl_stream = try!(connector.connect(host, tcp_stream));

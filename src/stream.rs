@@ -6,7 +6,7 @@ use std::io::{self, Read, Write};
 pub use std::net::TcpStream;
 pub use std::net::Shutdown;
 #[cfg(feature="ssl")]
-pub use openssl::ssl::{SslStream, SslContext};
+pub use native_tls::TlsStream;
 #[cfg(feature="async")]
 pub use tokio_io::{AsyncWrite, AsyncRead};
 #[cfg(feature="async")]
@@ -81,7 +81,7 @@ impl AsTcpStream for TcpStream {
 }
 
 #[cfg(feature="ssl")]
-impl AsTcpStream for SslStream<TcpStream> {
+impl AsTcpStream for TlsStream<TcpStream> {
 	fn as_tcp(&self) -> &TcpStream {
 		self.get_ref()
 	}

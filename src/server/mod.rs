@@ -3,7 +3,7 @@ use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream};
 use std::io;
 use std::convert::Into;
 #[cfg(feature="ssl")]
-use openssl::ssl::{SslStream, SslAcceptor};
+use native_tls::{TlsStream, TlsAcceptor};
 use stream::Stream;
 use self::upgrade::{WsUpgrade, IntoWs, Buffer};
 pub use self::upgrade::{Request, HyperIntoWsError};
@@ -39,15 +39,15 @@ pub type AcceptResult<S> = Result<WsUpgrade<S>, InvalidConnection<S>>;
 
 /// Marker struct for a struct not being secure
 #[derive(Clone)]
-pub struct NoSslAcceptor;
+pub struct NoTlsAcceptor;
 /// Trait that is implemented over NoSslAcceptor and SslAcceptor that
 /// serves as a generic bound to make a struct with.
 /// Used in the Server to specify impls based on wether the server
 /// is running over SSL or not.
-pub trait OptionalSslAcceptor: Clone {}
-impl OptionalSslAcceptor for NoSslAcceptor {}
+pub trait OptionalTlsAcceptor {}
+impl OptionalTlsAcceptor for NoTlsAcceptor {}
 #[cfg(feature="ssl")]
-impl OptionalSslAcceptor for SslAcceptor {}
+impl OptionalTlsAcceptor for TlsAcceptor {}
 
 /// Represents a WebSocket server which can work with either normal
 /// (non-secure) connections, or secure WebSocket connections.
@@ -134,27 +134,18 @@ impl OptionalSslAcceptor for SslAcceptor {}
 /// then calling `.into_ws()` on them.
 /// check out the docs over at `websocket::server::upgrade` for more.
 pub struct Server<S>
-	where S: OptionalSslAcceptor
+	where S: OptionalTlsAcceptor
 {
 	listener: TcpListener,
 	ssl_acceptor: S,
 }
 
 impl<S> Server<S>
-    where S: OptionalSslAcceptor
+    where S: OptionalTlsAcceptor
 {
 	/// Get the socket address of this server
 	pub fn local_addr(&self) -> io::Result<SocketAddr> {
 		self.listener.local_addr()
-	}
-
-	/// Create a new independently owned handle to the underlying socket.
-	pub fn try_clone(&self) -> io::Result<Server<S>> {
-		let inner = try!(self.listener.try_clone());
-		Ok(Server {
-		       listener: inner,
-		       ssl_acceptor: self.ssl_acceptor.clone(),
-		   })
 	}
 
 	/// Changes whether the Server is in nonblocking mode.
@@ -200,9 +191,9 @@ impl<S> Server<S>
 }
 
 #[cfg(feature="ssl")]
-impl Server<SslAcceptor> {
+impl Server<TlsAcceptor> {
 	/// Bind this Server to this socket, utilising the given SslContext
-	pub fn bind_secure<A>(addr: A, acceptor: SslAcceptor) -> io::Result<Self>
+	pub fn bind_secure<A>(addr: A, acceptor: TlsAcceptor) -> io::Result<Self>
 		where A: ToSocketAddrs
 	{
 		Ok(Server {
@@ -212,7 +203,7 @@ impl Server<SslAcceptor> {
 	}
 
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
-	pub fn accept(&mut self) -> AcceptResult<SslStream<TcpStream>> {
+	pub fn accept(&mut self) -> AcceptResult<TlsStream<TcpStream>> {
 		let stream = match self.listener.accept() {
 			Ok(s) => s.0,
 			Err(e) => {
@@ -252,20 +243,20 @@ impl Server<SslAcceptor> {
 }
 
 #[cfg(feature="ssl")]
-impl Iterator for Server<SslAcceptor> {
-	type Item = AcceptResult<SslStream<TcpStream>>;
+impl Iterator for Server<TlsAcceptor> {
+	type Item = AcceptResult<TlsStream<TcpStream>>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
 		Some(self.accept())
 	}
 }
 
-impl Server<NoSslAcceptor> {
+impl Server<NoTlsAcceptor> {
 	/// Bind this Server to this socket
 	pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<Self> {
 		Ok(Server {
 		       listener: try!(TcpListener::bind(&addr)),
-		       ssl_acceptor: NoSslAcceptor,
+		       ssl_acceptor: NoTlsAcceptor,
 		   })
 	}
 
@@ -295,9 +286,18 @@ impl Server<NoSslAcceptor> {
 			}
 		}
 	}
+
+	/// Create a new independently owned handle to the underlying socket.
+	pub fn try_clone(&self) -> io::Result<Self> {
+		let inner = try!(self.listener.try_clone());
+		Ok(Server {
+		       listener: inner,
+		       ssl_acceptor: self.ssl_acceptor.clone(),
+		   })
+	}
 }
 
-impl Iterator for Server<NoSslAcceptor> {
+impl Iterator for Server<NoTlsAcceptor> {
 	type Item = AcceptResult<TcpStream>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
