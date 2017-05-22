@@ -695,10 +695,12 @@ mod async_builder {
 			let (response, bytes_read) = {
 				let mut reader = BufReader::new(&*src as &[u8]);
 				let res = match parse_response(&mut reader) {
-					Ok(r) => r,
-					Err(hyper::Error::Io(ref err)) if err.kind() ==
-					                                  io::ErrorKind::UnexpectedEof => return Ok(None),
+					Err(hyper::Error::Io(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
+						return Ok(None)
+					}
+					Err(hyper::Error::TooLarge) => return Ok(None),
 					Err(e) => return Err(e.into()),
+					Ok(r) => r,
 				};
 				let (_, _, pos, _) = reader.into_parts();
 				(res, pos)
