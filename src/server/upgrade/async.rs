@@ -5,6 +5,31 @@ use stream::AsyncStream;
 use futures::{Stream, Future};
 use codec::http::HttpServerCodec;
 use bytes::BytesMut;
+use client::async::ClientNew;
+
+impl<S> WsUpgrade<S>
+    where S: AsyncStream
+{
+	pub fn async_accept(self) -> Result<ClientNew<S>, (S, io::Error)> {
+		unimplemented!();
+	}
+
+	pub fn async_accept_with(
+		mut self,
+		custom_headers: &Headers,
+	) -> Result<ClientNew<S>, (S, io::Error)> {
+		unimplemented!();
+	}
+
+	pub fn async_reject(self) -> Result<S, (S, io::Error)> {
+		unimplemented!();
+	}
+
+	pub fn async_reject_with(mut self, headers: &Headers) -> Result<S, (S, io::Error)> {
+		unimplemented!();
+	}
+}
+
 
 pub trait AsyncIntoWs {
 	/// The type of stream this upgrade process is working with (TcpStream, etc.)
