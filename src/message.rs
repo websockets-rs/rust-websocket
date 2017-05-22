@@ -153,7 +153,8 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 	fn take_payload(self) -> Vec<u8> {
 		if let Some(reason) = self.cd_status_code {
 			let mut buf = Vec::with_capacity(2 + self.payload.len());
-			buf.write_u16::<BigEndian>(reason);
+			buf.write_u16::<BigEndian>(reason)
+			   .expect("failed to write close code in take_payload");
 			buf.append(&mut self.payload.into_owned());
 			buf
 		} else {
@@ -376,7 +377,8 @@ impl ws::dataframe::DataFrame for OwnedMessage {
 				match data {
 					Some(c) => {
 						let mut buf = Vec::with_capacity(2 + c.reason.len());
-						buf.write_u16::<BigEndian>(c.status_code);
+						buf.write_u16::<BigEndian>(c.status_code)
+						   .expect("failed to write close code in take_payload");
 						buf.append(&mut c.reason.into_bytes());
 						buf
 					}

@@ -1,5 +1,4 @@
 //! Module containing the default implementation of data frames.
-use std::str::from_utf8;
 use std::io::{Read, Write};
 use result::{WebSocketResult, WebSocketError};
 use ws::dataframe::DataFrame as DataFrameable;

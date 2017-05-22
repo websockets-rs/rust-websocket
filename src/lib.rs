@@ -96,4 +96,3 @@ pub mod receiver;
 pub mod sender;
 #[cfg(feature="async")]
 pub mod codec;
-pub mod buffer;

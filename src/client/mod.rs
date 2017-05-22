@@ -13,7 +13,7 @@ use ws::sender::Sender as SenderTrait;
 use ws::receiver::{DataFrameIterator, MessageIterator};
 use ws::receiver::Receiver as ReceiverTrait;
 use message::OwnedMessage;
-use result::WebSocketResult;
+use result::{WebSocketResult, WebSocketError};
 use stream::{AsTcpStream, Stream, Splittable, Shutdown};
 use dataframe::DataFrame;
 use header::{WebSocketProtocol, WebSocketExtensions};
@@ -30,14 +30,16 @@ pub use self::builder::{ClientBuilder, Url, ParseError};
 
 #[cfg(feature="async")]
 pub mod async {
+	use super::*;
 	pub use tokio_core::reactor::Handle;
 	pub use tokio_io::codec::Framed;
 	pub use tokio_core::net::TcpStream;
-	use codec::MessageCodec;
-	use message::OwnedMessage;
+	pub use futures::Future;
+	use codec::ws::MessageCodec;
 
 	pub type Client<S> = Framed<S, MessageCodec<OwnedMessage>>;
 
+	pub type ClientNew<S> = Box<Future<Item = (Client<S>, Headers), Error = WebSocketError>>;
 }
 
 /// Represents a WebSocket client, which can send and receive messages/data frames.
