@@ -24,6 +24,9 @@ use hyper::header::{Headers, Upgrade, Protocol, ProtocolName, Connection, Connec
 
 pub mod from_hyper;
 
+#[cfg(feature="async")]
+pub mod async;
+
 /// This crate uses buffered readers to read in the handshake quickly, in order to
 /// interface with other use cases that don't use buffered readers the buffered readers
 /// is deconstructed when it is returned to the user and given as the underlying
@@ -42,6 +45,14 @@ pub struct Buffer {
 	/// Any data after `cap` is not valid.
 	pub cap: usize,
 }
+
+/// A typical request from hyper
+pub type Request = Incoming<(Method, RequestUri)>;
+
+/// If you have your requests separate from your stream you can use this struct
+/// to upgrade the connection based on the request given
+/// (the request should be a handshake).
+pub struct RequestStreamPair<S: Stream>(pub S, pub Request);
 
 /// Intermediate representation of a half created websocket session.
 /// Should be used to examine the client's handshake
@@ -246,14 +257,6 @@ pub trait IntoWs {
 	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error>;
 }
 
-
-/// A typical request from hyper
-pub type Request = Incoming<(Method, RequestUri)>;
-/// If you have your requests separate from your stream you can use this struct
-/// to upgrade the connection based on the request given
-/// (the request should be a handshake).
-pub struct RequestStreamPair<S: Stream>(pub S, pub Request);
-
 impl<S> IntoWs for S
     where S: Stream
 {
@@ -378,6 +381,16 @@ impl From<io::Error> for HyperIntoWsError {
 impl From<::hyper::error::Error> for HyperIntoWsError {
 	fn from(err: ::hyper::error::Error) -> Self {
 		HyperIntoWsError::Parsing(err)
+	}
+}
+
+#[cfg(feature="async")]
+impl From<::codec::http::HttpCodecError> for HyperIntoWsError {
+	fn from(src: ::codec::http::HttpCodecError) -> Self {
+		match src {
+			::codec::http::HttpCodecError::Io(e) => HyperIntoWsError::Io(e),
+			::codec::http::HttpCodecError::Http(e) => HyperIntoWsError::Parsing(e),
+		}
 	}
 }
 

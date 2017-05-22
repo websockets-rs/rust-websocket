@@ -551,7 +551,7 @@ impl<'u> ClientBuilder<'u> {
 			key_set: self.key_set,
 		};
 		let resource = builder.build_request();
-		let framed = stream.framed(::codec::http::HttpCodec);
+		let framed = stream.framed(::codec::http::HttpClientCodec);
 		let request = Incoming {
 			version: builder.version,
 			headers: builder.headers.clone(),
@@ -563,7 +563,7 @@ impl<'u> ClientBuilder<'u> {
           .send(request).map_err(::std::convert::Into::into)
 
           // wait for a response
-		      .and_then(|stream| stream.into_future().map_err(|e| e.0))
+		      .and_then(|stream| stream.into_future().map_err(|e| e.0.into()))
 
           // validate
 		      .and_then(move |(message, stream)| {

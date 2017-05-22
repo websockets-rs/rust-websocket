@@ -138,6 +138,16 @@ impl From<Utf8Error> for WebSocketError {
 	}
 }
 
+#[cfg(feature="async")]
+impl From<::codec::http::HttpCodecError> for WebSocketError {
+	fn from(src: ::codec::http::HttpCodecError) -> Self {
+		match src {
+			::codec::http::HttpCodecError::Io(e) => WebSocketError::IoError(e),
+			::codec::http::HttpCodecError::Http(e) => WebSocketError::HttpError(e),
+		}
+	}
+}
+
 impl From<WSUrlErrorKind> for WebSocketError {
 	fn from(err: WSUrlErrorKind) -> WebSocketError {
 		WebSocketError::WebSocketUrlError(err)

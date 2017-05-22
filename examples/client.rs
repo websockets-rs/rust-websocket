@@ -74,7 +74,7 @@ fn main() {
 					let _ = tx_1.send(OwnedMessage::Close(None));
 					return;
 				}
-				  OwnedMessage::Ping(data) => {
+				OwnedMessage::Ping(data) => {
 					match tx_1.send(OwnedMessage::Pong(data)) {
 						// Send a pong in response
 						Ok(()) => (),
