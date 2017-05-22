@@ -3,8 +3,7 @@ extern crate hyper;
 
 use std::thread;
 use std::io::Write;
-use websocket::{Server, Message};
-use websocket::message::Type;
+use websocket::{Server, Message, OwnedMessage};
 use hyper::Server as HttpServer;
 use hyper::net::Fresh;
 use hyper::server::request::Request;
@@ -44,23 +43,23 @@ fn main() {
 
 			println!("Connection from {}", ip);
 
-			let message = Message::text("Hello".to_string());
+			let message = Message::text("Hello");
 			client.send_message(&message).unwrap();
 
 			let (mut receiver, mut sender) = client.split().unwrap();
 
 			for message in receiver.incoming_messages() {
-				let message: Message = message.unwrap();
+				let message = message.unwrap();
 
-				match message.opcode {
-					Type::Close => {
+				match message {
+					OwnedMessage::Close(_) => {
 						let message = Message::close();
 						sender.send_message(&message).unwrap();
 						println!("Client {} disconnected", ip);
 						return;
 					}
-					Type::Ping => {
-						let message = Message::pong(message.payload);
+					OwnedMessage::Ping(data) => {
+						let message = Message::pong(data);
 						sender.send_message(&message).unwrap();
 					}
 					_ => sender.send_message(&message).unwrap(),

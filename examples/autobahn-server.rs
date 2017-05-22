@@ -1,9 +1,7 @@
 extern crate websocket;
 
 use std::thread;
-use std::str::from_utf8;
-use websocket::{Server, Message};
-use websocket::message::Type;
+use websocket::{Server, Message, OwnedMessage};
 
 fn main() {
 	let server = Server::bind("127.0.0.1:9002").unwrap();
@@ -16,7 +14,7 @@ fn main() {
 			let (mut receiver, mut sender) = client.split().unwrap();
 
 			for message in receiver.incoming_messages() {
-				let message: Message = match message {
+				let message = match message {
 					Ok(message) => message,
 					Err(e) => {
 						println!("{:?}", e);
@@ -25,21 +23,19 @@ fn main() {
 					}
 				};
 
-				match message.opcode {
-					Type::Text => {
-						let response = Message::text(from_utf8(&*message.payload).unwrap());
-						sender.send_message(&response).unwrap()
+				match message {
+					OwnedMessage::Text(txt) => {
+						sender.send_message(&OwnedMessage::Text(txt)).unwrap()
 					}
-					Type::Binary => {
-						sender.send_message(&Message::binary(message.payload)).unwrap()
+					OwnedMessage::Binary(bin) => {
+						sender.send_message(&OwnedMessage::Binary(bin)).unwrap()
 					}
-					Type::Close => {
-						let _ = sender.send_message(&Message::close());
+					OwnedMessage::Close(_) => {
+						sender.send_message(&OwnedMessage::Close(None)).ok();
 						return;
 					}
-					Type::Ping => {
-						let message = Message::pong(message.payload);
-						sender.send_message(&message).unwrap();
+					OwnedMessage::Ping(data) => {
+						sender.send_message(&OwnedMessage::Pong(data)).unwrap();
 					}
 					_ => (),
 				}
