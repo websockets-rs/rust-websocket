@@ -30,11 +30,13 @@ pub struct DataFrameCodec<D> {
 	frame_type: PhantomData<D>,
 }
 
-impl<D> DataFrameCodec<D> {
-	pub fn default(context: Context) -> DataFrameCodec<DataFrame> {
+impl DataFrameCodec<DataFrame> {
+	pub fn default(context: Context) -> Self {
 		DataFrameCodec::new(context)
 	}
+}
 
+impl<D> DataFrameCodec<D> {
 	pub fn new(context: Context) -> DataFrameCodec<D> {
 		DataFrameCodec {
 			is_server: context == Context::Server,
@@ -98,11 +100,17 @@ impl<D> Encoder for DataFrameCodec<D>
  ************/
 
 pub struct MessageCodec<M>
-    where M: MessageTrait
+	where M: MessageTrait
 {
 	buffer: Vec<DataFrame>,
 	dataframe_codec: DataFrameCodec<DataFrame>,
 	message_type: PhantomData<fn(M)>,
+}
+
+impl MessageCodec<OwnedMessage> {
+	pub fn default(context: Context) -> Self {
+		Self::new(context)
+	}
 }
 
 impl<M> MessageCodec<M>
@@ -135,7 +143,7 @@ impl<M> Decoder for MessageCodec<M>
 				}
 				// control frame
 				8...15 => {
-					  return Ok(Some(OwnedMessage::from_dataframes(vec![frame])?));
+					return Ok(Some(OwnedMessage::from_dataframes(vec![frame])?));
 				}
 				// data frame
 				1...7 if !is_first => {
@@ -149,7 +157,7 @@ impl<M> Decoder for MessageCodec<M>
 
 			if finished {
 				let buffer = mem::replace(&mut self.buffer, Vec::new());
-				  return Ok(Some(OwnedMessage::from_dataframes(buffer)?));
+				return Ok(Some(OwnedMessage::from_dataframes(buffer)?));
 			}
 		}
 
@@ -158,7 +166,7 @@ impl<M> Decoder for MessageCodec<M>
 }
 
 impl<M> Encoder for MessageCodec<M>
-    where M: MessageTrait,
+    where M: MessageTrait
 {
 	type Item = M;
 	type Error = WebSocketError;
