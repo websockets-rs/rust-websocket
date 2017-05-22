@@ -373,8 +373,7 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	fn establish_tcp(&mut self, secure: Option<bool>) -> WebSocketResult<TcpStream> {
-		let tcp_stream = TcpStream::connect(self.extract_host_port(secure)?)?;
-		Ok(tcp_stream)
+		Ok(TcpStream::connect(self.extract_host_port(secure)?)?)
 	}
 
 	#[cfg(feature="ssl")]
@@ -585,21 +584,24 @@ impl<'u> ClientBuilder<'u> {
 		Ok(Client::unchecked(reader, response.headers, true, false))
 	}
 
+	// TODO: add timeout option for connecting
+	// TODO: add conveniences like .response_to_pings, .send_close, etc.
 	#[cfg(feature="async")]
 	pub fn async_connect_insecure(self, handle: &Handle) -> AsyncClientNew<AsyncTcpStream> {
 		// get the address to connect to, return an error future if ther's a problem
-		let address = match self.extract_host_port(None).and_then(|p| Ok(p.to_socket_addrs()?)) {
-			Ok(mut s) => {
-				match s.next() {
-					Some(a) => a,
-					None => {
-						let err = WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName);
-						return future::err(err).boxed();
+		let address =
+			match self.extract_host_port(Some(false)).and_then(|p| Ok(p.to_socket_addrs()?)) {
+				Ok(mut s) => {
+					match s.next() {
+						Some(a) => a,
+						None => {
+							let err = WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName);
+							return future::err(err).boxed();
+						}
 					}
 				}
-			}
-			Err(e) => return future::err(e).boxed(),
-		};
+				Err(e) => return future::err(e).boxed(),
+			};
 
 		// connect a tcp stream
 		let tcp_stream = async::TcpStream::connect(&address, handle);
@@ -649,8 +651,9 @@ impl<'u> ClientBuilder<'u> {
 
           // output the final client and metadata
           .map(|(message, stream)| {
-              let codec = <MessageCodec<OwnedMessage>>::new(Context::Client);
-              let client = stream.into_inner().framed(codec);
+              let codec = MessageCodec::default(Context::Client);
+              let (client, buffer) = stream.into_parts();
+              let client = ::tokio_io::codec::framed_with_buf(client, codec, buffer);
               (client, message.headers)
           });
 
@@ -701,7 +704,6 @@ mod async_builder {
 				(res, pos)
 			};
 
-			// TODO: check if data get's lost this way
 			src.split_to(bytes_read);
 			Ok(Some(response))
 		}
