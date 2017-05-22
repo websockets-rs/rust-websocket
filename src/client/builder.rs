@@ -31,6 +31,7 @@ use super::Client;
 #[cfg(feature="async")]
 mod async_imports {
 	pub use super::super::async;
+	pub use tokio_io::codec::Framed;
 	pub use tokio_core::net::TcpStreamNew;
 	pub use tokio_core::reactor::Handle;
 	pub use futures::{Future, Sink};
@@ -576,8 +577,7 @@ impl<'u> ClientBuilder<'u> {
           // output the final client and metadata
           .map(|(message, stream)| {
               let codec = MessageCodec::default(Context::Client);
-              let (client, buffer) = stream.into_parts();
-              let client = ::tokio_io::codec::framed_with_buf(client, codec, buffer);
+              let client = Framed::from_parts(stream.into_parts(), codec);
               (client, message.headers)
           });
 

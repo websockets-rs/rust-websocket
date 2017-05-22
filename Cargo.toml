@@ -33,8 +33,7 @@ bytes = { version = "^0.4", optional = true }
 native-tls = { version = "^0.1.2", optional = true }
 
 [replace."tokio-io:0.1.1"]
-git = "https://github.com/illegalprime/tokio-io.git"
-rev = "18be60c56b0e932265a9e0301d14d5084577ca33"
+git = "https://github.com/tokio-rs/tokio-io.git"
 
 [features]
 default = ["ssl", "async", "async-ssl"]

@@ -1,5 +1,6 @@
 use super::{Buffer, HyperIntoWsError, WsUpgrade, Request, validate};
 use std::io::{self, ErrorKind};
+use tokio_io::codec::FramedParts;
 use hyper::header::Headers;
 use stream::AsyncStream;
 use futures::{Stream, Future};
@@ -56,21 +57,21 @@ impl<S> AsyncIntoWs for S
 		let future = self.framed(HttpServerCodec)
           .into_future()
           .map_err(|(e, s)| {
-              let (stream, buffer) = s.into_parts();
-              (stream, None, Some(buffer), e.into())
+              let FramedParts { inner, readbuf, .. } = s.into_parts();
+              (inner, None, Some(readbuf), e.into())
           })
           .and_then(|(m, s)| {
-              let (stream, buffer) = s.into_parts();
+              let FramedParts { inner, readbuf, .. } = s.into_parts();
               if let Some(msg) = m {
                   match validate(&msg.subject.0, &msg.version, &msg.headers) {
-                      Ok(()) => Ok((msg, stream, buffer)),
-                      Err(e) => Err((stream, None, Some(buffer), e)),
+                      Ok(()) => Ok((msg, inner, readbuf)),
+                      Err(e) => Err((inner, None, Some(readbuf), e)),
                   }
               } else {
                   let err = HyperIntoWsError::Io(io::Error::new(
                       ErrorKind::ConnectionReset,
                   "Connection dropped before handshake could be read"));
-                  Err((stream, None, Some(buffer), err))
+                  Err((inner, None, Some(readbuf), err))
               }
           })
           .map(|(m, stream, buffer)| {
