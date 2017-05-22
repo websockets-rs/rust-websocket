@@ -1,26 +1,22 @@
 extern crate websocket;
-extern crate tokio_core;
-extern crate tokio_io;
 extern crate futures;
-
-const CONNECTION: &'static str = "ws://127.0.0.1:2794";
+extern crate tokio_core;
 
 use std::thread;
 use std::io::stdin;
-
 use tokio_core::reactor::Core;
-
+use futures::future::Future;
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::sync::mpsc;
-
 use websocket::result::WebSocketError;
-use websocket::Message;
-use websocket::message::Type;
-use websocket::client::ClientBuilder;
+use websocket::{ClientBuilder, OwnedMessage};
+
+const CONNECTION: &'static str = "ws://127.0.0.1:2794";
 
 fn main() {
 	println!("Connecting to {}", CONNECTION);
+	let mut core = Core::new().unwrap();
 
 	// standard in isn't supported in mio yet, so we use a thread
 	// see https://github.com/carllerche/mio/issues/321
@@ -34,9 +30,9 @@ fn main() {
 			let trimmed = input.trim();
 
 			let (close, msg) = match trimmed {
-				"/close" => (true, Message::close()),
-				"/ping" => (false, Message::ping(b"PING".to_vec())),
-				_ => (false, Message::text(trimmed.to_string())),
+				"/close" => (true, OwnedMessage::Close(None)),
+				"/ping" => (false, OwnedMessage::Ping(b"PING".to_vec())),
+				_ => (false, OwnedMessage::Text(trimmed.to_string())),
 			};
 
 			stdin_sink.send(msg)
@@ -48,35 +44,22 @@ fn main() {
 		}
 	});
 
-	let mut core = Core::new().unwrap();
-	let handle = core.handle();
-
-	let client = ClientBuilder::new(CONNECTION)
+	let runner = ClientBuilder::new(CONNECTION)
 		.unwrap()
 		.add_protocol("rust-websocket")
-		.connect_insecure()
-		.unwrap()
-		.async(&handle)
-		.unwrap();
-
-	println!("Successfully connected");
-
-	let (sink, stream) = client.split();
-
-	let runner =
-		stream.filter_map(|message| {
-			match message.opcode {
-				Type::Close => Some(Message::close()),
-				Type::Ping => Some(Message::pong(message.payload)),
-				_ => {
-					// Say what we received
-					println!("Received Message: {:?}", message);
-					None
-				}
-			}
-		})
-		      .select(stdin_ch.map_err(|_| WebSocketError::NoDataAvailable))
-		      .forward(sink);
-
+		.async_connect_insecure(&core.handle())
+		.and_then(|(duplex, _)| {
+			let (sink, stream) = duplex.split();
+			stream.filter_map(|message| {
+				                  println!("Received Message: {:?}", message);
+				                  match message {
+				                      OwnedMessage::Close(e) => Some(OwnedMessage::Close(e)),
+				                      OwnedMessage::Ping(d) => Some(OwnedMessage::Pong(d)),
+				                      _ => None,
+				                  }
+				                 })
+			      .select(stdin_ch.map_err(|_| WebSocketError::NoDataAvailable))
+			      .forward(sink)
+		});
 	core.run(runner).unwrap();
 }
