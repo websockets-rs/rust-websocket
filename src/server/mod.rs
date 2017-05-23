@@ -5,7 +5,7 @@ use std::convert::Into;
 #[cfg(feature="ssl")]
 use native_tls::{TlsStream, TlsAcceptor};
 use stream::Stream;
-use self::upgrade::{WsUpgrade, IntoWs, Buffer};
+use self::upgrade::{SyncWsUpgrade, IntoWs, Buffer};
 pub use self::upgrade::{Request, HyperIntoWsError};
 
 pub mod upgrade;
@@ -35,7 +35,7 @@ pub struct InvalidConnection<S>
 /// Either the stream was established and it sent a websocket handshake
 /// which represents the `Ok` variant, or there was an error (this is the
 /// `Err` variant).
-pub type AcceptResult<S> = Result<WsUpgrade<S>, InvalidConnection<S>>;
+pub type AcceptResult<S> = Result<SyncWsUpgrade<S>, InvalidConnection<S>>;
 
 /// Marker struct for a struct not being secure
 #[derive(Clone)]

@@ -66,13 +66,12 @@ impl Decoder for HttpClientCodec {
 pub struct HttpServerCodec;
 
 impl Encoder for HttpServerCodec {
-	type Item = Incoming<RawStatus>;
+	type Item = Incoming<StatusCode>;
 	type Error = io::Error;
 
 	fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
 		// TODO: optomize this!
-		let status = StatusCode::from_u16(item.subject.0);
-		let response = format!("{} {}\r\n{}\r\n", item.version, status, item.headers);
+		let response = format!("{} {}\r\n{}\r\n", item.version, item.subject, item.headers);
 		let byte_len = response.as_bytes().len();
 		if byte_len > dst.remaining_mut() {
 			dst.reserve(byte_len);

@@ -60,7 +60,7 @@ pub struct RequestStreamPair<S: Stream>(pub S, pub Request);
 ///
 /// Users should then call `accept` or `reject` to complete the handshake
 /// and start a session.
-pub struct WsUpgrade<S>
+pub struct WsUpgrade<S, B>
 	where S: Stream
 {
 	/// The headers that will be used in the handshake response.
@@ -70,10 +70,12 @@ pub struct WsUpgrade<S>
 	/// The handshake request, filled with useful metadata.
 	pub request: Request,
 	/// Some buffered data from the stream, if it exists.
-	pub buffer: Option<Buffer>,
+	pub buffer: B,
 }
 
-impl<S> WsUpgrade<S>
+pub type SyncWsUpgrade<S> = WsUpgrade<S, Option<Buffer>>;
+
+impl<S, B> WsUpgrade<S, B>
     where S: Stream
 {
 	/// Select a protocol to use in the handshake response.
@@ -109,47 +111,21 @@ impl<S> WsUpgrade<S>
 		self
 	}
 
-	/// Accept the handshake request and send a response,
-	/// if nothing goes wrong a client will be created.
-	pub fn accept(self) -> Result<Client<S>, (S, IoError)> {
-		self.accept_with(&Headers::new())
-	}
-
-	/// Accept the handshake request and send a response while
-	/// adding on a few headers. These headers are added before the required
-	/// headers are, so some might be overwritten.
-	pub fn accept_with(mut self, custom_headers: &Headers) -> Result<Client<S>, (S, IoError)> {
-		self.headers.extend(custom_headers.iter());
-		self.headers
-		    .set(WebSocketAccept::new(// NOTE: we know there is a key because this is a valid request
-		                              // i.e. to construct this you must go through the validate function
-		                              self.request.headers.get::<WebSocketKey>().unwrap()));
-		self.headers
-		    .set(Connection(vec![
-			      ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
-		    ]));
-		self.headers.set(Upgrade(vec![Protocol::new(ProtocolName::WebSocket, None)]));
-
-		if let Err(e) = self.send(StatusCode::SwitchingProtocols) {
-			return Err((self.stream, e));
-		}
-
-		let stream = match self.buffer {
-			Some(Buffer { buf, pos, cap }) => BufReader::from_parts(self.stream, buf, pos, cap),
-			None => BufReader::new(self.stream),
-		};
-
-		Ok(Client::unchecked(stream, self.headers, false, true))
-	}
-
 	/// Reject the client's request to make a websocket connection.
 	pub fn reject(self) -> Result<S, (S, IoError)> {
-		self.reject_with(&Headers::new())
+		self.internal_reject(None)
 	}
+
 	/// Reject the client's request to make a websocket connection
 	/// and send extra headers.
-	pub fn reject_with(mut self, headers: &Headers) -> Result<S, (S, IoError)> {
-		self.headers.extend(headers.iter());
+	pub fn reject_with(self, headers: &Headers) -> Result<S, (S, IoError)> {
+		self.internal_reject(Some(headers))
+	}
+
+	fn internal_reject(mut self, headers: Option<&Headers>) -> Result<S, (S, IoError)> {
+		if let Some(custom) = headers {
+			self.headers.extend(custom.iter());
+		}
 		match self.send(StatusCode::BadRequest) {
 			Ok(()) => Ok(self.stream),
 			Err(e) => Err((self.stream, e)),
@@ -161,7 +137,7 @@ impl<S> WsUpgrade<S>
 		::std::mem::drop(self);
 	}
 
-	/// A list of protocols requested from the client.
+	/// Aelist of protocols requested from the client.
 	pub fn protocols(&self) -> &[String] {
 		self.request
 		    .headers
@@ -199,9 +175,59 @@ impl<S> WsUpgrade<S>
 		try!(write!(&mut self.stream, "{}\r\n", self.headers));
 		Ok(())
 	}
+
+	#[doc(hidden)]
+	pub fn prepare_headers(&mut self, custom: Option<&Headers>) -> StatusCode {
+		if let Some(headers) = custom {
+			self.headers.extend(headers.iter());
+		}
+		// NOTE: we know there is a key because this is a valid request
+		// i.e. to construct this you must go through the validate function
+		let key = self.request.headers.get::<WebSocketKey>().unwrap();
+		self.headers.set(WebSocketAccept::new(key));
+		self.headers
+		    .set(Connection(vec![
+			          ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
+		        ]));
+		self.headers.set(Upgrade(vec![Protocol::new(ProtocolName::WebSocket, None)]));
+
+		StatusCode::SwitchingProtocols
+	}
 }
 
-impl<S> WsUpgrade<S>
+impl<S> SyncWsUpgrade<S>
+    where S: Stream
+{
+	/// Accept the handshake request and send a response,
+	/// if nothing goes wrong a client will be created.
+	pub fn accept(self) -> Result<Client<S>, (S, IoError)> {
+		self.internal_accept(None)
+	}
+
+	/// Accept the handshake request and send a response while
+	/// adding on a few headers. These headers are added before the required
+	/// headers are, so some might be overwritten.
+	pub fn accept_with(self, custom_headers: &Headers) -> Result<Client<S>, (S, IoError)> {
+		self.internal_accept(Some(custom_headers))
+	}
+
+	fn internal_accept(mut self, headers: Option<&Headers>) -> Result<Client<S>, (S, IoError)> {
+		let status = self.prepare_headers(headers);
+
+		if let Err(e) = self.send(status) {
+			return Err((self.stream, e));
+		}
+
+		let stream = match self.buffer {
+			Some(Buffer { buf, pos, cap }) => BufReader::from_parts(self.stream, buf, pos, cap),
+			None => BufReader::new(self.stream),
+		};
+
+		Ok(Client::unchecked(stream, self.headers, false, true))
+	}
+}
+
+impl<S, B> WsUpgrade<S, B>
     where S: Stream + AsTcpStream
 {
 	/// Get a handle to the underlying TCP stream, useful to be able to set
@@ -254,7 +280,7 @@ pub trait IntoWs {
 	/// Attempt to parse the start of a Websocket handshake, later with the  returned
 	/// `WsUpgrade` struct, call `accept to start a websocket client, and `reject` to
 	/// send a handshake rejection response.
-	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error>;
+	fn into_ws(self) -> Result<SyncWsUpgrade<Self::Stream>, Self::Error>;
 }
 
 impl<S> IntoWs for S
@@ -263,7 +289,7 @@ impl<S> IntoWs for S
 	type Stream = S;
 	type Error = (S, Option<Request>, Option<Buffer>, HyperIntoWsError);
 
-	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
+	fn into_ws(self) -> Result<SyncWsUpgrade<Self::Stream>, Self::Error> {
 		let mut reader = BufReader::new(self);
 		let request = parse_request(&mut reader);
 
@@ -299,7 +325,7 @@ impl<S> IntoWs for RequestStreamPair<S>
 	type Stream = S;
 	type Error = (S, Request, HyperIntoWsError);
 
-	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
+	fn into_ws(self) -> Result<SyncWsUpgrade<Self::Stream>, Self::Error> {
 		match validate(&self.1.subject.0, &self.1.version, &self.1.headers) {
 			Ok(_) => {
 				Ok(WsUpgrade {

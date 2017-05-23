@@ -15,6 +15,9 @@ use ws::message::Message as MessageTrait;
 use ws::util::header::read_header;
 use result::WebSocketError;
 
+// TODO: IMPORTANT: check if frame_size is correct,
+// do not call .reserve with the entire size
+
 /**************
  * Dataframes *
  **************/

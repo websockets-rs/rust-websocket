@@ -36,7 +36,7 @@
 //! ```
 
 use hyper::net::NetworkStream;
-use super::{IntoWs, WsUpgrade, Buffer};
+use super::{IntoWs, SyncWsUpgrade, Buffer};
 
 pub use hyper::http::h1::Incoming;
 pub use hyper::method::Method;
@@ -58,7 +58,7 @@ impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 	type Stream = &'a mut &'b mut NetworkStream;
 	type Error = (Request<'a, 'b>, HyperIntoWsError);
 
-	fn into_ws(self) -> Result<WsUpgrade<Self::Stream>, Self::Error> {
+	fn into_ws(self) -> Result<SyncWsUpgrade<Self::Stream>, Self::Error> {
 		if let Err(e) = validate(&self.0.method, &self.0.version, &self.0.headers) {
 			return Err((self.0, e));
 		}
@@ -70,7 +70,7 @@ impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 		let (buf, pos, cap) = reader.take_buf();
 		let stream = reader.get_mut();
 
-		Ok(WsUpgrade {
+		Ok(SyncWsUpgrade {
 		       headers: Headers::new(),
 		       stream: stream,
 		       buffer: Some(Buffer {

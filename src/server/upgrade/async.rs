@@ -1,33 +1,81 @@
-use super::{Buffer, HyperIntoWsError, WsUpgrade, Request, validate};
+use super::{HyperIntoWsError, WsUpgrade, Request, validate};
 use std::io::{self, ErrorKind};
-use tokio_io::codec::FramedParts;
+use tokio_io::codec::{Framed, FramedParts};
 use hyper::header::Headers;
+use hyper::http::h1::Incoming;
+use hyper::status::StatusCode;
 use stream::AsyncStream;
-use futures::{Stream, Future};
+use futures::{Stream, Sink, Future};
+use futures::sink::Send;
 use codec::http::HttpServerCodec;
+use codec::ws::{MessageCodec, Context};
 use bytes::BytesMut;
 use client::async::ClientNew;
 
-impl<S> WsUpgrade<S>
-    where S: AsyncStream
+pub type AsyncWsUpgrade<S> = WsUpgrade<S, BytesMut>;
+
+impl<S> AsyncWsUpgrade<S>
+    where S: AsyncStream + 'static
 {
-	pub fn async_accept(self) -> Result<ClientNew<S>, (S, io::Error)> {
-		unimplemented!();
+	pub fn async_accept(self) -> ClientNew<S> {
+		self.internal_async_accept(None)
 	}
 
-	pub fn async_accept_with(
-		self,
-		custom_headers: &Headers,
-	) -> Result<ClientNew<S>, (S, io::Error)> {
-		unimplemented!();
+	pub fn async_accept_with(self, custom_headers: &Headers) -> ClientNew<S> {
+		self.internal_async_accept(Some(custom_headers))
 	}
 
-	pub fn async_reject(self) -> Result<S, (S, io::Error)> {
-		unimplemented!();
+	fn internal_async_accept(mut self, custom_headers: Option<&Headers>) -> ClientNew<S> {
+		let status = self.prepare_headers(custom_headers);
+		let WsUpgrade { headers, stream, request, buffer } = self;
+
+		let duplex = Framed::from_parts(FramedParts {
+		                                    inner: stream,
+		                                    readbuf: buffer,
+		                                    writebuf: BytesMut::with_capacity(0),
+		                                },
+		                                HttpServerCodec);
+
+		let future = duplex.send(Incoming {
+		                             version: request.version,
+		                             subject: status,
+		                             headers: headers.clone(),
+		                         })
+		                   .map(move |s| {
+			                        let codec = MessageCodec::default(Context::Client);
+			                        let client = Framed::from_parts(s.into_parts(), codec);
+			                        (client, headers)
+			                       })
+		                   .map_err(|e| e.into());
+		Box::new(future)
 	}
 
-	pub fn async_reject_with(self, headers: &Headers) -> Result<S, (S, io::Error)> {
-		unimplemented!();
+	pub fn async_reject(self) -> Send<Framed<S, HttpServerCodec>> {
+		self.internal_async_reject(None)
+	}
+
+	pub fn async_reject_with(self, headers: &Headers) -> Send<Framed<S, HttpServerCodec>> {
+		self.internal_async_reject(Some(headers))
+	}
+
+	fn internal_async_reject(
+		mut self,
+		headers: Option<&Headers>,
+	) -> Send<Framed<S, HttpServerCodec>> {
+		if let Some(custom) = headers {
+			self.headers.extend(custom.iter());
+		}
+		let duplex = Framed::from_parts(FramedParts {
+		                                    inner: self.stream,
+		                                    readbuf: self.buffer,
+		                                    writebuf: BytesMut::with_capacity(0),
+		                                },
+		                                HttpServerCodec);
+		duplex.send(Incoming {
+		                version: self.request.version,
+		                subject: StatusCode::BadRequest,
+		                headers: self.headers,
+		            })
 	}
 }
 
@@ -44,34 +92,34 @@ pub trait AsyncIntoWs {
 	///
 	/// Note: this is the asynchronous version, meaning it will not block when
 	/// trying to read a request.
-	fn into_ws(self) -> Box<Future<Item = WsUpgrade<Self::Stream>, Error = Self::Error>>;
+	fn into_ws(self) -> Box<Future<Item = AsyncWsUpgrade<Self::Stream>, Error = Self::Error>>;
 }
 
 impl<S> AsyncIntoWs for S
     where S: AsyncStream + 'static
 {
 	type Stream = S;
-	type Error = (S, Option<Request>, Option<BytesMut>, HyperIntoWsError);
+	type Error = (S, Option<Request>, BytesMut, HyperIntoWsError);
 
-	fn into_ws(self) -> Box<Future<Item = WsUpgrade<Self::Stream>, Error = Self::Error>> {
+	fn into_ws(self) -> Box<Future<Item = AsyncWsUpgrade<Self::Stream>, Error = Self::Error>> {
 		let future = self.framed(HttpServerCodec)
           .into_future()
           .map_err(|(e, s)| {
               let FramedParts { inner, readbuf, .. } = s.into_parts();
-              (inner, None, Some(readbuf), e.into())
+              (inner, None, readbuf, e.into())
           })
           .and_then(|(m, s)| {
               let FramedParts { inner, readbuf, .. } = s.into_parts();
               if let Some(msg) = m {
                   match validate(&msg.subject.0, &msg.version, &msg.headers) {
                       Ok(()) => Ok((msg, inner, readbuf)),
-                      Err(e) => Err((inner, None, Some(readbuf), e)),
+                      Err(e) => Err((inner, None, readbuf, e)),
                   }
               } else {
                   let err = HyperIntoWsError::Io(io::Error::new(
                       ErrorKind::ConnectionReset,
                   "Connection dropped before handshake could be read"));
-                  Err((inner, None, Some(readbuf), err))
+                  Err((inner, None, readbuf, err))
               }
           })
           .map(|(m, stream, buffer)| {
@@ -79,11 +127,7 @@ impl<S> AsyncIntoWs for S
                   headers: Headers::new(),
                   stream: stream,
                   request: m,
-                  buffer: Some(Buffer {
-                      buf: unimplemented!(),
-                      pos: 0,
-                      cap: buffer.capacity(),
-                  }),
+                  buffer: buffer,
               }
           });
 		Box::new(future)
