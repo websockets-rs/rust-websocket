@@ -4,10 +4,10 @@ use std::io::Write;
 use std::io::Result as IoResult;
 use result::WebSocketResult;
 use ws::dataframe::DataFrame;
-use stream::AsTcpStream;
+use stream::sync::AsTcpStream;
 use ws;
 use ws::sender::Sender as SenderTrait;
-pub use stream::Shutdown;
+pub use stream::sync::Shutdown;
 
 /// A writer that bundles a stream with a serializer to send the messages.
 /// This is used in the client's `.split()` function as the writing component.

@@ -2,11 +2,11 @@
 use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream};
 use std::io;
 use std::convert::Into;
-#[cfg(feature="ssl")]
+#[cfg(feature="sync-ssl")]
 use native_tls::{TlsStream, TlsAcceptor};
 use stream::Stream;
 use server::{WsServer, OptionalTlsAcceptor, NoTlsAcceptor};
-use server::upgrade::{SyncWsUpgrade, IntoWs, Buffer};
+use server::upgrade::sync::{Upgrade, IntoWs, Buffer};
 pub use server::upgrade::{Request, HyperIntoWsError};
 
 #[cfg(feature="async")]
@@ -41,7 +41,7 @@ pub struct InvalidConnection<S>
 /// Either the stream was established and it sent a websocket handshake
 /// which represents the `Ok` variant, or there was an error (this is the
 /// `Err` variant).
-pub type AcceptResult<S> = Result<SyncWsUpgrade<S>, InvalidConnection<S>>;
+pub type AcceptResult<S> = Result<Upgrade<S>, InvalidConnection<S>>;
 
 /// Represents a WebSocket server which can work with either normal
 /// (non-secure) connections, or secure WebSocket connections.
@@ -129,7 +129,7 @@ pub type AcceptResult<S> = Result<SyncWsUpgrade<S>, InvalidConnection<S>>;
 /// check out the docs over at `websocket::server::upgrade` for more.
 pub type Server<S> = WsServer<S, TcpListener>;
 
-impl<S> Server<S>
+impl<S> WsServer<S, TcpListener>
     where S: OptionalTlsAcceptor
 {
 	/// Get the socket address of this server
@@ -188,8 +188,8 @@ impl<S> Server<S>
 	}
 }
 
-#[cfg(feature="ssl")]
-impl Server<TlsAcceptor> {
+#[cfg(feature="sync-ssl")]
+impl WsServer<TlsAcceptor, TcpListener> {
 	/// Bind this Server to this socket, utilising the given SslContext
 	pub fn bind_secure<A>(addr: A, acceptor: TlsAcceptor) -> io::Result<Self>
 		where A: ToSocketAddrs
@@ -240,8 +240,8 @@ impl Server<TlsAcceptor> {
 	}
 }
 
-#[cfg(feature="ssl")]
-impl Iterator for Server<TlsAcceptor> {
+#[cfg(feature="sync-ssl")]
+impl Iterator for WsServer<TlsAcceptor, TcpListener> {
 	type Item = AcceptResult<TlsStream<TcpStream>>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {
@@ -249,7 +249,7 @@ impl Iterator for Server<TlsAcceptor> {
 	}
 }
 
-impl Server<NoTlsAcceptor> {
+impl WsServer<NoTlsAcceptor, TcpListener> {
 	/// Bind this Server to this socket
 	pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<Self> {
 		Ok(Server {
@@ -295,7 +295,7 @@ impl Server<NoTlsAcceptor> {
 	}
 }
 
-impl Iterator for Server<NoTlsAcceptor> {
+impl Iterator for WsServer<NoTlsAcceptor, TcpListener> {
 	type Item = AcceptResult<TcpStream>;
 
 	fn next(&mut self) -> Option<<Self as Iterator>::Item> {

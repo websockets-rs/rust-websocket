@@ -36,8 +36,9 @@ native-tls = { version = "^0.1.2", optional = true }
 git = "https://github.com/tokio-rs/tokio-io.git"
 
 [features]
-default = ["ssl", "async", "async-ssl"]
-ssl = ["native-tls"]
-nightly = ["hyper/nightly"]
+default = ["sync", "sync-ssl", "async", "async-ssl"]
+sync = []
+sync-ssl = ["native-tls", "sync"]
 async = ["tokio-core", "tokio-io", "bytes", "futures"]
 async-ssl = ["native-tls", "tokio-tls", "async"]
+nightly = ["hyper/nightly"]

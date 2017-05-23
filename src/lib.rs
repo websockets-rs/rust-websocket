@@ -43,7 +43,7 @@ extern crate rand;
 extern crate byteorder;
 extern crate sha1;
 extern crate base64;
-#[cfg(any(feature="ssl", feature="async-ssl"))]
+#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
 extern crate native_tls;
 #[cfg(feature="async")]
 extern crate tokio_core;
@@ -62,13 +62,6 @@ extern crate bitflags;
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
 
-pub use self::client::{Client, ClientBuilder};
-pub use self::dataframe::DataFrame;
-pub use self::message::{Message, OwnedMessage};
-pub use self::stream::Stream;
-pub use self::ws::Sender;
-pub use self::ws::Receiver;
-
 macro_rules! upsert_header {
     ($headers:expr; $header:ty; {
         Some($pat:pat) => $some_match:expr,
@@ -84,16 +77,76 @@ macro_rules! upsert_header {
     }}
 }
 
-
 pub mod ws;
-pub mod client;
-pub mod server;
 pub mod dataframe;
 pub mod message;
 pub mod result;
-pub mod stream;
 pub mod header;
-pub mod receiver;
-pub mod sender;
+
 #[cfg(feature="async")]
 pub mod codec;
+
+#[cfg(feature="sync")]
+pub mod receiver;
+#[cfg(feature="sync")]
+pub mod sender;
+
+pub mod client;
+pub mod server;
+pub mod stream;
+
+#[cfg(feature="sync")]
+pub mod sync {
+    pub use sender;
+    pub use sender::Writer;
+
+    pub use receiver;
+    pub use receiver::Reader;
+
+    pub use stream::sync::Stream;
+    pub use stream::sync as stream;
+
+    pub mod server {
+        pub use server::sync::*;
+        pub use server::upgrade::sync::Upgrade;
+        pub use server::upgrade::sync::IntoWs;
+        pub use server::upgrade::sync as upgrade;
+    }
+
+    pub mod client {
+        pub use client::sync::*;
+        pub use client::builder::ClientBuilder;
+    }
+}
+
+#[cfg(feature="async")]
+pub mod async {
+    pub use codec;
+    pub use codec::ws::MessageCodec;
+    pub use codec::ws::Context as MessageContext;
+    pub use codec::http::HttpClientCodec;
+    pub use codec::http::HttpServerCodec;
+
+    pub use stream::async::Stream;
+    pub use stream::async as stream;
+
+    pub mod server {
+        pub use server::async::*;
+        pub use server::upgrade::async::Upgrade;
+        pub use server::upgrade::async::IntoWs;
+        pub use server::upgrade::async as upgrade;
+    }
+
+    pub mod client {
+        pub use client::async::*;
+        pub use client::builder::ClientBuilder;
+    }
+}
+
+pub use self::message::Message;
+pub use self::message::CloseData;
+pub use self::message::OwnedMessage;
+
+pub use self::result::WebSocketError;
+pub use self::result::WebSocketResult;
+

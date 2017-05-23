@@ -4,28 +4,30 @@ use tokio_io::codec::{Framed, FramedParts};
 use hyper::header::Headers;
 use hyper::http::h1::Incoming;
 use hyper::status::StatusCode;
-use stream::AsyncStream;
-use futures::{Stream, Sink, Future};
+use stream::async::Stream;
+use futures::{Sink, Future};
+use futures::Stream as StreamTrait;
 use futures::sink::Send;
 use codec::http::HttpServerCodec;
 use codec::ws::{MessageCodec, Context};
 use bytes::BytesMut;
 use client::async::ClientNew;
 
-pub type AsyncWsUpgrade<S> = WsUpgrade<S, BytesMut>;
+pub type Upgrade<S> = WsUpgrade<S, BytesMut>;
 
-impl<S> AsyncWsUpgrade<S>
-    where S: AsyncStream + 'static
+/// TODO: docs, THIS IS THTE ASYNC ONE
+impl<S> WsUpgrade<S, BytesMut>
+    where S: Stream + 'static
 {
-	pub fn async_accept(self) -> ClientNew<S> {
-		self.internal_async_accept(None)
+	pub fn accept(self) -> ClientNew<S> {
+		self.internal_accept(None)
 	}
 
-	pub fn async_accept_with(self, custom_headers: &Headers) -> ClientNew<S> {
-		self.internal_async_accept(Some(custom_headers))
+	pub fn accept_with(self, custom_headers: &Headers) -> ClientNew<S> {
+		self.internal_accept(Some(custom_headers))
 	}
 
-	fn internal_async_accept(mut self, custom_headers: Option<&Headers>) -> ClientNew<S> {
+	fn internal_accept(mut self, custom_headers: Option<&Headers>) -> ClientNew<S> {
 		let status = self.prepare_headers(custom_headers);
 		let WsUpgrade { headers, stream, request, buffer } = self;
 
@@ -50,15 +52,15 @@ impl<S> AsyncWsUpgrade<S>
 		Box::new(future)
 	}
 
-	pub fn async_reject(self) -> Send<Framed<S, HttpServerCodec>> {
-		self.internal_async_reject(None)
+	pub fn reject(self) -> Send<Framed<S, HttpServerCodec>> {
+		self.internal_reject(None)
 	}
 
-	pub fn async_reject_with(self, headers: &Headers) -> Send<Framed<S, HttpServerCodec>> {
-		self.internal_async_reject(Some(headers))
+	pub fn reject_with(self, headers: &Headers) -> Send<Framed<S, HttpServerCodec>> {
+		self.internal_reject(Some(headers))
 	}
 
-	fn internal_async_reject(
+	fn internal_reject(
 		mut self,
 		headers: Option<&Headers>,
 	) -> Send<Framed<S, HttpServerCodec>> {
@@ -80,9 +82,9 @@ impl<S> AsyncWsUpgrade<S>
 }
 
 
-pub trait AsyncIntoWs {
+pub trait IntoWs {
 	/// The type of stream this upgrade process is working with (TcpStream, etc.)
-	type Stream: AsyncStream;
+	type Stream: Stream;
 	/// An error value in case the stream is not asking for a websocket connection
 	/// or something went wrong. It is common to also include the stream here.
 	type Error;
@@ -92,16 +94,16 @@ pub trait AsyncIntoWs {
 	///
 	/// Note: this is the asynchronous version, meaning it will not block when
 	/// trying to read a request.
-	fn into_ws(self) -> Box<Future<Item = AsyncWsUpgrade<Self::Stream>, Error = Self::Error>>;
+	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error>>;
 }
 
-impl<S> AsyncIntoWs for S
-    where S: AsyncStream + 'static
+impl<S> IntoWs for S
+    where S: Stream + 'static
 {
 	type Stream = S;
 	type Error = (S, Option<Request>, BytesMut, HyperIntoWsError);
 
-	fn into_ws(self) -> Box<Future<Item = AsyncWsUpgrade<Self::Stream>, Error = Self::Error>> {
+	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error>> {
 		let future = self.framed(HttpServerCodec)
           .into_future()
           .map_err(|(e, s)| {

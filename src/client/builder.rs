@@ -16,17 +16,20 @@ use hyper::http::h1::parse_response;
 use hyper::header::{Headers, Header, HeaderFormat, Host, Connection, ConnectionOption, Upgrade,
                     Protocol, ProtocolName};
 use unicase::UniCase;
-#[cfg(any(feature="ssl", feature="async-ssl"))]
-use native_tls::{TlsStream, TlsConnector};
 use header::extensions::Extension;
 use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
              WebSocketExtensions, Origin};
 use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
-#[cfg(feature="ssl")]
-use stream::NetworkStream;
 use stream::{self, Stream};
 
-use super::Client;
+#[cfg(feature="sync")]
+use super::sync::Client;
+
+#[cfg(feature="sync-ssl")]
+use stream::sync::NetworkStream;
+
+#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+use native_tls::{TlsStream, TlsConnector};
 
 #[cfg(feature="async")]
 mod async_imports {
@@ -375,7 +378,7 @@ impl<'u> ClientBuilder<'u> {
 	/// let message = Message::text("m337 47 7pm");
 	/// client.send_message(&message).unwrap();
 	/// ```
-	#[cfg(feature="ssl")]
+	#[cfg(feature="sync-ssl")]
 	pub fn connect(
 		&mut self,
 		ssl_config: Option<TlsConnector>,
@@ -406,6 +409,7 @@ impl<'u> ClientBuilder<'u> {
 	/// // split into two (for some reason)!
 	/// let (receiver, sender) = client.split().unwrap();
 	/// ```
+	#[cfg(feature="sync")]
 	pub fn connect_insecure(&mut self) -> WebSocketResult<Client<TcpStream>> {
 		let tcp_stream = try!(self.establish_tcp(Some(false)));
 
@@ -416,7 +420,7 @@ impl<'u> ClientBuilder<'u> {
 	/// This will only use an `SslStream`, this is useful
 	/// when you want to be sure to connect over SSL or when you want access
 	/// to the `SslStream` functions (without having to go through a `Box`).
-	#[cfg(feature="ssl")]
+	#[cfg(feature="sync-ssl")]
 	pub fn connect_secure(
 		&mut self,
 		ssl_config: Option<TlsConnector>,
@@ -458,6 +462,7 @@ impl<'u> ClientBuilder<'u> {
 	/// let text = String::from_utf8(text).unwrap();
 	/// assert!(text.contains("dGhlIHNhbXBsZSBub25jZQ=="), "{}", text);
 	/// ```
+	#[cfg(feature="sync")]
 	pub fn connect_on<S>(&mut self, mut stream: S) -> WebSocketResult<Client<S>>
 		where S: Stream
 	{
@@ -474,6 +479,15 @@ impl<'u> ClientBuilder<'u> {
 		self.validate(&response)?;
 
 		Ok(Client::unchecked(reader, response.headers, true, false))
+	}
+
+	#[cfg(feature="async-ssl")]
+	pub fn async_connect(
+		self,
+		ssl_config: Option<TlsConnector>,
+		handle: &Handle,
+	) -> async::ClientNew<Box<stream::async::Stream + Send>> {
+		unimplemented!();
 	}
 
 	#[cfg(feature="async-ssl")]
@@ -542,7 +556,7 @@ impl<'u> ClientBuilder<'u> {
 
 	#[cfg(feature="async")]
 	pub fn async_connect_on<S>(self, stream: S) -> async::ClientNew<S>
-		where S: stream::AsyncStream + Send + 'static
+		where S: stream::async::Stream + Send + 'static
 	{
 		let mut builder = ClientBuilder {
 			url: Cow::Owned(self.url.into_owned()),
@@ -695,7 +709,7 @@ impl<'u> ClientBuilder<'u> {
 		Ok(TcpStream::connect(self.extract_host_port(secure)?)?)
 	}
 
-	#[cfg(any(feature="ssl", feature="async-ssl"))]
+	#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
 	fn extract_host_ssl_conn(
 		&self,
 		connector: Option<TlsConnector>,
@@ -711,7 +725,7 @@ impl<'u> ClientBuilder<'u> {
 		Ok((host, connector))
 	}
 
-	#[cfg(feature="ssl")]
+	#[cfg(feature="sync-ssl")]
 	fn wrap_ssl(
 		&self,
 		tcp_stream: TcpStream,

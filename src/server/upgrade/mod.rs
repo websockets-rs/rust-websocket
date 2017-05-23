@@ -3,14 +3,11 @@
 use std::error::Error;
 use std::net::TcpStream;
 use std::io;
-use std::io::Result as IoResult;
-use std::io::Error as IoError;
 use std::fmt::{self, Formatter, Display};
-use stream::{Stream, AsTcpStream};
+use stream::Stream;
 use header::extensions::Extension;
 use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
              WebSocketExtensions, Origin};
-use client::Client;
 
 use unicase::UniCase;
 use hyper::status::StatusCode;
@@ -18,41 +15,16 @@ use hyper::http::h1::Incoming;
 use hyper::method::Method;
 use hyper::version::HttpVersion;
 use hyper::uri::RequestUri;
-use hyper::buffer::BufReader;
-use hyper::http::h1::parse_request;
 use hyper::header::{Headers, Upgrade, Protocol, ProtocolName, Connection, ConnectionOption};
-
-pub mod from_hyper;
 
 #[cfg(feature="async")]
 pub mod async;
 
-/// This crate uses buffered readers to read in the handshake quickly, in order to
-/// interface with other use cases that don't use buffered readers the buffered readers
-/// is deconstructed when it is returned to the user and given as the underlying
-/// reader and the buffer.
-///
-/// This struct represents bytes that have already been read in from the stream.
-/// A slice of valid data in this buffer can be obtained by: `&buf[pos..cap]`.
-#[derive(Debug)]
-pub struct Buffer {
-	/// the contents of the buffered stream data
-	pub buf: Vec<u8>,
-	/// the current position of cursor in the buffer
-	/// Any data before `pos` has already been read and parsed.
-	pub pos: usize,
-	/// the last location of valid data
-	/// Any data after `cap` is not valid.
-	pub cap: usize,
-}
+#[cfg(feature="sync")]
+pub mod sync;
 
 /// A typical request from hyper
 pub type Request = Incoming<(Method, RequestUri)>;
-
-/// If you have your requests separate from your stream you can use this struct
-/// to upgrade the connection based on the request given
-/// (the request should be a handshake).
-pub struct RequestStreamPair<S: Stream>(pub S, pub Request);
 
 /// Intermediate representation of a half created websocket session.
 /// Should be used to examine the client's handshake
@@ -72,8 +44,6 @@ pub struct WsUpgrade<S, B>
 	/// Some buffered data from the stream, if it exists.
 	pub buffer: B,
 }
-
-pub type SyncWsUpgrade<S> = WsUpgrade<S, Option<Buffer>>;
 
 impl<S, B> WsUpgrade<S, B>
     where S: Stream
@@ -109,27 +79,6 @@ impl<S, B> WsUpgrade<S, B>
             None => WebSocketExtensions(extensions)
         });
 		self
-	}
-
-	/// Reject the client's request to make a websocket connection.
-	pub fn reject(self) -> Result<S, (S, IoError)> {
-		self.internal_reject(None)
-	}
-
-	/// Reject the client's request to make a websocket connection
-	/// and send extra headers.
-	pub fn reject_with(self, headers: &Headers) -> Result<S, (S, IoError)> {
-		self.internal_reject(Some(headers))
-	}
-
-	fn internal_reject(mut self, headers: Option<&Headers>) -> Result<S, (S, IoError)> {
-		if let Some(custom) = headers {
-			self.headers.extend(custom.iter());
-		}
-		match self.send(StatusCode::BadRequest) {
-			Ok(()) => Ok(self.stream),
-			Err(e) => Err((self.stream, e)),
-		}
 	}
 
 	/// Drop the connection without saying anything.
@@ -170,7 +119,7 @@ impl<S, B> WsUpgrade<S, B>
 		self.request.headers.get::<Origin>().map(|o| &o.0 as &str)
 	}
 
-	fn send(&mut self, status: StatusCode) -> IoResult<()> {
+	fn send(&mut self, status: StatusCode) -> io::Result<()> {
 		try!(write!(&mut self.stream, "{} {}\r\n", self.request.version, status));
 		try!(write!(&mut self.stream, "{}\r\n", self.headers));
 		Ok(())
@@ -192,151 +141,6 @@ impl<S, B> WsUpgrade<S, B>
 		self.headers.set(Upgrade(vec![Protocol::new(ProtocolName::WebSocket, None)]));
 
 		StatusCode::SwitchingProtocols
-	}
-}
-
-impl<S> SyncWsUpgrade<S>
-    where S: Stream
-{
-	/// Accept the handshake request and send a response,
-	/// if nothing goes wrong a client will be created.
-	pub fn accept(self) -> Result<Client<S>, (S, IoError)> {
-		self.internal_accept(None)
-	}
-
-	/// Accept the handshake request and send a response while
-	/// adding on a few headers. These headers are added before the required
-	/// headers are, so some might be overwritten.
-	pub fn accept_with(self, custom_headers: &Headers) -> Result<Client<S>, (S, IoError)> {
-		self.internal_accept(Some(custom_headers))
-	}
-
-	fn internal_accept(mut self, headers: Option<&Headers>) -> Result<Client<S>, (S, IoError)> {
-		let status = self.prepare_headers(headers);
-
-		if let Err(e) = self.send(status) {
-			return Err((self.stream, e));
-		}
-
-		let stream = match self.buffer {
-			Some(Buffer { buf, pos, cap }) => BufReader::from_parts(self.stream, buf, pos, cap),
-			None => BufReader::new(self.stream),
-		};
-
-		Ok(Client::unchecked(stream, self.headers, false, true))
-	}
-}
-
-impl<S, B> WsUpgrade<S, B>
-    where S: Stream + AsTcpStream
-{
-	/// Get a handle to the underlying TCP stream, useful to be able to set
-	/// TCP options, etc.
-	pub fn tcp_stream(&self) -> &TcpStream {
-		self.stream.as_tcp()
-	}
-}
-
-/// Trait to take a stream or similar and attempt to recover the start of a
-/// websocket handshake from it.
-/// Should be used when a stream might contain a request for a websocket session.
-///
-/// If an upgrade request can be parsed, one can accept or deny the handshake with
-/// the `WsUpgrade` struct.
-/// Otherwise the original stream is returned along with an error.
-///
-/// Note: the stream is owned because the websocket client expects to own its stream.
-///
-/// This is already implemented for all Streams, which means all types with Read + Write.
-///
-/// # Example
-///
-/// ```rust,no_run
-/// use std::net::TcpListener;
-/// use std::net::TcpStream;
-/// use websocket::server::upgrade::IntoWs;
-/// use websocket::Client;
-///
-/// let listener = TcpListener::bind("127.0.0.1:80").unwrap();
-///
-/// for stream in listener.incoming().filter_map(Result::ok) {
-///     let mut client: Client<TcpStream> = match stream.into_ws() {
-/// 		    Ok(upgrade) => {
-///             match upgrade.accept() {
-///                 Ok(client) => client,
-///                 Err(_) => panic!(),
-///             }
-///         },
-/// 		    Err(_) => panic!(),
-///     };
-/// }
-/// ```
-pub trait IntoWs {
-	/// The type of stream this upgrade process is working with (TcpStream, etc.)
-	type Stream: Stream;
-	/// An error value in case the stream is not asking for a websocket connection
-	/// or something went wrong. It is common to also include the stream here.
-	type Error;
-	/// Attempt to parse the start of a Websocket handshake, later with the  returned
-	/// `WsUpgrade` struct, call `accept to start a websocket client, and `reject` to
-	/// send a handshake rejection response.
-	fn into_ws(self) -> Result<SyncWsUpgrade<Self::Stream>, Self::Error>;
-}
-
-impl<S> IntoWs for S
-    where S: Stream
-{
-	type Stream = S;
-	type Error = (S, Option<Request>, Option<Buffer>, HyperIntoWsError);
-
-	fn into_ws(self) -> Result<SyncWsUpgrade<Self::Stream>, Self::Error> {
-		let mut reader = BufReader::new(self);
-		let request = parse_request(&mut reader);
-
-		let (stream, buf, pos, cap) = reader.into_parts();
-		let buffer = Some(Buffer {
-		                      buf: buf,
-		                      cap: cap,
-		                      pos: pos,
-		                  });
-
-		let request = match request {
-			Ok(r) => r,
-			Err(e) => return Err((stream, None, buffer, e.into())),
-		};
-
-		match validate(&request.subject.0, &request.version, &request.headers) {
-			Ok(_) => {
-				Ok(WsUpgrade {
-				       headers: Headers::new(),
-				       stream: stream,
-				       request: request,
-				       buffer: buffer,
-				   })
-			}
-			Err(e) => Err((stream, Some(request), buffer, e)),
-		}
-	}
-}
-
-impl<S> IntoWs for RequestStreamPair<S>
-    where S: Stream
-{
-	type Stream = S;
-	type Error = (S, Request, HyperIntoWsError);
-
-	fn into_ws(self) -> Result<SyncWsUpgrade<Self::Stream>, Self::Error> {
-		match validate(&self.1.subject.0, &self.1.version, &self.1.headers) {
-			Ok(_) => {
-				Ok(WsUpgrade {
-				       headers: Headers::new(),
-				       stream: self.0,
-				       request: self.1,
-				       buffer: None,
-				   })
-			}
-			Err(e) => Err((self.0, self.1, e)),
-		}
 	}
 }
 

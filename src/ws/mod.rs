@@ -38,12 +38,19 @@
 //! To make life easier for a `Receiver`, several utility functions are provided which read
 //! various pieces of data from a Reader. These are found within the `util` module.
 pub use self::message::Message;
+
+#[cfg(feature="sync")]
 pub use self::sender::Sender;
+#[cfg(feature="sync")]
 pub use self::receiver::Receiver;
+#[cfg(feature="sync")]
 pub use self::receiver::{DataFrameIterator, MessageIterator};
 
 pub mod message;
-pub mod sender;
-pub mod receiver;
 pub mod util;
 pub mod dataframe;
+
+#[cfg(feature="sync")]
+pub mod sender;
+#[cfg(feature="sync")]
+pub mod receiver;

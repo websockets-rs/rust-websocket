@@ -11,8 +11,8 @@ use ws;
 use ws::receiver::Receiver as ReceiverTrait;
 use ws::receiver::{MessageIterator, DataFrameIterator};
 use message::OwnedMessage;
-use stream::{AsTcpStream, Stream};
-pub use stream::Shutdown;
+use stream::sync::{AsTcpStream, Stream};
+pub use stream::sync::Shutdown;
 
 /// This reader bundles an existing stream with a parsing algorithm.
 /// It is used by the client in its `.split()` function as the reading component.
