@@ -17,6 +17,13 @@ use bytes::BufMut;
 #[derive(Copy, Clone, Debug)]
 pub struct HttpClientCodec;
 
+fn split_off_http(src: &mut BytesMut) -> Option<BytesMut> {
+	match src.windows(4).position(|i| i == b"\r\n\r\n") {
+		Some(p) => Some(src.split_to(p + 4)),
+		None => None,
+	}
+}
+
 impl Encoder for HttpClientCodec {
 	type Item = Incoming<(Method, RequestUri)>;
 	type Error = io::Error;
@@ -43,22 +50,21 @@ impl Decoder for HttpClientCodec {
 	fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
 		// check if we get a request from hyper
 		// TODO: this is ineffecient, but hyper does not give us a better way to parse
-		let (response, bytes_read) = {
-			let mut reader = BufReader::new(&*src as &[u8]);
-			let res = match parse_response(&mut reader) {
-				Err(hyper::Error::Io(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
-					return Ok(None)
-				}
-				Err(hyper::Error::TooLarge) => return Ok(None),
-				Err(e) => return Err(e.into()),
-				Ok(r) => r,
-			};
-			let (_, _, pos, _) = reader.into_parts();
-			(res, pos)
-		};
-
-		src.split_to(bytes_read);
-		Ok(Some(response))
+		match split_off_http(src) {
+			Some(buf) => {
+				let mut reader = BufReader::new(&*src as &[u8]);
+				let res = match parse_response(&mut reader) {
+					Err(hyper::Error::Io(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
+						return Ok(None)
+					}
+					Err(hyper::Error::TooLarge) => return Ok(None),
+					Err(e) => return Err(e.into()),
+					Ok(r) => r,
+				};
+				Ok(Some(res))
+			}
+			None => Ok(None),
+		}
 	}
 }
 
@@ -87,22 +93,21 @@ impl Decoder for HttpServerCodec {
 	fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
 		// check if we get a request from hyper
 		// TODO: this is ineffecient, but hyper does not give us a better way to parse
-		let (response, bytes_read) = {
-			let mut reader = BufReader::new(&*src as &[u8]);
-			let res = match parse_request(&mut reader) {
-				Err(hyper::Error::Io(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
-					return Ok(None)
-				}
-				Err(hyper::Error::TooLarge) => return Ok(None),
-				Err(e) => return Err(e.into()),
-				Ok(r) => r,
-			};
-			let (_, _, pos, _) = reader.into_parts();
-			(res, pos)
-		};
-
-		src.split_to(bytes_read);
-		Ok(Some(response))
+		match split_off_http(src) {
+			Some(buf) => {
+				let mut reader = BufReader::with_capacity(&*buf as &[u8], buf.len());
+				let res = match parse_request(&mut reader) {
+					Err(hyper::Error::Io(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
+						return Ok(None);
+					}
+					Err(hyper::Error::TooLarge) => return Ok(None),
+					Err(e) => return Err(e.into()),
+					Ok(r) => r,
+				};
+				Ok(Some(res))
+			}
+			None => Ok(None),
+		}
 	}
 }
 
