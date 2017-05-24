@@ -7,6 +7,7 @@ use std::convert::From;
 use std::fmt;
 use hyper::Error as HttpError;
 use url::ParseError;
+use server::upgrade::HyperIntoWsError;
 
 #[cfg(any(feature="sync-ssl", feature="async-ssl"))]
 use native_tls::Error as TlsError;
@@ -15,6 +16,12 @@ use native_tls::HandshakeError as TlsHandshakeError;
 
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
+
+pub mod async {
+	use futures::Future;
+	use super::WebSocketError;
+	pub type WebSocketFuture<I> = Box<Future<Item = I, Error = WebSocketError>>;
+}
 
 /// Represents a WebSocket error
 #[derive(Debug)]
@@ -151,6 +158,25 @@ impl From<::codec::http::HttpCodecError> for WebSocketError {
 impl From<WSUrlErrorKind> for WebSocketError {
 	fn from(err: WSUrlErrorKind) -> WebSocketError {
 		WebSocketError::WebSocketUrlError(err)
+	}
+}
+
+impl From<HyperIntoWsError> for WebSocketError {
+	fn from(err: HyperIntoWsError) -> WebSocketError {
+		use self::HyperIntoWsError::*;
+		use WebSocketError::*;
+		match err {
+			Io(io) => IoError(io),
+			Parsing(err) => HttpError(err),
+			MethodNotGet => ProtocolError("Request method must be GET"),
+			UnsupportedHttpVersion => ProtocolError("Unsupported request HTTP version"),
+			UnsupportedWebsocketVersion => ProtocolError("Unsupported WebSocket version"),
+			NoSecWsKeyHeader => ProtocolError("Missing Sec-WebSocket-Key header"),
+			NoWsUpgradeHeader => ProtocolError("Invalid Upgrade WebSocket header"),
+			NoUpgradeHeader => ProtocolError("Missing Upgrade WebSocket header"),
+			NoWsConnectionHeader => ProtocolError("Invalid Connection WebSocket header"),
+			NoConnectionHeader => ProtocolError("Missing Connection WebSocket header"),
+		}
 	}
 }
 

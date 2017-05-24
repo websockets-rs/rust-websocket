@@ -86,7 +86,7 @@ impl<S, B> WsUpgrade<S, B>
 		::std::mem::drop(self);
 	}
 
-	/// Aelist of protocols requested from the client.
+	/// A list of protocols requested from the client.
 	pub fn protocols(&self) -> &[String] {
 		self.request
 		    .headers

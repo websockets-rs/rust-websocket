@@ -1,5 +1,5 @@
 use std::io;
-use std::net::SocketAddr;
+use std::net::ToSocketAddrs;
 use server::{WsServer, NoTlsAcceptor};
 use tokio_core::net::{TcpListener, TcpStream};
 use futures::{Stream, Future};
@@ -23,9 +23,11 @@ pub enum AcceptError<E> {
 }
 
 impl WsServer<NoTlsAcceptor, TcpListener> {
-	pub fn bind(addr: &SocketAddr, handle: &Handle) -> io::Result<Self> {
+	pub fn bind<A: ToSocketAddrs>(addr: A, handle: &Handle) -> io::Result<Self> {
+		let tcp = ::std::net::TcpListener::bind(addr)?;
+		let address = tcp.local_addr()?;
 		Ok(Server {
-		       listener: TcpListener::bind(addr, handle)?,
+		       listener: TcpListener::from_listener(tcp, &address, handle)?,
 		       ssl_acceptor: NoTlsAcceptor,
 		   })
 	}
@@ -58,13 +60,15 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 
 #[cfg(any(feature="async-ssl"))]
 impl WsServer<TlsAcceptor, TcpListener> {
-	pub fn bind_secure(
-		addr: &SocketAddr,
+	pub fn bind_secure<A: ToSocketAddrs>(
+		addr: A,
 		acceptor: TlsAcceptor,
 		handle: &Handle,
 	) -> io::Result<Self> {
+		let tcp = ::std::net::TcpListener::bind(addr)?;
+		let address = tcp.local_addr()?;
 		Ok(Server {
-		       listener: TcpListener::bind(addr, handle)?,
+		       listener: TcpListener::from_listener(tcp, &address, handle)?,
 		       ssl_acceptor: acceptor,
 		   })
 	}

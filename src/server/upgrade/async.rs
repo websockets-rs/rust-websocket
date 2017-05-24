@@ -44,7 +44,7 @@ impl<S> WsUpgrade<S, BytesMut>
 		                             headers: headers.clone(),
 		                         })
 		                   .map(move |s| {
-			                        let codec = MessageCodec::default(Context::Client);
+			                        let codec = MessageCodec::default(Context::Server);
 			                        let client = Framed::from_parts(s.into_parts(), codec);
 			                        (client, headers)
 			                       })
