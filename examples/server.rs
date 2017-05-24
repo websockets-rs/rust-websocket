@@ -1,7 +1,8 @@
 extern crate websocket;
 
 use std::thread;
-use websocket::{Server, OwnedMessage};
+use websocket::OwnedMessage;
+use websocket::sync::Server;
 
 fn main() {
 	let server = Server::bind("127.0.0.1:2794").unwrap();

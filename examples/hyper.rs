@@ -3,7 +3,8 @@ extern crate hyper;
 
 use std::thread;
 use std::io::Write;
-use websocket::{Server, Message, OwnedMessage};
+use websocket::{Message, OwnedMessage};
+use websocket::sync::Server;
 use hyper::Server as HttpServer;
 use hyper::net::Fresh;
 use hyper::server::request::Request;

@@ -112,11 +112,13 @@ pub mod sync {
 		pub use server::upgrade::sync::IntoWs;
 		pub use server::upgrade::sync as upgrade;
 	}
+	pub use server::sync::Server;
 
 	pub mod client {
 		pub use client::sync::*;
 		pub use client::builder::ClientBuilder;
 	}
+	pub use client::sync::Client;
 }
 
 #[cfg(feature="async")]
@@ -136,16 +138,21 @@ pub mod async {
 		pub use server::upgrade::async::IntoWs;
 		pub use server::upgrade::async as upgrade;
 	}
+	pub use server::async::Server;
 
 	pub mod client {
 		pub use client::async::*;
 		pub use client::builder::ClientBuilder;
 	}
+	pub use client::async::Client;
+
+	pub use result::async::WebSocketFuture;
 }
 
 pub use self::message::Message;
 pub use self::message::CloseData;
 pub use self::message::OwnedMessage;
+pub use self::client::builder::ClientBuilder;
 
 pub use self::result::WebSocketError;
 pub use self::result::WebSocketResult;
