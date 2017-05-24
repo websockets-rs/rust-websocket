@@ -60,10 +60,7 @@ impl<S> WsUpgrade<S, BytesMut>
 		self.internal_reject(Some(headers))
 	}
 
-	fn internal_reject(
-		mut self,
-		headers: Option<&Headers>,
-	) -> Send<Framed<S, HttpServerCodec>> {
+	fn internal_reject(mut self, headers: Option<&Headers>) -> Send<Framed<S, HttpServerCodec>> {
 		if let Some(custom) = headers {
 			self.headers.extend(custom.iter());
 		}

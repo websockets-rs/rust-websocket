@@ -47,6 +47,8 @@ mod async_imports {
 #[cfg(feature="async")]
 use self::async_imports::*;
 
+// TODO: add extra funcs for future stuff, like auto ping and auto close
+
 
 /// Build clients with a builder-style API
 /// This makes it easy to create and configure a websocket

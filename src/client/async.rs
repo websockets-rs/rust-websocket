@@ -14,4 +14,3 @@ pub use tokio_tls::TlsStream;
 pub type Client<S> = Framed<S, MessageCodec<OwnedMessage>>;
 
 pub type ClientNew<S> = Box<Future<Item = (Client<S>, Headers), Error = WebSocketError>>;
-

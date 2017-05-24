@@ -95,11 +95,11 @@ impl<S> WsUpgrade<S, Option<Buffer>>
 impl<S, B> WsUpgrade<S, B>
     where S: Stream + AsTcpStream
 {
-	  /// Get a handle to the underlying TCP stream, useful to be able to set
-	  /// TCP options, etc.
-	  pub fn tcp_stream(&self) -> &TcpStream {
-		    self.stream.as_tcp()
-	  }
+	/// Get a handle to the underlying TCP stream, useful to be able to set
+	/// TCP options, etc.
+	pub fn tcp_stream(&self) -> &TcpStream {
+		self.stream.as_tcp()
+	}
 }
 
 /// Trait to take a stream or similar and attempt to recover the start of a

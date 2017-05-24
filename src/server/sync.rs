@@ -5,7 +5,7 @@ use std::convert::Into;
 #[cfg(feature="sync-ssl")]
 use native_tls::{TlsStream, TlsAcceptor};
 use stream::Stream;
-use server::{WsServer, OptionalTlsAcceptor, NoTlsAcceptor};
+use server::{WsServer, OptionalTlsAcceptor, NoTlsAcceptor, InvalidConnection};
 use server::upgrade::sync::{Upgrade, IntoWs, Buffer};
 pub use server::upgrade::{Request, HyperIntoWsError};
 
@@ -16,32 +16,10 @@ use tokio_core::net::TcpListener as AsyncTcpListener;
 #[cfg(feature="async")]
 use server::async;
 
-/// When a sever tries to accept a connection many things can go wrong.
-///
-/// This struct is all the information that is recovered from a failed
-/// websocket handshake, in case one wants to use the connection for something
-/// else (such as HTTP).
-pub struct InvalidConnection<S>
-	where S: Stream
-{
-	/// if the stream was successfully setup it will be included here
-	/// on a failed connection.
-	pub stream: Option<S>,
-	/// the parsed request. **This is a normal HTTP request** meaning you can
-	/// simply run this server and handle both HTTP and Websocket connections.
-	/// If you already have a server you want to use, checkout the
-	/// `server::upgrade` module to integrate this crate with your server.
-	pub parsed: Option<Request>,
-	/// the buffered data that was already taken from the stream
-	pub buffer: Option<Buffer>,
-	/// the cause of the failed websocket connection setup
-	pub error: HyperIntoWsError,
-}
-
 /// Either the stream was established and it sent a websocket handshake
 /// which represents the `Ok` variant, or there was an error (this is the
 /// `Err` variant).
-pub type AcceptResult<S> = Result<Upgrade<S>, InvalidConnection<S>>;
+pub type AcceptResult<S> = Result<Upgrade<S>, InvalidConnection<S, Buffer>>;
 
 /// Represents a WebSocket server which can work with either normal
 /// (non-secure) connections, or secure WebSocket connections.
