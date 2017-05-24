@@ -489,7 +489,51 @@ impl<'u> ClientBuilder<'u> {
 		ssl_config: Option<TlsConnector>,
 		handle: &Handle,
 	) -> async::ClientNew<Box<stream::async::Stream + Send>> {
-		unimplemented!();
+		// connect to the tcp stream
+		let tcp_stream = match self.async_tcpstream(handle) {
+			Ok(t) => t,
+			Err(e) => return future::err(e).boxed(),
+		};
+
+		let builder = ClientBuilder {
+			url: Cow::Owned(self.url.into_owned()),
+			version: self.version,
+			headers: self.headers,
+			version_set: self.version_set,
+			key_set: self.key_set,
+		};
+
+		// check if we should connect over ssl or not
+		if builder.url.scheme() == "wss" {
+			// configure the tls connection
+			let (host, connector) = {
+				match builder.extract_host_ssl_conn(ssl_config) {
+					Ok((h, conn)) => (h.to_string(), conn),
+					Err(e) => return future::err(e).boxed(),
+				}
+			};
+			// secure connection, wrap with ssl
+			let future =
+				tcp_stream.map_err(|e| e.into())
+				          .and_then(move |s| {
+					                    connector.connect_async(&host, s)
+					                             .map_err(|e| e.into())
+					                   })
+				          .and_then(move |stream| {
+					                    let stream: Box<stream::async::Stream + Send> = Box::new(stream);
+					                    builder.async_connect_on(stream)
+					                   });
+			Box::new(future)
+		} else {
+			// insecure connection, connect normally
+			let future =
+				tcp_stream.map_err(|e| e.into())
+				          .and_then(move |stream| {
+					                    let stream: Box<stream::async::Stream + Send> = Box::new(stream);
+					                    builder.async_connect_on(stream)
+					                   });
+			Box::new(future)
+		}
 	}
 
 	#[cfg(feature="async-ssl")]
