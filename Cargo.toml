@@ -18,22 +18,19 @@ license = "MIT"
 
 [dependencies]
 hyper = "^0.10.6"
-unicase = "^1.0"
-url = "^1.0"
-bitflags = "^0.8"
-rand = "^0.3"
-byteorder = "^1.0"
-sha1 = "^0.2"
-base64 = "^0.5"
-futures = { version = "^0.1", optional = true }
-tokio-core = { version = "0.1.7", optional = true }
-tokio-io = { version = "0.1.1", optional = true }
-tokio-tls = { version = "^0.1", optional = true }
-bytes = { version = "^0.4", optional = true }
+unicase = "1.0"
+url = "1.0"
+bitflags = "0.8"
+rand = "0.3"
+byteorder = "1.0"
+sha1 = "0.2"
+base64 = "0.5"
+futures = { version = "0.1", optional = true }
+tokio-core = { version = "0.1", optional = true }
+tokio-io = { version = "^0.1.2", optional = true }
+tokio-tls = { version = "0.1", optional = true }
+bytes = { version = "0.4", optional = true }
 native-tls = { version = "^0.1.2", optional = true }
-
-[replace."tokio-io:0.1.1"]
-git = "https://github.com/tokio-rs/tokio-io.git"
 
 [features]
 default = ["sync", "sync-ssl", "async", "async-ssl"]
