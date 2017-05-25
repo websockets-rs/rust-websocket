@@ -2,14 +2,13 @@ extern crate websocket;
 extern crate futures;
 extern crate tokio_core;
 
+use std::fmt::Debug;
+
 use websocket::message::{Message, OwnedMessage};
 use websocket::server::InvalidConnection;
 use websocket::async::Server;
-use websocket::async::client::Client;
-use websocket::async::WebSocketFuture;
 
-use tokio_core::reactor::Core;
-use tokio_core::net::TcpStream;
+use tokio_core::reactor::{Handle, Core};
 use futures::{Future, Sink, Stream};
 
 fn main() {
@@ -24,39 +23,45 @@ fn main() {
 	// a stream of incoming connections
 	let f = server.incoming()
         // we don't wanna save the stream if it drops
-        .map_err(|InvalidConnection { error, .. }| error.into())
-        // negotiate with the client
-        .and_then(|upgrade| {
+        .map_err(|InvalidConnection { error, .. }| error)
+        .for_each(|upgrade| {
             // check if it has the protocol we want
-            let uses_proto = upgrade.protocols().iter().any(|s| s == "rust-websocket");
-
-            let f: WebSocketFuture<Option<Client<TcpStream>>> = if uses_proto {
-                // accept the request to be a ws connection if it does
-                Box::new(upgrade.use_protocol("rust-websocket").accept().map(|(s, _)| Some(s)))
-            } else {
+            if !upgrade.protocols().iter().any(|s| s == "rust-websocket") {
                 // reject it if it doesn't
-                Box::new(upgrade.reject().map(|_| None).map_err(|e| e.into()))
-            };
-            f
-        })
-        // get rid of the bad connections
-        .filter_map(|i| i)
-        // send a greeting!
-        .and_then(|s| s.send(Message::text("Hello World!").into()))
-        // simple echo server impl
-        .and_then(|s| {
-            let (sink, stream) = s.split();
-            stream.filter_map(|m| {
-                println!("Message from Client: {:?}", m);
-                match m {
-                    OwnedMessage::Ping(p) => Some(OwnedMessage::Pong(p)),
-                    OwnedMessage::Pong(_) => None,
-                    _ => Some(m),
-                }
-            }).forward(sink)
-        })
-        // TODO: ??
-        .collect();
+                spawn_future(upgrade.reject(), "Upgrade Rejection", &handle);
+                return Ok(());
+            }
+
+            // accept the request to be a ws connection if it does
+            let f = upgrade
+                .use_protocol("rust-websocket")
+                .accept()
+                // send a greeting!
+                .and_then(|(s, _)| s.send(Message::text("Hello World!").into()))
+                // simple echo server impl
+                .and_then(|s| {
+                    let (sink, stream) = s.split();
+                    stream.filter_map(|m| {
+                        println!("Message from Client: {:?}", m);
+                        match m {
+                            OwnedMessage::Ping(p) => Some(OwnedMessage::Pong(p)),
+                            OwnedMessage::Pong(_) => None,
+                            _ => Some(m),
+                        }
+                    }).forward(sink)
+                });
+
+            spawn_future(f, "Client Status", &handle);
+            Ok(())
+        });
 
 	core.run(f).unwrap();
+}
+
+fn spawn_future<F, I, E>(f: F, desc: &'static str, handle: &Handle)
+	where F: Future<Item = I, Error = E> + 'static,
+	      E: Debug
+{
+	handle.spawn(f.map_err(move |e| println!("{}: '{:?}'", desc, e))
+	              .map(move |_| println!("{}: Finished.", desc)));
 }
