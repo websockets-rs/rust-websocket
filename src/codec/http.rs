@@ -52,7 +52,7 @@ impl Decoder for HttpClientCodec {
 		// TODO: this is ineffecient, but hyper does not give us a better way to parse
 		match split_off_http(src) {
 			Some(buf) => {
-				let mut reader = BufReader::new(&*src as &[u8]);
+				let mut reader = BufReader::with_capacity(&*buf as &[u8], buf.len());
 				let res = match parse_response(&mut reader) {
 					Err(hyper::Error::Io(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
 						return Ok(None)

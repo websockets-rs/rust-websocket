@@ -24,7 +24,8 @@ fn main() {
 	let f = server.incoming()
         // we don't wanna save the stream if it drops
         .map_err(|InvalidConnection { error, .. }| error)
-        .for_each(|upgrade| {
+        .for_each(|(upgrade, addr)| {
+            println!("Got a connection from: {}", addr);
             // check if it has the protocol we want
             if !upgrade.protocols().iter().any(|s| s == "rust-websocket") {
                 // reject it if it doesn't
@@ -41,7 +42,7 @@ fn main() {
                 // simple echo server impl
                 .and_then(|s| {
                     let (sink, stream) = s.split();
-                    stream.filter_map(|m| {
+                    stream.take_while(|m| Ok(!m.is_close())).filter_map(|m| {
                         println!("Message from Client: {:?}", m);
                         match m {
                             OwnedMessage::Ping(p) => Some(OwnedMessage::Pong(p)),

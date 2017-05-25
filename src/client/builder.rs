@@ -631,7 +631,7 @@ impl<'u> ClientBuilder<'u> {
               message
                   .ok_or(WebSocketError::ProtocolError(
                       "Connection closed before handshake could complete."))
-                  .and_then(|message| builder.validate(&message).map(|_| (message, stream)))
+                  .and_then(|message| builder.validate(&message).map(|()| (message, stream)))
           })
 
           // output the final client and metadata

@@ -1,5 +1,6 @@
 use std::io;
 use std::net::ToSocketAddrs;
+use std::net::SocketAddr;
 use server::{WsServer, NoTlsAcceptor};
 use tokio_core::net::{TcpListener, TcpStream};
 use futures::{Stream, Future};
@@ -15,7 +16,8 @@ use tokio_tls::{TlsAcceptorExt, TlsStream};
 
 pub type Server<S> = WsServer<S, TcpListener>;
 
-pub type Incoming<S> = Box<Stream<Item = Upgrade<S>, Error = InvalidConnection<S, BytesMut>>>;
+pub type Incoming<S> = Box<Stream<Item = (Upgrade<S>, SocketAddr),
+                                  Error = InvalidConnection<S, BytesMut>>>;
 
 pub enum AcceptError<E> {
 	Io(io::Error),
@@ -43,7 +45,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 			                              error: e.into(),
 			                          }
 			                         })
-		                 .and_then(|(stream, _)| {
+		                 .and_then(|(stream, a)| {
 			stream.into_ws()
 			      .map_err(|(stream, req, buf, err)| {
 				               InvalidConnection {
@@ -53,6 +55,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 				                   error: err,
 				               }
 				              })
+			      .map(move |u| (u, a))
 		});
 		Box::new(future)
 	}
@@ -85,7 +88,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 			                              error: e.into(),
 			                          }
 			                         })
-		                 .and_then(move |(stream, _)| {
+		                 .and_then(move |(stream, a)| {
 			acceptor.accept_async(stream)
 			        .map_err(|e| {
 				InvalidConnection {
@@ -96,8 +99,9 @@ impl WsServer<TlsAcceptor, TcpListener> {
 					error: io::Error::new(io::ErrorKind::Other, e).into(),
 				}
 			})
+			        .map(move |s| (s, a))
 		})
-		                 .and_then(|stream| {
+		                 .and_then(|(stream, a)| {
 			stream.into_ws()
 			      .map_err(|(stream, req, buf, err)| {
 				               InvalidConnection {
@@ -107,6 +111,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 				                   error: err,
 				               }
 				              })
+			      .map(move |u| (u, a))
 		});
 		Box::new(future)
 	}
