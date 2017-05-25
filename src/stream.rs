@@ -1,6 +1,6 @@
 //! Provides the default stream type for WebSocket connections.
 
-use std::io::{self, Read, Write};
+use std::io::{Read, Write};
 
 /// Represents a stream that can be read from, and written to.
 /// This is an abstraction around readable and writable things to be able

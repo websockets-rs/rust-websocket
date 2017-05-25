@@ -1,7 +1,6 @@
 //! Allows you to take an existing request or stream of data and convert it into a
 //! WebSocket client.
 use std::error::Error;
-use std::net::TcpStream;
 use std::io;
 use std::fmt::{self, Formatter, Display};
 use stream::Stream;

@@ -17,6 +17,7 @@ use native_tls::HandshakeError as TlsHandshakeError;
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
 
+#[cfg(feature="async")]
 pub mod async {
 	use futures::Future;
 	use super::WebSocketError;

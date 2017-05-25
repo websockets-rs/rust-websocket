@@ -443,7 +443,7 @@ impl<'u> ClientBuilder<'u> {
 	///
 	/// ```rust
 	/// # use websocket::ClientBuilder;
-	/// use websocket::stream::ReadWritePair;
+	/// use websocket::sync::stream::ReadWritePair;
 	/// use std::io::Cursor;
 	///
 	/// let accept = b"HTTP/1.1 101 Switching Protocols\r

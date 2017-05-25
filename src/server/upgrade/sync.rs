@@ -119,8 +119,8 @@ impl<S, B> WsUpgrade<S, B>
 /// ```rust,no_run
 /// use std::net::TcpListener;
 /// use std::net::TcpStream;
-/// use websocket::server::upgrade::IntoWs;
-/// use websocket::Client;
+/// use websocket::sync::server::upgrade::IntoWs;
+/// use websocket::sync::Client;
 ///
 /// let listener = TcpListener::bind("127.0.0.1:80").unwrap();
 ///
@@ -221,8 +221,8 @@ impl<S> IntoWs for RequestStreamPair<S>
 /// # fn main() {
 /// use hyper::server::{Server, Request, Response};
 /// use websocket::Message;
-/// use websocket::server::upgrade::IntoWs;
-/// use websocket::server::upgrade::from_hyper::HyperRequest;
+/// use websocket::sync::server::upgrade::IntoWs;
+/// use websocket::sync::server::upgrade::HyperRequest;
 ///
 /// Server::http("0.0.0.0:80").unwrap().handle(move |req: Request, res: Response| {
 ///     match HyperRequest(req).into_ws() {

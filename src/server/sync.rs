@@ -4,7 +4,6 @@ use std::io;
 use std::convert::Into;
 #[cfg(feature="sync-ssl")]
 use native_tls::{TlsStream, TlsAcceptor};
-use stream::Stream;
 use server::{WsServer, OptionalTlsAcceptor, NoTlsAcceptor, InvalidConnection};
 use server::upgrade::sync::{Upgrade, IntoWs, Buffer};
 pub use server::upgrade::{Request, HyperIntoWsError};
@@ -33,7 +32,8 @@ pub type AcceptResult<S> = Result<Upgrade<S>, InvalidConnection<S, Buffer>>;
 ///extern crate websocket;
 ///# fn main() {
 ///use std::thread;
-///use websocket::{Server, Message};
+///use websocket::Message;
+///use websocket::sync::Server;
 ///
 ///let server = Server::bind("127.0.0.1:1234").unwrap();
 ///
@@ -54,14 +54,14 @@ pub type AcceptResult<S> = Result<Upgrade<S>, InvalidConnection<S, Buffer>>;
 ///# Secure Servers
 /// ```no_run
 ///extern crate websocket;
-///extern crate openssl;
+///extern crate native_tls;
 ///# fn main() {
 ///use std::thread;
 ///use std::io::Read;
 ///use std::fs::File;
-///use websocket::{Server, Message};
-///use openssl::pkcs12::Pkcs12;
-///use openssl::ssl::{SslMethod, SslAcceptorBuilder, SslStream};
+///use websocket::Message;
+///use websocket::sync::Server;
+///use native_tls::{Pkcs12, TlsAcceptor};
 ///
 ///// In this example we retrieve our keypair and certificate chain from a PKCS #12 archive,
 ///// but but they can also be retrieved from, for example, individual PEM- or DER-formatted
@@ -69,15 +69,9 @@ pub type AcceptResult<S> = Result<Upgrade<S>, InvalidConnection<S, Buffer>>;
 ///let mut file = File::open("identity.pfx").unwrap();
 ///let mut pkcs12 = vec![];
 ///file.read_to_end(&mut pkcs12).unwrap();
-///let pkcs12 = Pkcs12::from_der(&pkcs12).unwrap();
-///let identity = pkcs12.parse("password123").unwrap();
+///let pkcs12 = Pkcs12::from_der(&pkcs12, "hacktheplanet").unwrap();
 ///
-///let acceptor = SslAcceptorBuilder::mozilla_intermediate(SslMethod::tls(),
-///                                                        &identity.pkey,
-///                                                        &identity.cert,
-///                                                        &identity.chain)
-///                   .unwrap()
-///                   .build();
+///let acceptor = TlsAcceptor::builder(pkcs12).unwrap().build().unwrap();
 ///
 ///let server = Server::bind_secure("127.0.0.1:1234", acceptor).unwrap();
 ///
@@ -116,14 +110,16 @@ impl<S> WsServer<S, TcpListener>
 	}
 
 	/// Changes whether the Server is in nonblocking mode.
+	/// NOTE: It is strongly encouraged to use the `websocket::async` module instead
+	/// of this. It provides high level APIs for creating asynchronous servers.
 	///
-	/// If it is in nonblocking mode, accept() will return an error instead of blocking when there
-	/// are no incoming connections.
+	/// If it is in nonblocking mode, accept() will return an error instead of
+	/// blocking when there are no incoming connections.
 	///
 	///# Examples
 	///```no_run
 	/// # extern crate websocket;
-	/// # use websocket::Server;
+	/// # use websocket::sync::Server;
 	/// # fn main() {
 	/// // Suppose we have to work in a single thread, but want to
 	/// // accomplish two unrelated things:

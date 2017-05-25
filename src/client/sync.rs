@@ -165,11 +165,9 @@ impl<S> Client<S>
 	///
 	/// client.send_message(&Message::text("Hello world!")).unwrap();
 	///
-	/// let message: Message = client.recv_message().unwrap();
+	/// let response = client.recv_message().unwrap();
 	/// ```
-	pub fn recv_message<I>(&mut self) -> WebSocketResult<OwnedMessage>
-		where I: Iterator<Item = DataFrame>
-	{
+	pub fn recv_message(&mut self) -> WebSocketResult<OwnedMessage> {
 		self.receiver.recv_message(&mut self.stream)
 	}
 
@@ -260,7 +258,6 @@ impl<S> Client<S>
 	/// ```rust,no_run
 	/// # use websocket::ClientBuilder;
 	/// use std::io::Cursor;
-	/// use websocket::Message;
 	/// use websocket::ws::receiver::Receiver as ReceiverTrait;
 	/// use websocket::receiver::Receiver;
 	///
@@ -276,7 +273,7 @@ impl<S> Client<S>
 	/// /* transform buf somehow */
 	///
 	/// let mut buf_reader = Cursor::new(&mut buf);
-	/// let message: Message = receiver.recv_message(&mut buf_reader).unwrap();
+	/// let message = receiver.recv_message(&mut buf_reader).unwrap();
 	/// ```
 	pub fn reader_mut(&mut self) -> &mut Read {
 		&mut self.stream
@@ -299,14 +296,13 @@ impl<S> Client<S>
 	///```no_run
 	///# extern crate websocket;
 	///# fn main() {
-	///use websocket::{ClientBuilder, Message};
+	///use websocket::ClientBuilder;
 	///
 	///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
 	///                     .connect(None).unwrap();
 	///
 	///for message in client.incoming_messages() {
-	///    let message: Message = message.unwrap();
-	///    println!("Recv: {:?}", message);
+	///    println!("Recv: {:?}", message.unwrap());
 	///}
 	///# }
 	///```
@@ -318,7 +314,7 @@ impl<S> Client<S>
 	///```no_run
 	///# extern crate websocket;
 	///# fn main() {
-	///use websocket::{ClientBuilder, Message};
+	///use websocket::ClientBuilder;
 	///
 	///let mut client = ClientBuilder::new("ws://127.0.0.1:1234").unwrap()
 	///                     .connect_insecure().unwrap();
@@ -326,9 +322,8 @@ impl<S> Client<S>
 	///let (mut receiver, mut sender) = client.split().unwrap();
 	///
 	///for message in receiver.incoming_messages() {
-	///    let message: Message = message.unwrap();
 	///    // Echo the message back
-	///    sender.send_message(&message).unwrap();
+	///    sender.send_message(&message.unwrap()).unwrap();
 	///}
 	///# }
 	///```
@@ -357,8 +352,7 @@ impl<S> Client<S>
 	///
 	///thread::spawn(move || {
 	///    for message in receiver.incoming_messages() {
-	///        let message: Message = message.unwrap();
-	///        println!("Recv: {:?}", message);
+	///        println!("Recv: {:?}", message.unwrap());
 	///    }
 	///});
 	///
