@@ -8,19 +8,44 @@ use std::io::{Read, Write};
 pub trait Stream: Read + Write {}
 impl<S> Stream for S where S: Read + Write {}
 
+/// If you would like to combine an input stream and an output stream into a single
+/// stream to talk websockets over then this is the struct for you!
+///
+/// This is useful if you want to use different mediums for different directions.
+pub struct ReadWritePair<R, W>(pub R, pub W)
+	where R: Read,
+	      W: Write;
+
 #[cfg(feature="async")]
 pub mod async {
+	use std::io::{self, Read, Write};
+	use futures::Poll;
+	pub use super::ReadWritePair;
 	pub use tokio_core::net::TcpStream;
 	pub use tokio_io::{AsyncWrite, AsyncRead};
 	pub use tokio_io::io::{ReadHalf, WriteHalf};
 
 	pub trait Stream: AsyncRead + AsyncWrite {}
 	impl<S> Stream for S where S: AsyncRead + AsyncWrite {}
-	// TODO: implement for a pair of async read/write?
+
+	impl<R, W> AsyncRead for ReadWritePair<R, W>
+		where R: AsyncRead,
+		      W: Write
+	{
+	}
+	impl<R, W> AsyncWrite for ReadWritePair<R, W>
+		where W: AsyncWrite,
+		      R: Read
+	{
+		fn shutdown(&mut self) -> Poll<(), io::Error> {
+			self.1.shutdown()
+		}
+	}
 }
 
 #[cfg(feature="sync")]
 pub mod sync {
+	pub use super::ReadWritePair;
 	use std::io::{self, Read, Write};
 	use std::ops::Deref;
 	use std::fmt::Arguments;
@@ -101,14 +126,6 @@ pub mod sync {
 			self.deref().as_tcp()
 		}
 	}
-
-	/// If you would like to combine an input stream and an output stream into a single
-	/// stream to talk websockets over then this is the struct for you!
-	///
-	/// This is useful if you want to use different mediums for different directions.
-	pub struct ReadWritePair<R, W>(pub R, pub W)
-		where R: Read,
-		      W: Write;
 
 	impl<R, W> Read for ReadWritePair<R, W>
 		where R: Read,
