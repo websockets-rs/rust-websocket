@@ -37,7 +37,10 @@ impl DataFrame {
 		}
 	}
 
-	/// TODO: docs
+	/// Take the body and header of a dataframe and combine it into a single
+	/// Dataframe struct. A websocket message can be made up of many individual
+	/// dataframes, use the methods from the Message or OwnedMessage structs to
+	/// take many of these and create a websocket message.
 	pub fn read_dataframe_body(
 		header: DataFrameHeader,
 		body: Vec<u8>,

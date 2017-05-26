@@ -52,7 +52,7 @@ extern crate tokio_io;
 #[cfg(feature="async")]
 extern crate bytes;
 #[cfg(feature="async")]
-extern crate futures;
+pub extern crate futures;
 #[cfg(feature="async-ssl")]
 extern crate tokio_tls;
 
@@ -147,6 +147,12 @@ pub mod async {
 	pub use client::async::Client;
 
 	pub use result::async::WebSocketFuture;
+
+	pub use futures;
+	pub use tokio_core::net::TcpStream;
+	pub use tokio_core::net::TcpListener;
+	pub use tokio_core::reactor::Core;
+	pub use tokio_core::reactor::Handle;
 }
 
 pub use self::message::Message;

@@ -1,3 +1,7 @@
+//! Send HTTP requests and responses asynchronously.
+//!
+//! This module has both an `HttpClientCodec` for an async HTTP client and an
+//! `HttpServerCodec` for an async HTTP server.
 use std::io::{self, Write};
 use std::error::Error;
 use std::fmt::{self, Formatter, Display};
@@ -15,6 +19,39 @@ use bytes::BytesMut;
 use bytes::BufMut;
 
 #[derive(Copy, Clone, Debug)]
+///```rust,no_run
+///# extern crate tokio_core;
+///# extern crate tokio_io;
+///# extern crate websocket;
+///# extern crate hyper;
+///# use websocket::codec::http::HttpClientCodec;
+///# use websocket::async::futures::Future;
+///# use websocket::async::futures::Sink;
+///# use tokio_core::net::TcpStream;
+///# use tokio_core::reactor::Core;
+///# use tokio_io::AsyncRead;
+///# use hyper::http::h1::Incoming;
+///# use hyper::version::HttpVersion;
+///# use hyper::header::Headers;
+///# use hyper::method::Method;
+///# use hyper::uri::RequestUri;
+///
+///# fn main() {
+///let core = Core::new().unwrap();
+///
+///let f = TcpStream::connect(&"crouton.net".parse().unwrap(), &core.handle())
+///    .and_then(|s| {
+///        Ok(s.framed(HttpClientCodec))
+///    })
+///    .and_then(|s| {
+///        s.send(Incoming {
+///            version: HttpVersion::Http11,
+///            subject: (Method::Get, RequestUri::AbsolutePath("/".to_string())),
+///            headers: Headers::new(),
+///        })
+///    });
+///# }
+///```
 pub struct HttpClientCodec;
 
 fn split_off_http(src: &mut BytesMut) -> Option<BytesMut> {

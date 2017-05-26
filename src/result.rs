@@ -17,10 +17,15 @@ use native_tls::HandshakeError as TlsHandshakeError;
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
 
+/// This module contains convenience types to make working with Futures and
+/// websocket results easier.
 #[cfg(feature="async")]
 pub mod async {
 	use futures::Future;
 	use super::WebSocketError;
+
+	/// The most common Future in this library, it is simply some result `I` or
+	/// a `WebSocketError`. This is analogous to the `WebSocketResult` type.
 	pub type WebSocketFuture<I> = Box<Future<Item = I, Error = WebSocketError>>;
 }
 

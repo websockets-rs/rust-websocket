@@ -229,7 +229,14 @@ impl<'a> ws::Message for Message<'a> {
 	}
 }
 
-/// Represents a WebSocket message.
+/// Represents an owned WebSocket message.
+///
+/// `OwnedMessage`s are generated when the user receives a message (since the data
+/// has to be copied out of the network buffer anyway).
+/// If you would like to create a message out of borrowed data to use for sending
+/// please use the `Message` struct (which contains a `Cow`).
+///
+/// Note that `OwnedMessage` can `Message` can be converted into each other.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum OwnedMessage {
 	/// A message containing UTF-8 text data
@@ -249,6 +256,12 @@ pub enum OwnedMessage {
 }
 
 impl OwnedMessage {
+	/// Checks if this message is a close message.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Close(None).is_close());
+	///```
 	pub fn is_close(&self) -> bool {
 		match *self {
 			OwnedMessage::Close(_) => true,
@@ -256,6 +269,15 @@ impl OwnedMessage {
 		}
 	}
 
+	/// Checks if this message is a control message.
+	/// Control messages are either `Close`, `Ping`, or `Pong`.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Ping(vec![]).is_control());
+	///assert!(OwnedMessage::Pong(vec![]).is_control());
+	///assert!(OwnedMessage::Close(None).is_control());
+	///```
 	pub fn is_control(&self) -> bool {
 		match *self {
 			OwnedMessage::Close(_) => true,
@@ -265,10 +287,26 @@ impl OwnedMessage {
 		}
 	}
 
+	/// Checks if this message is a data message.
+	/// Data messages are either `Text` or `Binary`.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Text("1337".to_string()).is_data());
+	///assert!(OwnedMessage::Binary(vec![]).is_data());
+	///```
 	pub fn is_data(&self) -> bool {
 		!self.is_control()
 	}
 
+	/// Checks if this message is a ping message.
+	/// `Ping` messages can come at any time and usually generate a `Pong` message
+	/// response.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Ping("ping".to_string().into_bytes()).is_ping());
+	///```
 	pub fn is_ping(&self) -> bool {
 		match *self {
 			OwnedMessage::Ping(_) => true,
@@ -276,6 +314,13 @@ impl OwnedMessage {
 		}
 	}
 
+	/// Checks if this message is a pong message.
+	/// `Pong` messages are usually sent only in response to `Ping` messages.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Pong("pong".to_string().into_bytes()).is_pong());
+	///```
 	pub fn is_pong(&self) -> bool {
 		match *self {
 			OwnedMessage::Pong(_) => true,

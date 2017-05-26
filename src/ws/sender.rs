@@ -9,6 +9,9 @@ use result::WebSocketResult;
 
 /// A trait for sending data frames and messages.
 pub trait Sender {
+	/// Should the messages sent be masked.
+	/// See the [RFC](https://tools.ietf.org/html/rfc6455#section-5.3)
+	/// for more detail.
 	fn is_masked(&self) -> bool;
 
 	/// Sends a single data frame using this sender.
