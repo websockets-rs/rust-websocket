@@ -490,7 +490,7 @@ impl<'u> ClientBuilder<'u> {
 		handle: &Handle,
 	) -> async::ClientNew<Box<stream::async::Stream + Send>> {
 		// connect to the tcp stream
-		let tcp_stream = match self.async_tcpstream(handle) {
+		let tcp_stream = match self.async_tcpstream(None, handle) {
 			Ok(t) => t,
 			Err(e) => return future::err(e).boxed(),
 		};
@@ -543,7 +543,7 @@ impl<'u> ClientBuilder<'u> {
 		handle: &Handle,
 	) -> async::ClientNew<async::TlsStream<async::TcpStream>> {
 		// connect to the tcp stream
-		let tcp_stream = match self.async_tcpstream(handle) {
+		let tcp_stream = match self.async_tcpstream(Some(true), handle) {
 			Ok(t) => t,
 			Err(e) => return future::err(e).boxed(),
 		};
@@ -565,14 +565,14 @@ impl<'u> ClientBuilder<'u> {
 		};
 
 		// put it all together
-		let future =
-			tcp_stream.map_err(|e| e.into())
-			          .and_then(move |s| {
-				                    connector.connect_async(&host, s).map_err(|e| e.into())
-				                   })
-			          .and_then(move |stream| {
-				                    builder.async_connect_on(stream)
-				                   });
+		let future = tcp_stream.map_err(|e| e.into())
+		                       .and_then(move |s| {
+			                                 connector.connect_async(&host, s)
+			                                          .map_err(|e| e.into())
+			                                })
+		                       .and_then(move |stream| {
+			                                 builder.async_connect_on(stream)
+			                                });
 		Box::new(future)
 	}
 
@@ -580,7 +580,7 @@ impl<'u> ClientBuilder<'u> {
 	// TODO: add conveniences like .response_to_pings, .send_close, etc.
 	#[cfg(feature="async")]
 	pub fn async_connect_insecure(self, handle: &Handle) -> async::ClientNew<async::TcpStream> {
-		let tcp_stream = match self.async_tcpstream(handle) {
+		let tcp_stream = match self.async_tcpstream(Some(false), handle) {
 			Ok(t) => t,
 			Err(e) => return future::err(e).boxed(),
 		};
@@ -645,20 +645,23 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	#[cfg(feature="async")]
-	fn async_tcpstream(&self, handle: &Handle) -> WebSocketResult<TcpStreamNew> {
+	fn async_tcpstream(
+		&self,
+		secure: Option<bool>,
+		handle: &Handle,
+	) -> WebSocketResult<TcpStreamNew> {
 		// get the address to connect to, return an error future if ther's a problem
-		let address =
-			match self.extract_host_port(Some(false)).and_then(|p| Ok(p.to_socket_addrs()?)) {
-				Ok(mut s) => {
-					match s.next() {
-						Some(a) => a,
-						None => {
-							return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName));
-						}
+		let address = match self.extract_host_port(secure).and_then(|p| Ok(p.to_socket_addrs()?)) {
+			Ok(mut s) => {
+				match s.next() {
+					Some(a) => a,
+					None => {
+						return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName));
 					}
 				}
-				Err(e) => return Err(e.into()),
-			};
+			}
+			Err(e) => return Err(e.into()),
+		};
 
 		// connect a tcp stream
 		Ok(async::TcpStream::connect(&address, handle))
