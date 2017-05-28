@@ -1,26 +1,32 @@
 //! Everything you need to create a client connection to a websocket.
 
 use std::borrow::Cow;
-use std::net::TcpStream;
-use std::net::ToSocketAddrs;
 pub use url::{Url, ParseError};
-use url::Position;
-use hyper::version::HttpVersion;
-use hyper::http::h1::Incoming;
-use hyper::http::RawStatus;
-use hyper::status::StatusCode;
-use hyper::buffer::BufReader;
-use hyper::method::Method;
-use hyper::uri::RequestUri;
-use hyper::http::h1::parse_response;
-use hyper::header::{Headers, Header, HeaderFormat, Host, Connection, ConnectionOption, Upgrade,
-                    Protocol, ProtocolName};
-use unicase::UniCase;
 use header::extensions::Extension;
-use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
-             WebSocketExtensions, Origin};
-use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
-use stream::{self, Stream};
+use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensions, Origin};
+use hyper::header::{Headers, Header, HeaderFormat};
+use hyper::version::HttpVersion;
+
+#[cfg(any(feature="sync", feature="async"))]
+mod common_imports {
+	pub use std::net::TcpStream;
+	pub use std::net::ToSocketAddrs;
+	pub use url::Position;
+	pub use hyper::http::h1::Incoming;
+	pub use hyper::http::RawStatus;
+	pub use hyper::status::StatusCode;
+	pub use hyper::buffer::BufReader;
+	pub use hyper::method::Method;
+	pub use hyper::uri::RequestUri;
+	pub use hyper::http::h1::parse_response;
+	pub use hyper::header::{Host, Connection, ConnectionOption, Upgrade, Protocol, ProtocolName};
+	pub use unicase::UniCase;
+	pub use header::WebSocketAccept;
+	pub use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
+	pub use stream::{self, Stream};
+}
+#[cfg(any(feature="sync", feature="async"))]
+use self::common_imports::*;
 
 #[cfg(feature="sync")]
 use super::sync::Client;
@@ -29,7 +35,9 @@ use super::sync::Client;
 use stream::sync::NetworkStream;
 
 #[cfg(any(feature="sync-ssl", feature="async-ssl"))]
-use native_tls::{TlsStream, TlsConnector};
+use native_tls::TlsConnector;
+#[cfg(feature="sync-ssl")]
+use native_tls::TlsStream;
 
 #[cfg(feature="async")]
 mod async_imports {
@@ -819,6 +827,7 @@ impl<'u> ClientBuilder<'u> {
 		Ok(async::TcpStream::connect(&address, handle))
 	}
 
+	#[cfg(any(feature="sync", feature="async"))]
 	fn build_request(&mut self) -> String {
 		// enter host if available (unix sockets don't have hosts)
 		if let Some(host) = self.url.host_str() {
@@ -855,6 +864,7 @@ impl<'u> ClientBuilder<'u> {
 		resource
 	}
 
+	#[cfg(any(feature="sync", feature="async"))]
 	fn validate(&self, response: &Incoming<RawStatus>) -> WebSocketResult<()> {
 		let status = StatusCode::from_u16(response.subject.0);
 
@@ -890,6 +900,7 @@ impl<'u> ClientBuilder<'u> {
 		Ok(())
 	}
 
+	#[cfg(any(feature="sync", feature="async"))]
 	fn extract_host_port(&self, secure: Option<bool>) -> WebSocketResult<(&str, u16)> {
 		let port = match (self.url.port(), secure) {
 			(Some(port), _) => port,
@@ -906,6 +917,7 @@ impl<'u> ClientBuilder<'u> {
 		Ok((host, port))
 	}
 
+	#[cfg(feature="sync")]
 	fn establish_tcp(&mut self, secure: Option<bool>) -> WebSocketResult<TcpStream> {
 		Ok(TcpStream::connect(self.extract_host_port(secure)?)?)
 	}

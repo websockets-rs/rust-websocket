@@ -5,33 +5,25 @@
 
 //! Rust-WebSocket is a WebSocket (RFC6455) library written in Rust.
 //!
-//! # Clients
-//! WebSocket clients make use of the `Client` object, which features two connection
-//! functions: `connect()` and `connect_ssl_context()`. See the `Client` struct
-//! documentation for more information. These both return a client-side `Request`
-//! object which is sent to the server with the `send()` method. The `Request` can
-//! be altered, typically using `Request.headers.set()` to add additional headers
-//! or change existing ones before calling `send()`.
+//! # Synchronous and Asynchronous
+//! This crate has both async and sync implementations of websockets, you are free to
+//! choose which one you would like to use by switching on the `async` or `sync` features
+//! for this crate. By default both are switched on since they do not conflict with each
+//! other.
 //!
-//! Calling `send()` on a `Request` will obtain a `Response`, which can be checked
-//! with the `validate()` method, which will return `Ok(())` if the response is a
-//! valid one. Data frames and messages can then be sent by obtaining a `Client`
-//! object with `begin()`.
+//! You'll find many modules with `::sync` and `::async` submodules that separate these
+//! behaviours. Since it get's tedious to add these on when appropriate a top-level
+//! convenience module called `websocket::sync` and `websocket::async` has been added that
+//! groups all the sync and async stuff, respectively.
+//!
+//! # Clients
+//! To make a client use the `ClientBuilder` struct, this builder has methods
+//! for creating both synchronous and asynchronous clients.
 //!
 //! # Servers
 //! WebSocket servers act similarly to the `TcpListener`, and listen for connections.
 //! See the `Server` struct documentation for more information. The `bind()` and
 //! `bind_secure()` functions will bind the server to the given `SocketAddr`.
-//! `Server` implements Iterator and can be used to iterate over incoming `Request`
-//! items.
-//!
-//! Requests can be validated using `validate()`, and other parts of the request may
-//! be examined (e.g. the Host header and/or the Origin header). A call to `accept()`
-//! or `fail()` will generate a `Response` which either accepts the connection, or
-//! denies it respectively.
-//!
-//! A `Response` can then be altered if necessary, and is sent with the 'send()`
-//! method, returning a `Client` ready to send and receive data frames or messages.
 //!
 //! # Extending Rust-WebSocket
 //! The `ws` module contains the traits and functions used by Rust-WebSockt at a lower
@@ -95,6 +87,7 @@ pub mod client;
 pub mod server;
 pub mod stream;
 
+/// A collection of handy synchronous-only parts of the crate.
 #[cfg(feature="sync")]
 pub mod sync {
 	pub use sender;
@@ -106,6 +99,7 @@ pub mod sync {
 	pub use stream::sync::Stream;
 	pub use stream::sync as stream;
 
+	/// A collection of handy synchronous-only parts of the `server` module.
 	pub mod server {
 		pub use server::sync::*;
 		pub use server::upgrade::sync::Upgrade;
@@ -114,6 +108,7 @@ pub mod sync {
 	}
 	pub use server::sync::Server;
 
+	/// A collection of handy synchronous-only parts of the `client` module.
 	pub mod client {
 		pub use client::sync::*;
 		pub use client::builder::ClientBuilder;
@@ -121,6 +116,7 @@ pub mod sync {
 	pub use client::sync::Client;
 }
 
+/// A collection of handy asynchronous-only parts of the crate.
 #[cfg(feature="async")]
 pub mod async {
 	pub use codec;
@@ -132,6 +128,7 @@ pub mod async {
 	pub use stream::async::Stream;
 	pub use stream::async as stream;
 
+	/// A collection of handy asynchronous-only parts of the `server` module.
 	pub mod server {
 		pub use server::async::*;
 		pub use server::upgrade::async::Upgrade;
@@ -140,6 +137,7 @@ pub mod async {
 	}
 	pub use server::async::Server;
 
+	/// A collection of handy asynchronous-only parts of the `client` module.
 	pub mod client {
 		pub use client::async::*;
 		pub use client::builder::ClientBuilder;

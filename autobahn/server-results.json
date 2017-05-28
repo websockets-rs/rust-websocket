@@ -2773,28 +2773,28 @@
          "reportfile": "rust_websocket_case_6_3_2.json"
       },
       "6.4.1": {
-         "behavior": "NON-STRICT",
+         "behavior": "OK",
          "behaviorClose": "OK",
          "duration": 2002,
          "remoteCloseCode": null,
          "reportfile": "rust_websocket_case_6_4_1.json"
       },
       "6.4.2": {
-         "behavior": "NON-STRICT",
+         "behavior": "OK",
          "behaviorClose": "OK",
          "duration": 2001,
          "remoteCloseCode": null,
          "reportfile": "rust_websocket_case_6_4_2.json"
       },
       "6.4.3": {
-         "behavior": "NON-STRICT",
+         "behavior": "OK",
          "behaviorClose": "OK",
          "duration": 2003,
          "remoteCloseCode": null,
          "reportfile": "rust_websocket_case_6_4_3.json"
       },
       "6.4.4": {
-         "behavior": "NON-STRICT",
+         "behavior": "OK",
          "behaviorClose": "OK",
          "duration": 2003,
          "remoteCloseCode": null,

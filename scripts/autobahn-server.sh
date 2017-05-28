@@ -13,8 +13,9 @@ function cleanup() {
 trap cleanup TERM EXIT
 
 function test_diff() {
+    SAVED_RESULTS=$(sed 's/NON-STRICT/OK/g' autobahn/server-results.json)
     DIFF=$(diff \
-        <(jq -S 'del(."rust-websocket" | .. | .duration?)' 'autobahn/server-results.json') \
+        <(jq -S 'del(."rust-websocket" | .. | .duration?)' "$SAVED_RESULTS") \
         <(jq -S 'del(."rust-websocket" | .. | .duration?)' 'autobahn/server/index.json') )
 
     if [[ $DIFF ]]; then

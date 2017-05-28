@@ -364,7 +364,7 @@ mod tests {
 	fn message_codec_client_send_receive() {
 		let mut core = Core::new().unwrap();
 		let mut input = Vec::new();
-		Message::text("50 schmeckels").serialize(&mut input, false);
+		Message::text("50 schmeckels").serialize(&mut input, false).unwrap();
 
 		let f = ReadWritePair(Cursor::new(input), Cursor::new(vec![]))
 			.framed(MessageCodec::new(Context::Client))
@@ -375,15 +375,17 @@ mod tests {
 				     s
 				    })
 			.and_then(|s| s.send(Message::text("ethan bradberry")))
-			.map(|s| {
-				let stream = s.into_parts().inner;
+			.and_then(|s| {
+				let mut stream = s.into_parts().inner;
+          stream.1.set_position(0);
+          println!("buffer: {:?}", stream.1);
 				ReadWritePair(stream.1, stream.0)
-					.framed(MessageCodec::default(Context::Client))
+					.framed(MessageCodec::default(Context::Server))
 					.into_future()
 					.map_err(|e| e.0)
 					.map(|(message, _)| {
 						     assert_eq!(message, Some(Message::text("ethan bradberry").into()))
-						    });
+						    })
 			});
 
 		core.run(f).unwrap();
@@ -393,7 +395,7 @@ mod tests {
 	fn message_codec_server_send_receive() {
 		let mut core = Core::new().unwrap();
 		let mut input = Vec::new();
-		Message::text("50 schmeckels").serialize(&mut input, true);
+		Message::text("50 schmeckels").serialize(&mut input, true).unwrap();
 
 		let f = ReadWritePair(Cursor::new(input.as_slice()), Cursor::new(vec![]))
 			.framed(MessageCodec::new(Context::Server))
@@ -406,7 +408,7 @@ mod tests {
 			.and_then(|s| s.send(Message::text("ethan bradberry")))
 			.map(|s| {
 				     let mut written = vec![];
-				     Message::text("ethan bradberry").serialize(&mut written, false);
+				     Message::text("ethan bradberry").serialize(&mut written, false).unwrap();
 				     assert_eq!(written, s.into_parts().inner.1.into_inner());
 				    });
 

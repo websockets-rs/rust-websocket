@@ -12,9 +12,11 @@ use unicase::UniCase;
 use hyper::status::StatusCode;
 use hyper::http::h1::Incoming;
 use hyper::method::Method;
-use hyper::version::HttpVersion;
 use hyper::uri::RequestUri;
 use hyper::header::{Headers, Upgrade, Protocol, ProtocolName, Connection, ConnectionOption};
+
+#[cfg(any(feature="sync", feature="async"))]
+use hyper::version::HttpVersion;
 
 #[cfg(feature="async")]
 pub mod async;
@@ -122,6 +124,7 @@ impl<S, B> WsUpgrade<S, B>
 		self.request.headers.get::<Origin>().map(|o| &o.0 as &str)
 	}
 
+  #[cfg(feature="sync")]
 	fn send(&mut self, status: StatusCode) -> io::Result<()> {
 		try!(write!(&mut self.stream, "{} {}\r\n", self.request.version, status));
 		try!(write!(&mut self.stream, "{}\r\n", self.headers));
@@ -227,6 +230,7 @@ impl From<::codec::http::HttpCodecError> for HyperIntoWsError {
 	}
 }
 
+#[cfg(any(feature="sync", feature="async"))]
 fn validate(
 	method: &Method,
 	version: &HttpVersion,

@@ -47,9 +47,48 @@ pub struct InvalidConnection<S, B>
 	pub error: HyperIntoWsError,
 }
 
+/// Represents a WebSocket server which can work with either normal
+/// (non-secure) connections, or secure WebSocket connections.
+///
+/// This is a convenient way to implement WebSocket servers, however
+/// it is possible to use any sendable Reader and Writer to obtain
+/// a WebSocketClient, so if needed, an alternative server implementation can be used.
+///
+/// # Synchronous Servers
+/// Synchronous implementations of a websocket server are available below, each method is
+/// documented so the reader knows wether is it synchronous or asynchronous.
+///
+/// To use the synchronous implementation, you must have the `sync` feature enabled
+/// (it is enabled by default).
+/// To use the synchronous SSL implementation, you must have the `sync-ssl` feature enabled
+/// (it is enabled by default).
+///
+/// # Asynchronous Servers
+/// Asynchronous implementations of a websocket server are available below, each method is
+/// documented so the reader knows wether is it synchronous or asynchronous.
+/// Simply look out for the implementation of `Server` whose methods only return `Future`s
+/// (it is also written in the docs if the method is async).
+///
+/// To use the asynchronous implementation, you must have the `async` feature enabled
+/// (it is enabled by default).
+/// To use the asynchronous SSL implementation, you must have the `async-ssl` feature enabled
+/// (it is enabled by default).
+///
+/// # A Hyper Server
+/// This crates comes with hyper integration out of the box, you can create a hyper
+/// server and serve websocket and HTTP **on the same port!**
+/// check out the docs over at `websocket::server::upgrade::sync::HyperRequest` for an example.
+///
+/// # A Custom Server
+/// So you don't want to use any of our server implementations? That's O.K.
+/// All it takes is implementing the `IntoWs` trait for your server's streams,
+/// then calling `.into_ws()` on them.
+/// check out the docs over at `websocket::server::upgrade::sync` for more.
+#[cfg(any(feature="sync", feature="async"))]
 pub struct WsServer<S, L>
 	where S: OptionalTlsAcceptor
 {
 	listener: L,
-	ssl_acceptor: S,
+	/// The SSL acceptor given to the server
+	pub ssl_acceptor: S,
 }

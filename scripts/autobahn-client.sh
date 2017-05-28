@@ -16,8 +16,9 @@ wstest -m fuzzingserver -s 'autobahn/fuzzingserver.json' & \
 sleep 10
 
 function test_diff() {
+    SAVED_RESULTS=$(sed 's/NON-STRICT/OK/g' autobahn/client-results.json)
     DIFF=$(diff \
-        <(jq -S 'del(."rust-websocket" | .. | .duration?)' 'autobahn/client-results.json') \
+        <(jq -S 'del(."rust-websocket" | .. | .duration?)' "$SAVED_RESULTS") \
         <(jq -S 'del(."rust-websocket" | .. | .duration?)' 'autobahn/client/index.json') )
 
     if [[ $DIFF ]]; then

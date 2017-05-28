@@ -26,81 +26,9 @@ pub type AcceptResult<S> = Result<Upgrade<S>, InvalidConnection<S, Buffer>>;
 /// This is a convenient way to implement WebSocket servers, however
 /// it is possible to use any sendable Reader and Writer to obtain
 /// a WebSocketClient, so if needed, an alternative server implementation can be used.
-///# Non-secure Servers
-///
-/// ```no_run
-///extern crate websocket;
-///# fn main() {
-///use std::thread;
-///use websocket::Message;
-///use websocket::sync::Server;
-///
-///let server = Server::bind("127.0.0.1:1234").unwrap();
-///
-///for connection in server.filter_map(Result::ok) {
-///    // Spawn a new thread for each connection.
-///    thread::spawn(move || {
-///		   let mut client = connection.accept().unwrap();
-///
-///		   let message = Message::text("Hello, client!");
-///		   let _ = client.send_message(&message);
-///
-///		   // ...
-///    });
-///}
-/// # }
-/// ```
-///
-///# Secure Servers
-/// ```no_run
-///extern crate websocket;
-///extern crate native_tls;
-///# fn main() {
-///use std::thread;
-///use std::io::Read;
-///use std::fs::File;
-///use websocket::Message;
-///use websocket::sync::Server;
-///use native_tls::{Pkcs12, TlsAcceptor};
-///
-///// In this example we retrieve our keypair and certificate chain from a PKCS #12 archive,
-///// but but they can also be retrieved from, for example, individual PEM- or DER-formatted
-///// files. See the documentation for the `PKey` and `X509` types for more details.
-///let mut file = File::open("identity.pfx").unwrap();
-///let mut pkcs12 = vec![];
-///file.read_to_end(&mut pkcs12).unwrap();
-///let pkcs12 = Pkcs12::from_der(&pkcs12, "hacktheplanet").unwrap();
-///
-///let acceptor = TlsAcceptor::builder(pkcs12).unwrap().build().unwrap();
-///
-///let server = Server::bind_secure("127.0.0.1:1234", acceptor).unwrap();
-///
-///for connection in server.filter_map(Result::ok) {
-///    // Spawn a new thread for each connection.
-///    thread::spawn(move || {
-///		   let mut client = connection.accept().unwrap();
-///
-///		   let message = Message::text("Hello, client!");
-///		   let _ = client.send_message(&message);
-///
-///		   // ...
-///    });
-///}
-/// # }
-/// ```
-///
-/// # A Hyper Server
-/// This crates comes with hyper integration out of the box, you can create a hyper
-/// server and serve websocket and HTTP **on the same port!**
-/// check out the docs over at `websocket::server::upgrade::sync::HyperRequest` for an example.
-///
-/// # A Custom Server
-/// So you don't want to use any of our server implementations? That's O.K.
-/// All it takes is implementing the `IntoWs` trait for your server's streams,
-/// then calling `.into_ws()` on them.
-/// check out the docs over at `websocket::server::upgrade::sync` for more.
 pub type Server<S> = WsServer<S, TcpListener>;
 
+/// Synchronous methods for creating a server and accepting incoming connections.
 impl<S> WsServer<S, TcpListener>
     where S: OptionalTlsAcceptor
 {
@@ -116,7 +44,6 @@ impl<S> WsServer<S, TcpListener>
 	/// If it is in nonblocking mode, accept() will return an error instead of
 	/// blocking when there are no incoming connections.
 	///
-	///# Examples
 	///```no_run
 	/// # extern crate websocket;
 	/// # use websocket::sync::Server;
@@ -152,6 +79,10 @@ impl<S> WsServer<S, TcpListener>
 		self.listener.set_nonblocking(nonblocking)
 	}
 
+	/// Turns an existing synchronous server into an asynchronous one.
+	/// This will only work if the stream used for this server `S` already implements
+	/// `AsyncRead + AsyncWrite`. Useful if you would like some blocking things to happen
+	/// at the start of your server.
 	#[cfg(feature="async")]
 	pub fn into_async(self, handle: &Handle) -> io::Result<async::Server<S>> {
 		let addr = self.listener.local_addr()?;
@@ -162,9 +93,48 @@ impl<S> WsServer<S, TcpListener>
 	}
 }
 
+/// Synchronous methods for creating an SSL server and accepting incoming connections.
 #[cfg(feature="sync-ssl")]
 impl WsServer<TlsAcceptor, TcpListener> {
 	/// Bind this Server to this socket, utilising the given SslContext
+	///
+	/// # Secure Servers
+	/// ```no_run
+	/// extern crate websocket;
+	/// extern crate native_tls;
+	/// # fn main() {
+	/// use std::thread;
+	/// use std::io::Read;
+	/// use std::fs::File;
+	/// use websocket::Message;
+	/// use websocket::sync::Server;
+	/// use native_tls::{Pkcs12, TlsAcceptor};
+	///
+	/// // In this example we retrieve our keypair and certificate chain from a PKCS #12 archive,
+	/// // but but they can also be retrieved from, for example, individual PEM- or DER-formatted
+	/// // files. See the documentation for the `PKey` and `X509` types for more details.
+	/// let mut file = File::open("identity.pfx").unwrap();
+	/// let mut pkcs12 = vec![];
+	/// file.read_to_end(&mut pkcs12).unwrap();
+	/// let pkcs12 = Pkcs12::from_der(&pkcs12, "hacktheplanet").unwrap();
+	///
+	/// let acceptor = TlsAcceptor::builder(pkcs12).unwrap().build().unwrap();
+	///
+	/// let server = Server::bind_secure("127.0.0.1:1234", acceptor).unwrap();
+	///
+	/// for connection in server.filter_map(Result::ok) {
+	///     // Spawn a new thread for each connection.
+	///     thread::spawn(move || {
+	/// 		    let mut client = connection.accept().unwrap();
+	///
+	/// 		    let message = Message::text("Hello, client!");
+	/// 		    let _ = client.send_message(&message);
+	///
+	/// 		    // ...
+	///     });
+	/// }
+	/// # }
+	/// ```
 	pub fn bind_secure<A>(addr: A, acceptor: TlsAcceptor) -> io::Result<Self>
 		where A: ToSocketAddrs
 	{
@@ -225,6 +195,31 @@ impl Iterator for WsServer<TlsAcceptor, TcpListener> {
 
 impl WsServer<NoTlsAcceptor, TcpListener> {
 	/// Bind this Server to this socket
+	///
+	/// # Non-secure Servers
+	///
+	/// ```no_run
+	/// extern crate websocket;
+	/// # fn main() {
+	/// use std::thread;
+	/// use websocket::Message;
+	/// use websocket::sync::Server;
+	///
+	/// let server = Server::bind("127.0.0.1:1234").unwrap();
+	///
+	/// for connection in server.filter_map(Result::ok) {
+	///     // Spawn a new thread for each connection.
+	///     thread::spawn(move || {
+	///		      let mut client = connection.accept().unwrap();
+	///
+	///		      let message = Message::text("Hello, client!");
+	///		      let _ = client.send_message(&message);
+	///
+	///		      // ...
+	///    });
+	/// }
+	/// # }
+	/// ```
 	pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<Self> {
 		Ok(Server {
 		       listener: try!(TcpListener::bind(&addr)),
