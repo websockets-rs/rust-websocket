@@ -125,7 +125,7 @@ pub mod sync {
 pub mod async {
 	pub use codec;
 	pub use codec::ws::MessageCodec;
-	pub use codec::ws::Context as MessageContext;
+	pub use codec::ws::Context as MsgCodecCtx;
 	pub use codec::http::HttpClientCodec;
 	pub use codec::http::HttpServerCodec;
 

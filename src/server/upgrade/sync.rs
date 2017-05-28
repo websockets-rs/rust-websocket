@@ -37,8 +37,13 @@ pub struct Buffer {
 /// (the request should be a handshake).
 pub struct RequestStreamPair<S: Stream>(pub S, pub Request);
 
+/// The synchronous specialization of `WsUpgrade`.
+/// See the `WsUpgrade` docs for usage and the extra synchronous methods
+/// given by this specialization.
 pub type Upgrade<S> = WsUpgrade<S, Option<Buffer>>;
 
+/// These methods are the synchronous ways of accepting and rejecting a websocket
+/// handshake.
 impl<S> WsUpgrade<S, Option<Buffer>>
     where S: Stream
 {

@@ -398,7 +398,7 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	/// Create an insecure (plain TCP) connection to the client.
-	/// In this case no `Box` will be used you will just get a TcpStream,
+	/// In this case no `Box` will be used, you will just get a TcpStream,
 	/// giving you the ability to split the stream into a reader and writer
 	/// (since SSL streams cannot be cloned).
 	///
@@ -419,9 +419,9 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	/// Create an SSL connection to the sever.
-	/// This will only use an `SslStream`, this is useful
+	/// This will only use an `TlsStream`, this is useful
 	/// when you want to be sure to connect over SSL or when you want access
-	/// to the `SslStream` functions (without having to go through a `Box`).
+	/// to the `TlsStream` functions (without having to go through a `Box`).
 	#[cfg(feature="sync-ssl")]
 	pub fn connect_secure(
 		&mut self,
@@ -434,7 +434,6 @@ impl<'u> ClientBuilder<'u> {
 		self.connect_on(ssl_stream)
 	}
 
-	// TODO: similar ability for server?
 	/// Connects to a websocket server on any stream you would like.
 	/// Possible streams:
 	///  - Unix Sockets
@@ -483,6 +482,50 @@ impl<'u> ClientBuilder<'u> {
 		Ok(Client::unchecked(reader, response.headers, true, false))
 	}
 
+	/// Connect to a websocket server asynchronously.
+	///
+	/// This will use a `Box<AsyncRead + AsyncWrite + Send>` to represent either
+	/// an SSL connection or a normal TCP connection, what to use will be decided
+	/// using the protocol of the URL passed in (e.g. `ws://` or `wss://`)
+	///
+	/// If you have non-default SSL circumstances, you can use the `ssl_config`
+	/// parameter to configure those.
+	///
+	///# Example
+	///
+	/// ```rust,no_run
+	/// # extern crate rand;
+	/// # extern crate tokio_core;
+	/// # extern crate futures;
+	/// # extern crate websocket;
+	/// use websocket::ClientBuilder;
+	/// use websocket::futures::{Future, Stream, Sink};
+	/// use websocket::Message;
+	/// use tokio_core::reactor::Core;
+	/// # use rand::Rng;
+	///
+	/// # fn main() {
+	/// let mut core = Core::new().unwrap();
+	///
+	/// // let's randomly do either SSL or plaintext
+	/// let url = if rand::thread_rng().gen() {
+	///     "ws://echo.websocket.org"
+	/// } else {
+	///     "wss://echo.websocket.org"
+	/// };
+	///
+	/// // send a message and hear it come back
+	/// let echo_future = ClientBuilder::new(url).unwrap()
+	///     .async_connect(None, &core.handle())
+	///     .and_then(|(s, _)| s.send(Message::text("hallo").into()))
+	///     .and_then(|s| s.into_future().map_err(|e| e.0))
+	///     .map(|(m, _)| {
+	///         assert_eq!(m, Some(Message::text("hallo").into()))
+	///     });
+	///
+	/// core.run(echo_future).unwrap();
+	/// # }
+	/// ```
 	#[cfg(feature="async-ssl")]
 	pub fn async_connect(
 		self,
@@ -536,6 +579,41 @@ impl<'u> ClientBuilder<'u> {
 		}
 	}
 
+	/// Asynchronously create an SSL connection to a websocket sever.
+	///
+	/// This method will only try to connect over SSL and fail otherwise, useful
+	/// when you want to be sure to connect over SSL or when you want access
+	/// to the `TlsStream` functions (without having to go through a `Box`).
+	///
+	/// If you have non-default SSL circumstances, you can use the `ssl_config`
+	/// parameter to configure those.
+	///
+	///# Example
+	///
+	/// ```rust
+	/// # extern crate tokio_core;
+	/// # extern crate futures;
+	/// # extern crate websocket;
+	/// use websocket::ClientBuilder;
+	/// use websocket::futures::{Future, Stream, Sink};
+	/// use websocket::Message;
+	/// use tokio_core::reactor::Core;
+	/// # fn main() {
+	///
+	/// let mut core = Core::new().unwrap();
+	///
+	/// // send a message and hear it come back
+	/// let echo_future = ClientBuilder::new("wss://echo.websocket.org").unwrap()
+	///     .async_connect_secure(None, &core.handle())
+	///     .and_then(|(s, _)| s.send(Message::text("hallo").into()))
+	///     .and_then(|s| s.into_future().map_err(|e| e.0))
+	///     .map(|(m, _)| {
+	///         assert_eq!(m, Some(Message::text("hallo").into()))
+	///     });
+	///
+	/// core.run(echo_future).unwrap();
+	/// # }
+	/// ```
 	#[cfg(feature="async-ssl")]
 	pub fn async_connect_secure(
 		self,
@@ -578,6 +656,38 @@ impl<'u> ClientBuilder<'u> {
 
 	// TODO: add timeout option for connecting
 	// TODO: add conveniences like .response_to_pings, .send_close, etc.
+	/// Asynchronously create an insecure (plain TCP) connection to the client.
+	///
+	/// In this case no `Box` will be used, you will just get a `TcpStream`,
+	/// giving you less allocations on the heap and direct access to `TcpStream`
+	/// functions.
+	///
+	///# Example
+	///
+	/// ```rust,no_run
+	/// # extern crate tokio_core;
+	/// # extern crate futures;
+	/// # extern crate websocket;
+	/// use websocket::ClientBuilder;
+	/// use websocket::futures::{Future, Stream, Sink};
+	/// use websocket::Message;
+	/// use tokio_core::reactor::Core;
+	/// # fn main() {
+	///
+	/// let mut core = Core::new().unwrap();
+	///
+	/// // send a message and hear it come back
+	/// let echo_future = ClientBuilder::new("ws://echo.websocket.org").unwrap()
+	///     .async_connect_insecure(&core.handle())
+	///     .and_then(|(s, _)| s.send(Message::text("hallo").into()))
+	///     .and_then(|s| s.into_future().map_err(|e| e.0))
+	///     .map(|(m, _)| {
+	///         assert_eq!(m, Some(Message::text("hallo").into()))
+	///     });
+	///
+	/// core.run(echo_future).unwrap();
+	/// # }
+	/// ```
 	#[cfg(feature="async")]
 	pub fn async_connect_insecure(self, handle: &Handle) -> async::ClientNew<async::TcpStream> {
 		let tcp_stream = match self.async_tcpstream(Some(false), handle) {
@@ -600,6 +710,48 @@ impl<'u> ClientBuilder<'u> {
 		Box::new(future)
 	}
 
+	/// Asynchronously connects to a websocket server on any stream you would like.
+	/// Possible streams:
+	///  - Unix Sockets
+	///  - Bluetooth
+	///  - Logging Middle-ware
+	///  - SSH
+	///
+	/// The stream must be `AsyncRead + AsyncWrite + Send + 'static`.
+	///
+	/// # Example
+	///
+	/// ```rust
+	/// use websocket::header::WebSocketProtocol;
+	/// use websocket::ClientBuilder;
+	/// use websocket::sync::stream::ReadWritePair;
+	/// use websocket::futures::Future;
+	/// use websocket::async::Core;
+	/// # use std::io::Cursor;
+	///
+	/// let mut core = Core::new().unwrap();
+	///
+	/// let accept = b"\
+	/// HTTP/1.1 101 Switching Protocols\r\n\
+	/// Upgrade: websocket\r\n\
+	/// Sec-WebSocket-Protocol: proto-metheus\r\n\
+	/// Connection: Upgrade\r\n\
+	/// Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n\
+	/// \r\n";
+	///
+	/// let input = Cursor::new(&accept[..]);
+	/// let output = Cursor::new(Vec::new());
+	///
+	/// let client = ClientBuilder::new("wss://test.ws").unwrap()
+	///     .key(b"the sample nonce".clone())
+	///     .async_connect_on(ReadWritePair(input, output))
+	///     .map(|(_, headers)| {
+	///         let proto: &WebSocketProtocol = headers.get().unwrap();
+	///         assert_eq!(proto.0.first().unwrap(), "proto-metheus")
+	///     });
+	///
+	/// core.run(client).unwrap();
+	/// ```
 	#[cfg(feature="async")]
 	pub fn async_connect_on<S>(self, stream: S) -> async::ClientNew<S>
 		where S: stream::async::Stream + Send + 'static

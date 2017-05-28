@@ -19,14 +19,18 @@ use bytes::BytesMut;
 use bytes::BufMut;
 
 #[derive(Copy, Clone, Debug)]
+///A codec to be used with `tokio` codecs that can serialize HTTP requests and
+///deserialize HTTP responses. One can use this on it's own without websockets to
+///make a very bare async HTTP server.
+///
+///# Example
 ///```rust,no_run
 ///# extern crate tokio_core;
 ///# extern crate tokio_io;
 ///# extern crate websocket;
 ///# extern crate hyper;
-///# use websocket::codec::http::HttpClientCodec;
-///# use websocket::async::futures::Future;
-///# use websocket::async::futures::Sink;
+///use websocket::async::HttpClientCodec;
+///# use websocket::async::futures::{Future, Sink, Stream};
 ///# use tokio_core::net::TcpStream;
 ///# use tokio_core::reactor::Core;
 ///# use tokio_io::AsyncRead;
@@ -37,9 +41,10 @@ use bytes::BufMut;
 ///# use hyper::uri::RequestUri;
 ///
 ///# fn main() {
-///let core = Core::new().unwrap();
+///let mut core = Core::new().unwrap();
+///let addr = "crouton.net".parse().unwrap();
 ///
-///let f = TcpStream::connect(&"crouton.net".parse().unwrap(), &core.handle())
+///let f = TcpStream::connect(&addr, &core.handle())
 ///    .and_then(|s| {
 ///        Ok(s.framed(HttpClientCodec))
 ///    })
@@ -49,7 +54,12 @@ use bytes::BufMut;
 ///            subject: (Method::Get, RequestUri::AbsolutePath("/".to_string())),
 ///            headers: Headers::new(),
 ///        })
-///    });
+///    })
+///    .map_err(|e| e.into())
+///    .and_then(|s| s.into_future().map_err(|(e, _)| e))
+///    .map(|(m, _)| println!("You got a crouton: {:?}", m));
+///
+///core.run(f).unwrap();
 ///# }
 ///```
 pub struct HttpClientCodec;
@@ -105,6 +115,59 @@ impl Decoder for HttpClientCodec {
 	}
 }
 
+///A codec that can be used with streams implementing `AsyncRead + AsyncWrite`
+///that can serialize HTTP responses and deserialize HTTP requests. Using this
+///with an async `TcpStream` will give you a very bare async HTTP server.
+///
+///This crate sends out one HTTP request / response in order to perform the websocket
+///handshake then never talks HTTP again. Because of this an async HTTP implementation
+///is needed.
+///
+///# Example
+///
+///```rust,no_run
+///# extern crate tokio_core;
+///# extern crate tokio_io;
+///# extern crate websocket;
+///# extern crate hyper;
+///# use std::io;
+///use websocket::async::HttpServerCodec;
+///# use websocket::async::futures::{Future, Sink, Stream};
+///# use tokio_core::net::TcpStream;
+///# use tokio_core::reactor::Core;
+///# use tokio_io::AsyncRead;
+///# use hyper::http::h1::Incoming;
+///# use hyper::version::HttpVersion;
+///# use hyper::header::Headers;
+///# use hyper::method::Method;
+///# use hyper::uri::RequestUri;
+///# use hyper::status::StatusCode;
+///# fn main() {
+///
+///let mut core = Core::new().unwrap();
+///let addr = "nothing-to-see-here.com".parse().unwrap();
+///
+///let f = TcpStream::connect(&addr, &core.handle())
+///   .map(|s| s.framed(HttpServerCodec))
+///   .map_err(|e| e.into())
+///   .and_then(|s| s.into_future().map_err(|(e, _)| e))
+///   .and_then(|(m, s)| match m {
+///       Some(ref m) if m.subject.0 == Method::Get => Ok(s),
+///       _ => panic!(),
+///   })
+///   .and_then(|stream| {
+///       stream
+///          .send(Incoming {
+///               version: HttpVersion::Http11,
+///               subject: StatusCode::NotFound,
+///               headers: Headers::new(),
+///           })
+///           .map_err(|e| e.into())
+///   });
+///
+///core.run(f).unwrap();
+///# }
+///```
 #[derive(Copy, Clone, Debug)]
 pub struct HttpServerCodec;
 
@@ -148,9 +211,15 @@ impl Decoder for HttpServerCodec {
 	}
 }
 
+/// Any error that can happen during the writing or parsing of HTTP requests
+/// and responses. This consists of HTTP parsing errors (the `Http` variant) and
+/// errors that can occur when writing to IO (the `Io` variant).
 #[derive(Debug)]
 pub enum HttpCodecError {
+	/// An error that occurs during the writing or reading of HTTP data
+	/// from a socket.
 	Io(io::Error),
+	/// An error that occurs during the parsing of an HTTP request or response.
 	Http(hyper::Error),
 }
 
@@ -185,5 +254,71 @@ impl From<io::Error> for HttpCodecError {
 impl From<hyper::Error> for HttpCodecError {
 	fn from(err: hyper::Error) -> HttpCodecError {
 		HttpCodecError::Http(err)
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use std::io::Cursor;
+	use stream::ReadWritePair;
+	use tokio_core::reactor::Core;
+	use futures::{Stream, Sink, Future};
+	use tokio_io::AsyncRead;
+	use hyper::version::HttpVersion;
+	use hyper::header::Headers;
+
+	#[test]
+	fn test_client_http_codec() {
+		let mut core = Core::new().unwrap();
+		let response = "HTTP/1.1 404 Not Found\r\n\r\npssst extra data here";
+		let input = Cursor::new(response.as_bytes());
+		let output = Cursor::new(Vec::new());
+
+		let f = ReadWritePair(input, output)
+			.framed(HttpClientCodec)
+			.send(Incoming {
+			          version: HttpVersion::Http11,
+			          subject: (Method::Get, RequestUri::AbsolutePath("/".to_string())),
+			          headers: Headers::new(),
+			      })
+			.map_err(|e| e.into())
+			.and_then(|s| s.into_future().map_err(|(e, _)| e))
+			.and_then(|(m, _)| match m {
+			              Some(ref m) if StatusCode::from_u16(m.subject.0) ==
+			                             StatusCode::NotFound => Ok(()),
+			              _ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
+			          });
+		core.run(f).unwrap();
+	}
+
+	#[test]
+	fn test_server_http_codec() {
+		let mut core = Core::new().unwrap();
+		let request = "\
+		    GET / HTTP/1.0\r\n\
+		    Host: www.rust-lang.org\r\n\
+		    \r\n\
+		    ".as_bytes();
+		let input = Cursor::new(request);
+		let output = Cursor::new(Vec::new());
+
+		let f = ReadWritePair(input, output)
+			.framed(HttpServerCodec)
+			.into_future()
+			.map_err(|(e, _)| e)
+			.and_then(|(m, s)| match m {
+			              Some(ref m) if m.subject.0 == Method::Get => Ok(s),
+			              _ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
+			          })
+			.and_then(|s| {
+				          s.send(Incoming {
+				                     version: HttpVersion::Http11,
+				                     subject: StatusCode::NotFound,
+				                     headers: Headers::new(),
+				                 })
+				           .map_err(|e| e.into())
+				         });
+		core.run(f).unwrap();
 	}
 }

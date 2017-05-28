@@ -31,6 +31,10 @@ pub type Request = Incoming<(Method, RequestUri)>;
 ///
 /// Users should then call `accept` or `reject` to complete the handshake
 /// and start a session.
+/// Note: if the stream in use is `AsyncRead + AsyncWrite`, then asynchronous
+/// functions will be available when completing the handshake.
+/// Otherwise if the stream is simply `Read + Write` blocking functions will be
+/// available to complete the handshake.
 pub struct WsUpgrade<S, B>
 	where S: Stream
 {

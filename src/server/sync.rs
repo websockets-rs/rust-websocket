@@ -92,13 +92,13 @@ pub type AcceptResult<S> = Result<Upgrade<S>, InvalidConnection<S, Buffer>>;
 /// # A Hyper Server
 /// This crates comes with hyper integration out of the box, you can create a hyper
 /// server and serve websocket and HTTP **on the same port!**
-/// check out the docs over at `websocket::server::upgrade::from_hyper` for an example.
+/// check out the docs over at `websocket::server::upgrade::sync::HyperRequest` for an example.
 ///
 /// # A Custom Server
 /// So you don't want to use any of our server implementations? That's O.K.
 /// All it takes is implementing the `IntoWs` trait for your server's streams,
 /// then calling `.into_ws()` on them.
-/// check out the docs over at `websocket::server::upgrade` for more.
+/// check out the docs over at `websocket::server::upgrade::sync` for more.
 pub type Server<S> = WsServer<S, TcpListener>;
 
 impl<S> WsServer<S, TcpListener>
