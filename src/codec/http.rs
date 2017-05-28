@@ -299,7 +299,8 @@ mod tests {
 		    GET / HTTP/1.0\r\n\
 		    Host: www.rust-lang.org\r\n\
 		    \r\n\
-		    ".as_bytes();
+		    "
+			.as_bytes();
 		let input = Cursor::new(request);
 		let output = Cursor::new(Vec::new());
 

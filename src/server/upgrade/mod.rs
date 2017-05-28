@@ -124,7 +124,7 @@ impl<S, B> WsUpgrade<S, B>
 		self.request.headers.get::<Origin>().map(|o| &o.0 as &str)
 	}
 
-  #[cfg(feature="sync")]
+	#[cfg(feature="sync")]
 	fn send(&mut self, status: StatusCode) -> io::Result<()> {
 		try!(write!(&mut self.stream, "{} {}\r\n", self.request.version, status));
 		try!(write!(&mut self.stream, "{}\r\n", self.headers));
