@@ -24,9 +24,6 @@ use ws::message::Message as MessageTrait;
 use ws::util::header::read_header;
 use result::WebSocketError;
 
-// TODO: IMPORTANT: check if frame_size is correct,
-// do not call .reserve with the entire size
-
 /// Even though a websocket connection may look perfectly symmetrical
 /// in reality there are small differences between clients and servers.
 /// This type is passed to the codecs to inform them of what role they are in
@@ -289,8 +286,6 @@ impl<M> Encoder for MessageCodec<M>
 		item.serialize(&mut dst.writer(), masked)
 	}
 }
-
-// TODO: add tests to check boundary cases for reading dataframes
 
 #[cfg(test)]
 mod tests {

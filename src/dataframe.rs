@@ -1,5 +1,5 @@
 //! Module containing the default implementation of data frames.
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
 use result::{WebSocketResult, WebSocketError};
 use ws::dataframe::DataFrame as DataFrameable;
 use ws::util::header::DataFrameHeader;
@@ -61,7 +61,6 @@ impl DataFrame {
 				if !should_be_masked {
 					return Err(WebSocketError::DataFrameError("Expected unmasked data frame"));
 				}
-				// TODO: move data to avoid copy?
 				mask::mask_data(mask, &body)
 			}
 			None => {
@@ -87,7 +86,10 @@ impl DataFrame {
 		let header = try!(dfh::read_header(reader));
 
 		let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
-		reader.take(header.len).read_to_end(&mut data)?;
+		let read = reader.take(header.len).read_to_end(&mut data)?;
+		if (read as u64) < header.len {
+			return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "incomplete payload").into());
+		}
 
 		DataFrame::read_dataframe_body(header, data, should_be_masked)
 	}
@@ -212,6 +214,25 @@ mod tests {
 		};
 		assert_eq!(obtained, expected);
 	}
+
+	#[test]
+	fn read_incomplete_payloads() {
+		let mut data = vec![0x8au8, 0x08, 0x19, 0xac, 0xab, 0x8a, 0x52, 0x4e, 0x05, 0x00];
+		let payload = vec![25, 172, 171, 138, 82, 78, 5, 0];
+		let short_header = DataFrame::read_dataframe(&mut &data[..1], false);
+		let short_payload = DataFrame::read_dataframe(&mut &data[..6], false);
+		let full_payload = DataFrame::read_dataframe(&mut &data[..], false);
+		data.push(0xff);
+		let more_payload = DataFrame::read_dataframe(&mut &data[..], false);
+
+		match (short_header.unwrap_err(), short_payload.unwrap_err()) {
+			(WebSocketError::NoDataAvailable, WebSocketError::NoDataAvailable) => (),
+			_ => assert!(false),
+		};
+		assert_eq!(full_payload.unwrap().data, payload);
+		assert_eq!(more_payload.unwrap().data, payload);
+	}
+
 	#[bench]
 	fn bench_read_dataframe(b: &mut Bencher) {
 		let data = b"The quick brown fox jumps over the lazy dog";
