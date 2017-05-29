@@ -1,6 +1,6 @@
 [package]
 name = "websocket"
-version = "0.20.0"
+version = "0.20.1"
 authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.com>"]
 
 description = "A WebSocket (RFC6455) library for Rust."
@@ -12,7 +12,7 @@ repository = "https://github.com/cyderize/rust-websocket.git"
 readme = "README.md"
 
 keywords = ["websocket", "websockets", "rfc6455", "async", "tokio"]
-categories = ["asynchronous", "network-programming", "web-programming", "web-programming.categories.websocket"]
+categories = ["asynchronous", "network-programming", "web-programming", "web-programming::websocket"]
 
 license = "MIT"
 
