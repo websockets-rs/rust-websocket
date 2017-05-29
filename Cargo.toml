@@ -11,7 +11,7 @@ repository = "https://github.com/cyderize/rust-websocket.git"
 
 readme = "README.md"
 
-keywords = ["websocket", "websockets", "rfc6455", "async", "asynchronous", "tokio", "web", "future", "futures"]
+keywords = ["websocket", "websockets", "rfc6455", "async", "tokio"]
 categories = ["asynchronous", "network-programming", "web-programming", "web-programming.categories.websocket"]
 
 license = "MIT"
