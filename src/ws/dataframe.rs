@@ -3,7 +3,6 @@
 //! optomize the memory footprint of a dataframe for their
 //! own needs, and be able to use custom dataframes quickly
 use std::io::Write;
-use std::borrow::Cow;
 use result::WebSocketResult;
 use ws::util::header as dfh;
 use ws::util::mask::Masker;
@@ -19,28 +18,39 @@ pub trait DataFrame {
 	fn opcode(&self) -> u8;
 	/// Reserved bits of this dataframe
 	fn reserved(&self) -> &[bool; 3];
-	/// Entire payload of the dataframe. If not known then implement
-	/// write_payload as that is the actual method used when sending the
-	/// dataframe over the wire.
-	fn payload(&self) -> Cow<[u8]>;
 
 	/// How long (in bytes) is this dataframe's payload
-	fn size(&self) -> usize {
-		self.payload().len()
+	fn size(&self) -> usize;
+
+	/// Get's the size of the entire dataframe in bytes,
+	/// i.e. header and payload.
+	fn frame_size(&self, masked: bool) -> usize {
+		// one byte for the opcode & reserved & fin
+		1
+        // depending on the size of the payload, add the right payload len bytes
+        + match self.size() {
+            s if s <= 125 => 1,
+            s if s <= 65535 => 3,
+            _ => 9,
+        }
+        // add the mask size if there is one
+        + if masked {
+            4
+        } else {
+            0
+        }
+        // finally add the payload len
+        + self.size()
 	}
 
 	/// Write the payload to a writer
-	fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
-		where W: Write
-	{
-		try!(socket.write_all(&*self.payload()));
-		Ok(())
-	}
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()>;
+
+	/// Takes the payload out into a vec
+	fn take_payload(self) -> Vec<u8>;
 
 	/// Writes a DataFrame to a Writer.
-	fn write_to<W>(&self, writer: &mut W, mask: bool) -> WebSocketResult<()>
-		where W: Write
-	{
+	fn write_to(&self, writer: &mut Write, mask: bool) -> WebSocketResult<()> {
 		let mut flags = dfh::DataFrameFlags::empty();
 		if self.is_last() {
 			flags.insert(dfh::FIN);
@@ -78,48 +88,5 @@ pub trait DataFrame {
 		};
 		try!(writer.flush());
 		Ok(())
-	}
-}
-
-impl<'a, D> DataFrame for &'a D
-    where D: DataFrame
-{
-	#[inline(always)]
-	fn is_last(&self) -> bool {
-		D::is_last(self)
-	}
-
-	#[inline(always)]
-	fn opcode(&self) -> u8 {
-		D::opcode(self)
-	}
-
-	#[inline(always)]
-	fn reserved(&self) -> &[bool; 3] {
-		D::reserved(self)
-	}
-
-	#[inline(always)]
-	fn payload(&self) -> Cow<[u8]> {
-		D::payload(self)
-	}
-
-	#[inline(always)]
-	fn size(&self) -> usize {
-		D::size(self)
-	}
-
-	#[inline(always)]
-	fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
-		where W: Write
-	{
-		D::write_payload(self, socket)
-	}
-
-	#[inline(always)]
-	fn write_to<W>(&self, writer: &mut W, mask: bool) -> WebSocketResult<()>
-		where W: Write
-	{
-		D::write_to(self, writer, mask)
 	}
 }

@@ -1,8 +1,8 @@
 //! Module containing the default implementation of data frames.
-use std::io::Read;
-use std::borrow::Cow;
+use std::io::{Read, Write};
 use result::{WebSocketResult, WebSocketError};
 use ws::dataframe::DataFrame as DataFrameable;
+use ws::util::header::DataFrameHeader;
 use ws::util::header as dfh;
 use ws::util::mask;
 
@@ -37,39 +37,59 @@ impl DataFrame {
 		}
 	}
 
+	/// Take the body and header of a dataframe and combine it into a single
+	/// Dataframe struct. A websocket message can be made up of many individual
+	/// dataframes, use the methods from the Message or OwnedMessage structs to
+	/// take many of these and create a websocket message.
+	pub fn read_dataframe_body(
+		header: DataFrameHeader,
+		body: Vec<u8>,
+		should_be_masked: bool,
+	) -> WebSocketResult<Self> {
+		let finished = header.flags.contains(dfh::FIN);
+
+		let reserved = [
+			header.flags.contains(dfh::RSV1),
+			header.flags.contains(dfh::RSV2),
+			header.flags.contains(dfh::RSV3),
+		];
+
+		let opcode = Opcode::new(header.opcode).expect("Invalid header opcode!");
+
+		let data = match header.mask {
+			Some(mask) => {
+				if !should_be_masked {
+					return Err(WebSocketError::DataFrameError("Expected unmasked data frame"));
+				}
+				// TODO: move data to avoid copy?
+				mask::mask_data(mask, &body)
+			}
+			None => {
+				if should_be_masked {
+					return Err(WebSocketError::DataFrameError("Expected masked data frame"));
+				}
+				body
+			}
+		};
+
+		Ok(DataFrame {
+		       finished: finished,
+		       reserved: reserved,
+		       opcode: opcode,
+		       data: data,
+		   })
+	}
+
 	/// Reads a DataFrame from a Reader.
 	pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<Self>
 		where R: Read
 	{
 		let header = try!(dfh::read_header(reader));
 
-		Ok(DataFrame {
-		       finished: header.flags.contains(dfh::FIN),
-		       reserved: [
-			header.flags.contains(dfh::RSV1),
-			header.flags.contains(dfh::RSV2),
-			header.flags.contains(dfh::RSV3),
-		],
-		       opcode: Opcode::new(header.opcode).expect("Invalid header opcode!"),
-		       data: match header.mask {
-		           Some(mask) => {
-			if !should_be_masked {
-				return Err(WebSocketError::DataFrameError("Expected unmasked data frame"));
-			}
-			let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
-			try!(reader.take(header.len).read_to_end(&mut data));
-			mask::mask_data(mask, &data)
-		}
-		           None => {
-			if should_be_masked {
-				return Err(WebSocketError::DataFrameError("Expected masked data frame"));
-			}
-			let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
-			try!(reader.take(header.len).read_to_end(&mut data));
-			data
-		}
-		       },
-		   })
+		let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
+		reader.take(header.len).read_to_end(&mut data)?;
+
+		DataFrame::read_dataframe_body(header, data, should_be_masked)
 	}
 }
 
@@ -90,8 +110,19 @@ impl DataFrameable for DataFrame {
 	}
 
 	#[inline(always)]
-	fn payload(&self) -> Cow<[u8]> {
-		Cow::Borrowed(&self.data)
+	fn size(&self) -> usize {
+		self.data.len()
+	}
+
+	#[inline(always)]
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
+		socket.write_all(self.data.as_slice())?;
+		Ok(())
+	}
+
+	#[inline(always)]
+	fn take_payload(self) -> Vec<u8> {
+		self.data
 	}
 }
 

@@ -12,23 +12,36 @@ function cleanup() {
 }
 trap cleanup TERM EXIT
 
+function test_diff() {
+    SAVED_RESULTS=$(sed 's/NON-STRICT/OK/g' autobahn/server-results.json)
+    DIFF=$(diff \
+        <(jq -S 'del(."rust-websocket" | .. | .duration?)' "$SAVED_RESULTS") \
+        <(jq -S 'del(."rust-websocket" | .. | .duration?)' 'autobahn/server/index.json') )
+
+    if [[ $DIFF ]]; then
+        echo Difference in results, either this is a regression or \
+             one should update autobahn/server-results.json with the new results. \
+             The results are:
+        echo $DIFF
+        exit 64
+    fi
+}
+
+# Test synchronous version
 cargo build --example autobahn-server
-./target/debug/examples/autobahn-server & \
-    WSSERVER_PID=$!
+./target/debug/examples/autobahn-server & WSSERVER_PID=$!
 echo "Server PID: ${WSSERVER_PID}"
 sleep 10
-
 wstest -m fuzzingclient -s 'autobahn/fuzzingclient.json'
+kill -9 ${WSSERVER_PID}
+test_diff
 
-DIFF=$(diff \
-    <(jq -S 'del(."rust-websocket" | .. | .duration?)' 'autobahn/server-results.json') \
-    <(jq -S 'del(."rust-websocket" | .. | .duration?)' 'autobahn/server/index.json') )
-
-if [[ $DIFF ]]; then
-    echo Difference in results, either this is a regression or \
-         one should update autobahn/server-results.json with the new results. \
-         The results are:
-    echo $DIFF
-    exit 64
-fi
+# Test asynchronous version
+cargo build --example async-autobahn-server
+./target/debug/examples/async-autobahn-server & WSSERVER_PID=$!
+echo "Server PID: ${WSSERVER_PID}"
+sleep 10
+wstest -m fuzzingclient -s 'autobahn/fuzzingclient.json'
+kill -9 ${WSSERVER_PID}
+test_diff
 

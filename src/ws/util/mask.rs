@@ -6,20 +6,16 @@ use std::mem;
 
 /// Struct to pipe data into another writer,
 /// while masking the data being written
-pub struct Masker<'w, W>
-	where W: Write + 'w
-{
+pub struct Masker<'w> {
 	key: [u8; 4],
 	pos: usize,
-	end: &'w mut W,
+	end: &'w mut Write,
 }
 
-impl<'w, W> Masker<'w, W>
-    where W: Write + 'w
-{
+impl<'w> Masker<'w> {
 	/// Create a new Masker with the key and the endpoint
 	/// to be writter to.
-	pub fn new(key: [u8; 4], endpoint: &'w mut W) -> Self {
+	pub fn new(key: [u8; 4], endpoint: &'w mut Write) -> Self {
 		Masker {
 			key: key,
 			pos: 0,
@@ -28,9 +24,7 @@ impl<'w, W> Masker<'w, W>
 	}
 }
 
-impl<'w, W> Write for Masker<'w, W>
-    where W: Write + 'w
-{
+impl<'w> Write for Masker<'w> {
 	fn write(&mut self, data: &[u8]) -> IoResult<usize> {
 		let mut buf = Vec::with_capacity(data.len());
 		for &byte in data.iter() {

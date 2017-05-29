@@ -1,90 +1,13 @@
 //! Provides the default stream type for WebSocket connections.
 
-use std::ops::Deref;
-use std::fmt::Arguments;
 use std::io::{self, Read, Write};
-pub use std::net::TcpStream;
-pub use std::net::Shutdown;
-#[cfg(feature="ssl")]
-pub use openssl::ssl::{SslStream, SslContext};
+use std::fmt::Arguments;
 
 /// Represents a stream that can be read from, and written to.
 /// This is an abstraction around readable and writable things to be able
 /// to speak websockets over ssl, tcp, unix sockets, etc.
 pub trait Stream: Read + Write {}
-
 impl<S> Stream for S where S: Read + Write {}
-
-/// a `Stream` that can also be used as a borrow to a `TcpStream`
-/// this is useful when you want to set `TcpStream` options on a
-/// `Stream` like `nonblocking`.
-pub trait NetworkStream: Read + Write + AsTcpStream {}
-
-impl<S> NetworkStream for S where S: Read + Write + AsTcpStream {}
-
-/// some streams can be split up into separate reading and writing components
-/// `TcpStream` is an example. This trait marks this ability so one can split
-/// up the client into two parts.
-///
-/// Notice however that this is not possible to do with SSL.
-pub trait Splittable {
-	/// The reading component of this type
-	type Reader: Read;
-	/// The writing component of this type
-	type Writer: Write;
-
-	/// Split apart this type into a reading and writing component.
-	fn split(self) -> io::Result<(Self::Reader, Self::Writer)>;
-}
-
-impl<R, W> Splittable for ReadWritePair<R, W>
-	where R: Read,
-	      W: Write
-{
-	type Reader = R;
-	type Writer = W;
-
-	fn split(self) -> io::Result<(R, W)> {
-		Ok((self.0, self.1))
-	}
-}
-
-impl Splittable for TcpStream {
-	type Reader = TcpStream;
-	type Writer = TcpStream;
-
-	fn split(self) -> io::Result<(TcpStream, TcpStream)> {
-		self.try_clone().map(|s| (s, self))
-	}
-}
-
-/// The ability access a borrow to an underlying TcpStream,
-/// so one can set options on the stream such as `nonblocking`.
-pub trait AsTcpStream {
-	/// Get a borrow of the TcpStream
-	fn as_tcp(&self) -> &TcpStream;
-}
-
-impl AsTcpStream for TcpStream {
-	fn as_tcp(&self) -> &TcpStream {
-		self
-	}
-}
-
-#[cfg(feature="ssl")]
-impl AsTcpStream for SslStream<TcpStream> {
-	fn as_tcp(&self) -> &TcpStream {
-		self.get_ref()
-	}
-}
-
-impl<T> AsTcpStream for Box<T>
-    where T: AsTcpStream
-{
-	fn as_tcp(&self) -> &TcpStream {
-		self.deref().as_tcp()
-	}
-}
 
 /// If you would like to combine an input stream and an output stream into a single
 /// stream to talk websockets over then this is the struct for you!
@@ -135,5 +58,122 @@ impl<R, W> Write for ReadWritePair<R, W>
 	#[inline(always)]
 	fn write_fmt(&mut self, fmt: Arguments) -> io::Result<()> {
 		self.1.write_fmt(fmt)
+	}
+}
+
+/// A collection of traits and implementations for async streams.
+#[cfg(feature="async")]
+pub mod async {
+	use std::io::{self, Read, Write};
+	use futures::Poll;
+	pub use super::ReadWritePair;
+	pub use tokio_core::net::TcpStream;
+	pub use tokio_io::{AsyncWrite, AsyncRead};
+	pub use tokio_io::io::{ReadHalf, WriteHalf};
+
+	/// A stream that can be read from and written to asynchronously.
+	/// This let's us abstract over many async streams like tcp, ssl,
+	/// udp, ssh, etc.
+	pub trait Stream: AsyncRead + AsyncWrite {}
+	impl<S> Stream for S where S: AsyncRead + AsyncWrite {}
+
+	impl<R, W> AsyncRead for ReadWritePair<R, W>
+		where R: AsyncRead,
+		      W: Write
+	{
+	}
+
+	impl<R, W> AsyncWrite for ReadWritePair<R, W>
+		where W: AsyncWrite,
+		      R: Read
+	{
+		fn shutdown(&mut self) -> Poll<(), io::Error> {
+			self.1.shutdown()
+		}
+	}
+}
+
+/// A collection of traits and implementations for synchronous streams.
+#[cfg(feature="sync")]
+pub mod sync {
+	pub use super::ReadWritePair;
+	use std::io::{self, Read, Write};
+	use std::ops::Deref;
+	pub use std::net::TcpStream;
+	pub use std::net::Shutdown;
+	#[cfg(feature="sync-ssl")]
+	pub use native_tls::TlsStream;
+
+	pub use super::Stream;
+
+	/// a `Stream` that can also be used as a borrow to a `TcpStream`
+	/// this is useful when you want to set `TcpStream` options on a
+	/// `Stream` like `nonblocking`.
+	pub trait NetworkStream: Read + Write + AsTcpStream {}
+
+	impl<S> NetworkStream for S where S: Read + Write + AsTcpStream {}
+
+	/// some streams can be split up into separate reading and writing components
+	/// `TcpStream` is an example. This trait marks this ability so one can split
+	/// up the client into two parts.
+	///
+	/// Notice however that this is not possible to do with SSL.
+	pub trait Splittable {
+		/// The reading component of this type
+		type Reader: Read;
+		/// The writing component of this type
+		type Writer: Write;
+
+		/// Split apart this type into a reading and writing component.
+		fn split(self) -> io::Result<(Self::Reader, Self::Writer)>;
+	}
+
+	impl<R, W> Splittable for ReadWritePair<R, W>
+		where R: Read,
+		      W: Write
+	{
+		type Reader = R;
+		type Writer = W;
+
+		fn split(self) -> io::Result<(R, W)> {
+			Ok((self.0, self.1))
+		}
+	}
+
+	impl Splittable for TcpStream {
+		type Reader = TcpStream;
+		type Writer = TcpStream;
+
+		fn split(self) -> io::Result<(TcpStream, TcpStream)> {
+			self.try_clone().map(|s| (s, self))
+		}
+	}
+
+	/// The ability access a borrow to an underlying TcpStream,
+	/// so one can set options on the stream such as `nonblocking`.
+	pub trait AsTcpStream {
+		/// Get a borrow of the TcpStream
+		fn as_tcp(&self) -> &TcpStream;
+	}
+
+	impl AsTcpStream for TcpStream {
+		fn as_tcp(&self) -> &TcpStream {
+			self
+		}
+	}
+
+	#[cfg(feature="sync-ssl")]
+	impl AsTcpStream for TlsStream<TcpStream> {
+		fn as_tcp(&self) -> &TcpStream {
+			self.get_ref()
+		}
+	}
+
+	impl<T> AsTcpStream for Box<T>
+        where T: AsTcpStream
+	{
+		fn as_tcp(&self) -> &TcpStream {
+			self.deref().as_tcp()
+		}
 	}
 }

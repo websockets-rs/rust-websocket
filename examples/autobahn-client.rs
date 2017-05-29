@@ -1,10 +1,8 @@
 extern crate websocket;
-extern crate serde_json;
 
-use std::str::from_utf8;
 use websocket::ClientBuilder;
+use websocket::OwnedMessage;
 use websocket::Message;
-use websocket::message::Type;
 
 fn main() {
 	let addr = "ws://127.0.0.1:9001".to_string();
@@ -33,7 +31,7 @@ fn main() {
 		println!("Executing test case: {}/{}", case_id, case_count);
 
 		for message in receiver.incoming_messages() {
-			let message: Message = match message {
+			let message = match message {
 				Ok(message) => message,
 				Err(e) => {
 					println!("Error: {:?}", e);
@@ -42,20 +40,19 @@ fn main() {
 				}
 			};
 
-			match message.opcode {
-				Type::Text => {
-					let response = Message::text(from_utf8(&*message.payload).unwrap());
-					sender.send_message(&response).unwrap();
+			match message {
+				OwnedMessage::Text(txt) => {
+					sender.send_message(&OwnedMessage::Text(txt)).unwrap();
 				}
-				Type::Binary => {
-					sender.send_message(&Message::binary(message.payload)).unwrap();
+				OwnedMessage::Binary(bin) => {
+					sender.send_message(&OwnedMessage::Binary(bin)).unwrap();
 				}
-				Type::Close => {
-					let _ = sender.send_message(&Message::close());
+				OwnedMessage::Close(_) => {
+					let _ = sender.send_message(&OwnedMessage::Close(None));
 					break;
 				}
-				Type::Ping => {
-					sender.send_message(&Message::pong(message.payload)).unwrap();
+				OwnedMessage::Ping(data) => {
+					sender.send_message(&OwnedMessage::Pong(data)).unwrap();
 				}
 				_ => (),
 			}
@@ -81,7 +78,7 @@ fn get_case_count(addr: String) -> usize {
 	let mut count = 0;
 
 	for message in receiver.incoming_messages() {
-		let message: Message = match message {
+		let message = match message {
 			Ok(message) => message,
 			Err(e) => {
 				println!("Error: {:?}", e);
@@ -90,17 +87,17 @@ fn get_case_count(addr: String) -> usize {
 				break;
 			}
 		};
-		match message.opcode {
-			Type::Text => {
-				count = serde_json::from_str(from_utf8(&*message.payload).unwrap()).unwrap();
+		match message {
+			OwnedMessage::Text(txt) => {
+				count = txt.parse().unwrap();
 				println!("Will run {} cases...", count);
 			}
-			Type::Close => {
+			OwnedMessage::Close(_) => {
 				let _ = sender.send_message(&Message::close());
 				break;
 			}
-			Type::Ping => {
-				sender.send_message(&Message::pong(message.payload)).unwrap();
+			OwnedMessage::Ping(data) => {
+				sender.send_message(&OwnedMessage::Pong(data)).unwrap();
 			}
 			_ => (),
 		}
@@ -125,7 +122,7 @@ fn update_reports(addr: String, agent: &str) {
 	println!("Updating reports...");
 
 	for message in receiver.incoming_messages() {
-		let message: Message = match message {
+		let message = match message {
 			Ok(message) => message,
 			Err(e) => {
 				println!("Error: {:?}", e);
@@ -133,15 +130,15 @@ fn update_reports(addr: String, agent: &str) {
 				return;
 			}
 		};
-		match message.opcode {
-			Type::Close => {
+		match message {
+			OwnedMessage::Close(_) => {
 				let _ = sender.send_message(&Message::close());
 				println!("Reports updated.");
 				println!("Test suite finished!");
 				return;
 			}
-			Type::Ping => {
-				sender.send_message(&Message::pong(message.payload)).unwrap();
+			OwnedMessage::Ping(data) => {
+				sender.send_message(&OwnedMessage::Pong(data)).unwrap();
 			}
 			_ => (),
 		}

@@ -1,6 +1,9 @@
 /target
 /Cargo.lock
 
+# emacs
+*.#*.rs
+
 # Windows image file caches
 Thumbs.db
 ehthumbs.db

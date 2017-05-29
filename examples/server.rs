@@ -1,8 +1,8 @@
 extern crate websocket;
 
 use std::thread;
-use websocket::{Server, Message};
-use websocket::message::Type;
+use websocket::OwnedMessage;
+use websocket::sync::Server;
 
 fn main() {
 	let server = Server::bind("127.0.0.1:2794").unwrap();
@@ -21,23 +21,23 @@ fn main() {
 
 			println!("Connection from {}", ip);
 
-			let message: Message = Message::text("Hello".to_string());
+			let message = OwnedMessage::Text("Hello".to_string());
 			client.send_message(&message).unwrap();
 
 			let (mut receiver, mut sender) = client.split().unwrap();
 
 			for message in receiver.incoming_messages() {
-				let message: Message = message.unwrap();
+				let message = message.unwrap();
 
-				match message.opcode {
-					Type::Close => {
-						let message = Message::close();
+				match message {
+					OwnedMessage::Close(_) => {
+						let message = OwnedMessage::Close(None);
 						sender.send_message(&message).unwrap();
 						println!("Client {} disconnected", ip);
 						return;
 					}
-					Type::Ping => {
-						let message = Message::pong(message.payload);
+					OwnedMessage::Ping(ping) => {
+						let message = OwnedMessage::Pong(ping);
 						sender.send_message(&message).unwrap();
 					}
 					_ => sender.send_message(&message).unwrap(),

@@ -7,14 +7,27 @@ use std::convert::From;
 use std::fmt;
 use hyper::Error as HttpError;
 use url::ParseError;
+use server::upgrade::HyperIntoWsError;
 
-#[cfg(feature="ssl")]
-use openssl::error::ErrorStack as SslError;
-#[cfg(feature="ssl")]
-use openssl::ssl::HandshakeError as SslHandshakeError;
+#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+use native_tls::Error as TlsError;
+#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+use native_tls::HandshakeError as TlsHandshakeError;
 
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
+
+/// This module contains convenience types to make working with Futures and
+/// websocket results easier.
+#[cfg(feature="async")]
+pub mod async {
+	use futures::Future;
+	use super::WebSocketError;
+
+	/// The most common Future in this library, it is simply some result `I` or
+	/// a `WebSocketError`. This is analogous to the `WebSocketResult` type.
+	pub type WebSocketFuture<I> = Box<Future<Item = I, Error = WebSocketError>>;
+}
 
 /// Represents a WebSocket error
 #[derive(Debug)]
@@ -38,14 +51,14 @@ pub enum WebSocketError {
 	/// A WebSocket URL error
 	WebSocketUrlError(WSUrlErrorKind),
 	/// An SSL error
-	#[cfg(feature="ssl")]
-	SslError(SslError),
+	#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+	TlsError(TlsError),
 	/// an ssl handshake failure
-	#[cfg(feature="ssl")]
-	SslHandshakeFailure,
+	#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+	TlsHandshakeFailure,
 	/// an ssl handshake interruption
-	#[cfg(feature="ssl")]
-	SslHandshakeInterruption,
+	#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+	TlsHandshakeInterruption,
 	/// A UTF-8 error
 	Utf8Error(Utf8Error),
 }
@@ -69,12 +82,12 @@ impl Error for WebSocketError {
 			WebSocketError::IoError(_) => "I/O failure",
 			WebSocketError::HttpError(_) => "HTTP failure",
 			WebSocketError::UrlError(_) => "URL failure",
-			#[cfg(feature="ssl")]
-			      WebSocketError::SslError(_) => "SSL failure",
-			#[cfg(feature="ssl")]
-            WebSocketError::SslHandshakeFailure => "SSL Handshake failure",
-			#[cfg(feature="ssl")]
-            WebSocketError::SslHandshakeInterruption => "SSL Handshake interrupted",
+			#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+			      WebSocketError::TlsError(_) => "TLS failure",
+			#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+            WebSocketError::TlsHandshakeFailure => "TLS Handshake failure",
+			#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+            WebSocketError::TlsHandshakeInterruption => "TLS Handshake interrupted",
 			WebSocketError::Utf8Error(_) => "UTF-8 failure",
 			WebSocketError::WebSocketUrlError(_) => "WebSocket URL failure",
 		}
@@ -85,8 +98,8 @@ impl Error for WebSocketError {
 			WebSocketError::IoError(ref error) => Some(error),
 			WebSocketError::HttpError(ref error) => Some(error),
 			WebSocketError::UrlError(ref error) => Some(error),
-			#[cfg(feature="ssl")]
-			      WebSocketError::SslError(ref error) => Some(error),
+			#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+			      WebSocketError::TlsError(ref error) => Some(error),
 			WebSocketError::Utf8Error(ref error) => Some(error),
 			WebSocketError::WebSocketUrlError(ref error) => Some(error),
 			_ => None,
@@ -115,20 +128,19 @@ impl From<ParseError> for WebSocketError {
 	}
 }
 
-#[cfg(feature="ssl")]
-impl From<SslError> for WebSocketError {
-	fn from(err: SslError) -> WebSocketError {
-		WebSocketError::SslError(err)
+#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+impl From<TlsError> for WebSocketError {
+	fn from(err: TlsError) -> WebSocketError {
+		WebSocketError::TlsError(err)
 	}
 }
 
-#[cfg(feature="ssl")]
-impl<T> From<SslHandshakeError<T>> for WebSocketError {
-	fn from(err: SslHandshakeError<T>) -> WebSocketError {
+#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+impl<T> From<TlsHandshakeError<T>> for WebSocketError {
+	fn from(err: TlsHandshakeError<T>) -> WebSocketError {
 		match err {
-			SslHandshakeError::SetupFailure(err) => WebSocketError::SslError(err),
-			SslHandshakeError::Failure(_) => WebSocketError::SslHandshakeFailure,
-			SslHandshakeError::Interrupted(_) => WebSocketError::SslHandshakeInterruption,
+			TlsHandshakeError::Failure(_) => WebSocketError::TlsHandshakeFailure,
+			TlsHandshakeError::Interrupted(_) => WebSocketError::TlsHandshakeInterruption,
 		}
 	}
 }
@@ -139,9 +151,38 @@ impl From<Utf8Error> for WebSocketError {
 	}
 }
 
+#[cfg(feature="async")]
+impl From<::codec::http::HttpCodecError> for WebSocketError {
+	fn from(src: ::codec::http::HttpCodecError) -> Self {
+		match src {
+			::codec::http::HttpCodecError::Io(e) => WebSocketError::IoError(e),
+			::codec::http::HttpCodecError::Http(e) => WebSocketError::HttpError(e),
+		}
+	}
+}
+
 impl From<WSUrlErrorKind> for WebSocketError {
 	fn from(err: WSUrlErrorKind) -> WebSocketError {
 		WebSocketError::WebSocketUrlError(err)
+	}
+}
+
+impl From<HyperIntoWsError> for WebSocketError {
+	fn from(err: HyperIntoWsError) -> WebSocketError {
+		use self::HyperIntoWsError::*;
+		use WebSocketError::*;
+		match err {
+			Io(io) => IoError(io),
+			Parsing(err) => HttpError(err),
+			MethodNotGet => ProtocolError("Request method must be GET"),
+			UnsupportedHttpVersion => ProtocolError("Unsupported request HTTP version"),
+			UnsupportedWebsocketVersion => ProtocolError("Unsupported WebSocket version"),
+			NoSecWsKeyHeader => ProtocolError("Missing Sec-WebSocket-Key header"),
+			NoWsUpgradeHeader => ProtocolError("Invalid Upgrade WebSocket header"),
+			NoUpgradeHeader => ProtocolError("Missing Upgrade WebSocket header"),
+			NoWsConnectionHeader => ProtocolError("Invalid Connection WebSocket header"),
+			NoConnectionHeader => ProtocolError("Missing Connection WebSocket header"),
+		}
 	}
 }
 

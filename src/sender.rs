@@ -4,10 +4,10 @@ use std::io::Write;
 use std::io::Result as IoResult;
 use result::WebSocketResult;
 use ws::dataframe::DataFrame;
-use stream::AsTcpStream;
+use stream::sync::AsTcpStream;
 use ws;
 use ws::sender::Sender as SenderTrait;
-pub use stream::Shutdown;
+pub use stream::sync::Shutdown;
 
 /// A writer that bundles a stream with a serializer to send the messages.
 /// This is used in the client's `.split()` function as the writing component.
@@ -32,9 +32,8 @@ impl<W> Writer<W>
 	}
 
 	/// Sends a single message to the remote endpoint.
-	pub fn send_message<'m, M, D>(&mut self, message: &'m M) -> WebSocketResult<()>
-		where M: ws::Message<'m, D>,
-		      D: DataFrame
+	pub fn send_message<M>(&mut self, message: &M) -> WebSocketResult<()>
+		where M: ws::Message
 	{
 		self.sender.send_message(&mut self.stream, message)
 	}
@@ -70,11 +69,7 @@ impl Sender {
 }
 
 impl ws::Sender for Sender {
-	/// Sends a single data frame to the remote endpoint.
-	fn send_dataframe<D, W>(&mut self, writer: &mut W, dataframe: &D) -> WebSocketResult<()>
-		where D: DataFrame,
-		      W: Write
-	{
-		dataframe.write_to(writer, self.mask)
+	fn is_masked(&self) -> bool {
+		self.mask
 	}
 }

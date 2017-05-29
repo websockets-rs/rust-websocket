@@ -8,11 +8,11 @@ use hyper::buffer::BufReader;
 use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
 use ws;
-use ws::dataframe::DataFrame as DataFrameable;
 use ws::receiver::Receiver as ReceiverTrait;
 use ws::receiver::{MessageIterator, DataFrameIterator};
-use stream::{AsTcpStream, Stream};
-pub use stream::Shutdown;
+use message::OwnedMessage;
+use stream::sync::{AsTcpStream, Stream};
+pub use stream::sync::Shutdown;
 
 /// This reader bundles an existing stream with a parsing algorithm.
 /// It is used by the client in its `.split()` function as the reading component.
@@ -39,21 +39,15 @@ impl<R> Reader<R>
 	}
 
 	/// Reads a single message from this receiver.
-	pub fn recv_message<'m, M, D, I>(&mut self) -> WebSocketResult<M>
-		where M: ws::Message<'m, D, DataFrameIterator = I>,
-		      I: Iterator<Item = D>,
-		      D: DataFrameable
+	pub fn recv_message<I>(&mut self) -> WebSocketResult<OwnedMessage>
+		where I: Iterator<Item = DataFrame>
 	{
 		self.receiver.recv_message(&mut self.stream)
 	}
 
 	/// An iterator over incoming messsages.
 	/// This iterator will block until new messages arrive and will never halt.
-	pub fn incoming_messages<'a, M, D>(&'a mut self,)
-		-> MessageIterator<'a, Receiver, D, M, BufReader<R>>
-		where M: ws::Message<'a, D>,
-		      D: DataFrameable
-	{
+	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, BufReader<R>> {
 		self.receiver.incoming_messages(&mut self.stream)
 	}
 }
@@ -94,6 +88,8 @@ impl Receiver {
 
 impl ws::Receiver for Receiver {
 	type F = DataFrame;
+
+	type M = OwnedMessage;
 
 	/// Reads a single data frame from the remote endpoint.
 	fn recv_dataframe<R>(&mut self, reader: &mut R) -> WebSocketResult<DataFrame>
@@ -136,6 +132,7 @@ impl ws::Receiver for Receiver {
 			}
 		}
 
+		// TODO: this is slow, easy fix
 		let buffer = self.buffer.clone();
 		self.buffer.clear();
 

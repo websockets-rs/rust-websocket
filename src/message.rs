@@ -1,9 +1,11 @@
 //! Module containing the default implementation for messages.
+use std::str::from_utf8;
+use std::io;
 use std::io::Write;
 use std::borrow::Cow;
-use std::iter::{Take, Repeat, repeat};
 use result::{WebSocketResult, WebSocketError};
 use dataframe::Opcode;
+use ws::dataframe::DataFrame as DataFrameTrait;
 use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
 use ws::util::bytes_to_string;
 use ws;
@@ -11,7 +13,7 @@ use ws;
 const FALSE_RESERVED_BITS: &'static [bool; 3] = &[false; 3];
 
 /// Valid types of messages (in the default implementation)
-#[derive(Debug, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum Type {
 	/// Message with UTF8 test
 	Text = 1,
@@ -33,7 +35,7 @@ pub enum Type {
 ///
 /// Incidentally this (the default implementation of Message) implements the DataFrame trait
 /// because this message just gets sent as one single DataFrame.
-#[derive(PartialEq, Clone, Debug)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Message<'a> {
 	/// Type of WebSocket message
 	pub opcode: Type,
@@ -136,70 +138,367 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 		FALSE_RESERVED_BITS
 	}
 
-	fn payload(&self) -> Cow<[u8]> {
-		let mut buf = Vec::with_capacity(self.size());
-		self.write_payload(&mut buf).ok();
-		Cow::Owned(buf)
-	}
-
 	fn size(&self) -> usize {
 		self.payload.len() + if self.cd_status_code.is_some() { 2 } else { 0 }
 	}
 
-	fn write_payload<W>(&self, socket: &mut W) -> WebSocketResult<()>
-		where W: Write
-	{
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
 		if let Some(reason) = self.cd_status_code {
 			try!(socket.write_u16::<BigEndian>(reason));
 		}
 		try!(socket.write_all(&*self.payload));
 		Ok(())
 	}
+
+	fn take_payload(self) -> Vec<u8> {
+		if let Some(reason) = self.cd_status_code {
+			let mut buf = Vec::with_capacity(2 + self.payload.len());
+			buf.write_u16::<BigEndian>(reason)
+			   .expect("failed to write close code in take_payload");
+			buf.append(&mut self.payload.into_owned());
+			buf
+		} else {
+			self.payload.into_owned()
+		}
+	}
 }
 
-impl<'a, 'b> ws::Message<'b, &'b Message<'a>> for Message<'a> {
-	type DataFrameIterator = Take<Repeat<&'b Message<'a>>>;
+impl<'a> ws::Message for Message<'a> {
+	/// Attempt to form a message from a series of data frames
+	fn serialize(&self, writer: &mut Write, masked: bool) -> WebSocketResult<()> {
+		self.write_to(writer, masked)
+	}
 
-	fn dataframes(&'b self) -> Self::DataFrameIterator {
-		repeat(self).take(1)
+	/// Returns how many bytes this message will take up
+	fn message_size(&self, masked: bool) -> usize {
+		self.frame_size(masked)
 	}
 
 	/// Attempt to form a message from a series of data frames
 	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
-		where D: ws::dataframe::DataFrame
+		where D: DataFrameTrait
 	{
 		let opcode = try!(frames.first()
 		                        .ok_or(WebSocketError::ProtocolError("No dataframes provided"))
 		                        .map(|d| d.opcode()));
+		let opcode = Opcode::new(opcode);
 
-		let mut data = Vec::new();
+		let payload_size = frames.iter().map(|d| d.size()).sum();
 
-		for (i, dataframe) in frames.iter().enumerate() {
+		let mut data = Vec::with_capacity(payload_size);
+
+		for (i, dataframe) in frames.into_iter().enumerate() {
 			if i > 0 && dataframe.opcode() != Opcode::Continuation as u8 {
 				return Err(WebSocketError::ProtocolError("Unexpected non-continuation data frame"));
 			}
 			if *dataframe.reserved() != [false; 3] {
 				return Err(WebSocketError::ProtocolError("Unsupported reserved bits received"));
 			}
-			data.extend(dataframe.payload().iter().cloned());
+			data.append(&mut dataframe.take_payload());
 		}
 
-		Ok(match Opcode::new(opcode) {
-		       Some(Opcode::Text) => Message::text(try!(bytes_to_string(&data[..]))),
-		       Some(Opcode::Binary) => Message::binary(data),
-		       Some(Opcode::Close) => {
-			       if !data.is_empty() {
-			           let status_code = try!((&data[..]).read_u16::<BigEndian>());
-			           let reason = try!(bytes_to_string(&data[2..]));
-			           Message::close_because(status_code, reason)
-			          } else {
-			           Message::close()
-			          }
-		       }
-		       Some(Opcode::Ping) => Message::ping(data),
-		       Some(Opcode::Pong) => Message::pong(data),
-		       _ => return Err(WebSocketError::ProtocolError("Unsupported opcode received")),
-		   })
+		if opcode == Some(Opcode::Text) {
+			if let Err(e) = from_utf8(data.as_slice()) {
+				return Err(e.into());
+			}
+		}
+
+		let msg = match opcode {
+			Some(Opcode::Text) => {
+				Message {
+					opcode: Type::Text,
+					cd_status_code: None,
+					payload: Cow::Owned(data),
+				}
+			}
+			Some(Opcode::Binary) => Message::binary(data),
+			Some(Opcode::Close) => {
+				if data.len() > 0 {
+					let status_code = try!((&data[..]).read_u16::<BigEndian>());
+					let reason = try!(bytes_to_string(&data[2..]));
+					Message::close_because(status_code, reason)
+				} else {
+					Message::close()
+				}
+			}
+			Some(Opcode::Ping) => Message::ping(data),
+			Some(Opcode::Pong) => Message::pong(data),
+			_ => return Err(WebSocketError::ProtocolError("Unsupported opcode received")),
+		};
+		Ok(msg)
+	}
+}
+
+/// Represents an owned WebSocket message.
+///
+/// `OwnedMessage`s are generated when the user receives a message (since the data
+/// has to be copied out of the network buffer anyway).
+/// If you would like to create a message out of borrowed data to use for sending
+/// please use the `Message` struct (which contains a `Cow`).
+///
+/// Note that `OwnedMessage` can `Message` can be converted into each other.
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub enum OwnedMessage {
+	/// A message containing UTF-8 text data
+	Text(String),
+	/// A message containing binary data
+	Binary(Vec<u8>),
+	/// A message which indicates closure of the WebSocket connection.
+	/// This message may or may not contain data.
+	Close(Option<CloseData>),
+	/// A ping message - should be responded to with a pong message.
+	/// Usually the pong message will be sent with the same data as the
+	/// received ping message.
+	Ping(Vec<u8>),
+	/// A pong message, sent in response to a Ping message, usually
+	/// containing the same data as the received ping message.
+	Pong(Vec<u8>),
+}
+
+impl OwnedMessage {
+	/// Checks if this message is a close message.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Close(None).is_close());
+	///```
+	pub fn is_close(&self) -> bool {
+		match *self {
+			OwnedMessage::Close(_) => true,
+			_ => false,
+		}
+	}
+
+	/// Checks if this message is a control message.
+	/// Control messages are either `Close`, `Ping`, or `Pong`.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Ping(vec![]).is_control());
+	///assert!(OwnedMessage::Pong(vec![]).is_control());
+	///assert!(OwnedMessage::Close(None).is_control());
+	///```
+	pub fn is_control(&self) -> bool {
+		match *self {
+			OwnedMessage::Close(_) => true,
+			OwnedMessage::Ping(_) => true,
+			OwnedMessage::Pong(_) => true,
+			_ => false,
+		}
+	}
+
+	/// Checks if this message is a data message.
+	/// Data messages are either `Text` or `Binary`.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Text("1337".to_string()).is_data());
+	///assert!(OwnedMessage::Binary(vec![]).is_data());
+	///```
+	pub fn is_data(&self) -> bool {
+		!self.is_control()
+	}
+
+	/// Checks if this message is a ping message.
+	/// `Ping` messages can come at any time and usually generate a `Pong` message
+	/// response.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Ping("ping".to_string().into_bytes()).is_ping());
+	///```
+	pub fn is_ping(&self) -> bool {
+		match *self {
+			OwnedMessage::Ping(_) => true,
+			_ => false,
+		}
+	}
+
+	/// Checks if this message is a pong message.
+	/// `Pong` messages are usually sent only in response to `Ping` messages.
+	///
+	///```rust
+	///# use websocket::OwnedMessage;
+	///assert!(OwnedMessage::Pong("pong".to_string().into_bytes()).is_pong());
+	///```
+	pub fn is_pong(&self) -> bool {
+		match *self {
+			OwnedMessage::Pong(_) => true,
+			_ => false,
+		}
+	}
+}
+
+impl ws::Message for OwnedMessage {
+	/// Attempt to form a message from a series of data frames
+	fn serialize(&self, writer: &mut Write, masked: bool) -> WebSocketResult<()> {
+		self.write_to(writer, masked)
+	}
+
+	/// Returns how many bytes this message will take up
+	fn message_size(&self, masked: bool) -> usize {
+		self.frame_size(masked)
+	}
+
+	/// Attempt to form a message from a series of data frames
+	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
+		where D: DataFrameTrait
+	{
+		Ok(Message::from_dataframes(frames)?.into())
+	}
+}
+
+impl ws::dataframe::DataFrame for OwnedMessage {
+	#[inline(always)]
+	fn is_last(&self) -> bool {
+		true
+	}
+
+	#[inline(always)]
+	fn opcode(&self) -> u8 {
+		(match *self {
+		     OwnedMessage::Text(_) => Type::Text,
+		     OwnedMessage::Binary(_) => Type::Binary,
+		     OwnedMessage::Close(_) => Type::Close,
+		     OwnedMessage::Ping(_) => Type::Ping,
+		     OwnedMessage::Pong(_) => Type::Pong,
+		 }) as u8
+	}
+
+	#[inline(always)]
+	fn reserved(&self) -> &[bool; 3] {
+		FALSE_RESERVED_BITS
+	}
+
+	fn size(&self) -> usize {
+		match *self {
+			OwnedMessage::Text(ref txt) => txt.len(),
+			OwnedMessage::Binary(ref bin) => bin.len(),
+			OwnedMessage::Ping(ref data) => data.len(),
+			OwnedMessage::Pong(ref data) => data.len(),
+			OwnedMessage::Close(ref data) => {
+				match data {
+					&Some(ref c) => c.reason.len() + 2,
+					&None => 0,
+				}
+			}
+		}
+	}
+
+	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
+		match *self {
+			OwnedMessage::Text(ref txt) => {
+				socket.write_all(txt.as_bytes())?
+			}
+			OwnedMessage::Binary(ref bin) => {
+				socket.write_all(bin.as_slice())?
+			}
+			OwnedMessage::Ping(ref data) => {
+				socket.write_all(data.as_slice())?
+			}
+			OwnedMessage::Pong(ref data) => {
+				socket.write_all(data.as_slice())?
+			}
+			OwnedMessage::Close(ref data) => {
+				match data {
+					&Some(ref c) => {
+						socket.write_u16::<BigEndian>(c.status_code)?;
+						socket.write_all(c.reason.as_bytes())?
+					}
+					&None => (),
+				}
+			}
+		};
+		Ok(())
+	}
+
+	fn take_payload(self) -> Vec<u8> {
+		match self {
+			OwnedMessage::Text(txt) => txt.into_bytes(),
+			OwnedMessage::Binary(bin) => bin,
+			OwnedMessage::Ping(data) => data,
+			OwnedMessage::Pong(data) => data,
+			OwnedMessage::Close(data) => {
+				match data {
+					Some(c) => {
+						let mut buf = Vec::with_capacity(2 + c.reason.len());
+						buf.write_u16::<BigEndian>(c.status_code)
+						   .expect("failed to write close code in take_payload");
+						buf.append(&mut c.reason.into_bytes());
+						buf
+					}
+					None => vec![],
+				}
+			}
+		}
+	}
+}
+
+impl<'m> From<Message<'m>> for OwnedMessage {
+	fn from(message: Message<'m>) -> Self {
+		match message.opcode {
+			Type::Text => {
+				let convert = String::from_utf8_lossy(&message.payload).into_owned();
+				OwnedMessage::Text(convert)
+			}
+			Type::Close => {
+				match message.cd_status_code {
+					Some(code) => OwnedMessage::Close(Some(CloseData {
+                status_code: code,
+                reason: String::from_utf8_lossy(&message.payload).into_owned(),
+            })),
+					None => OwnedMessage::Close(None),
+				}
+			}
+			Type::Binary => OwnedMessage::Binary(message.payload.into_owned()),
+			Type::Ping => OwnedMessage::Ping(message.payload.into_owned()),
+			Type::Pong => OwnedMessage::Pong(message.payload.into_owned()),
+		}
+	}
+}
+
+impl<'m> From<OwnedMessage> for Message<'m> {
+	fn from(message: OwnedMessage) -> Self {
+		match message {
+			OwnedMessage::Text(txt) => Message::text(txt),
+			OwnedMessage::Binary(bin) => Message::binary(bin),
+			OwnedMessage::Close(because) => {
+				match because {
+					Some(c) => Message::close_because(c.status_code, c.reason),
+					None => Message::close(),
+				}
+			}
+			OwnedMessage::Ping(data) => Message::ping(data),
+			OwnedMessage::Pong(data) => Message::pong(data),
+		}
+	}
+}
+
+/// Represents data contained in a Close message
+#[derive(Eq, PartialEq, Clone, Debug)]
+pub struct CloseData {
+	/// The status-code of the CloseData
+	pub status_code: u16,
+	/// The reason-phrase of the CloseData
+	pub reason: String,
+}
+
+impl CloseData {
+	/// Create a new CloseData object
+	pub fn new(status_code: u16, reason: String) -> CloseData {
+		CloseData {
+			status_code: status_code,
+			reason: reason,
+		}
+	}
+	/// Convert this into a vector of bytes
+	pub fn into_bytes(self) -> io::Result<Vec<u8>> {
+		let mut buf = Vec::new();
+		try!(buf.write_u16::<BigEndian>(self.status_code));
+		for i in self.reason.as_bytes().iter() {
+			buf.push(*i);
+		}
+		Ok(buf)
 	}
 }
 
