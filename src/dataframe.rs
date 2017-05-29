@@ -61,7 +61,6 @@ impl DataFrame {
 				if !should_be_masked {
 					return Err(WebSocketError::DataFrameError("Expected unmasked data frame"));
 				}
-				// TODO: move data to avoid copy?
 				mask::mask_data(mask, &body)
 			}
 			None => {

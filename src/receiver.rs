@@ -132,6 +132,6 @@ impl ws::Receiver for Receiver {
 			}
 		}
 
-    Ok(::std::mem::replace(&mut self.buffer, Vec::new()))
+		Ok(::std::mem::replace(&mut self.buffer, Vec::new()))
 	}
 }

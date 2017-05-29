@@ -55,9 +55,6 @@ mod async_imports {
 #[cfg(feature="async")]
 use self::async_imports::*;
 
-// TODO: add extra funcs for future stuff, like auto ping and auto close
-
-
 /// Build clients with a builder-style API
 /// This makes it easy to create and configure a websocket
 /// connection:
@@ -662,7 +659,6 @@ impl<'u> ClientBuilder<'u> {
 		Box::new(future)
 	}
 
-	// TODO: add timeout option for connecting
 	// TODO: add conveniences like .response_to_pings, .send_close, etc.
 	/// Asynchronously create an insecure (plain TCP) connection to the client.
 	///
@@ -974,6 +970,4 @@ mod tests {
 		assert!(protos.contains(&"electric".to_string()));
 		assert!(!protos.contains(&"rust-websocket".to_string()));
 	}
-
-	// TODO: a few more
 }
