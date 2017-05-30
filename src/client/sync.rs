@@ -361,10 +361,10 @@ impl<S> Client<S>
 	///# }
 	///```
 	pub fn split
-		(self,)
+		(self)
 		 -> IoResult<(Reader<<S as Splittable>::Reader>, Writer<<S as Splittable>::Writer>)> {
 		let (stream, buf, pos, cap) = self.stream.into_parts();
-		let (read, write) = try!(stream.split());
+		let (read, write) = stream.split()?;
 		Ok((Reader {
 		        stream: BufReader::from_parts(read, buf, pos, cap),
 		        receiver: self.receiver,

@@ -139,7 +139,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 		where A: ToSocketAddrs
 	{
 		Ok(Server {
-		       listener: try!(TcpListener::bind(&addr)),
+		       listener: TcpListener::bind(&addr)?,
 		       ssl_acceptor: acceptor,
 		   })
 	}
@@ -222,7 +222,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 	/// ```
 	pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<Self> {
 		Ok(Server {
-		       listener: try!(TcpListener::bind(&addr)),
+		       listener: TcpListener::bind(&addr)?,
 		       ssl_acceptor: NoTlsAcceptor,
 		   })
 	}
@@ -256,7 +256,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 
 	/// Create a new independently owned handle to the underlying socket.
 	pub fn try_clone(&self) -> io::Result<Self> {
-		let inner = try!(self.listener.try_clone());
+		let inner = self.listener.try_clone()?;
 		Ok(Server {
 		       listener: inner,
 		       ssl_acceptor: self.ssl_acceptor.clone(),

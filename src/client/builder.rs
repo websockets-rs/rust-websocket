@@ -142,7 +142,7 @@ impl<'u> ClientBuilder<'u> {
 	/// let builder = ClientBuilder::new("wss://mycluster.club");
 	/// ```
 	pub fn new(address: &str) -> Result<Self, ParseError> {
-		let url = try!(Url::parse(address));
+		let url = Url::parse(address)?;
 		Ok(ClientBuilder::init(Cow::Owned(url)))
 	}
 
@@ -390,11 +390,11 @@ impl<'u> ClientBuilder<'u> {
 		&mut self,
 		ssl_config: Option<TlsConnector>,
 	) -> WebSocketResult<Client<Box<NetworkStream + Send>>> {
-		let tcp_stream = try!(self.establish_tcp(None));
+		let tcp_stream = self.establish_tcp(None)?;
 
 		let boxed_stream: Box<NetworkStream + Send> = if
 			self.url.scheme() == "wss" {
-			Box::new(try!(self.wrap_ssl(tcp_stream, ssl_config)))
+			Box::new(self.wrap_ssl(tcp_stream, ssl_config)?)
 		} else {
 			Box::new(tcp_stream)
 		};
@@ -418,7 +418,7 @@ impl<'u> ClientBuilder<'u> {
 	/// ```
 	#[cfg(feature="sync")]
 	pub fn connect_insecure(&mut self) -> WebSocketResult<Client<TcpStream>> {
-		let tcp_stream = try!(self.establish_tcp(Some(false)));
+		let tcp_stream = self.establish_tcp(Some(false))?;
 
 		self.connect_on(tcp_stream)
 	}
@@ -432,9 +432,9 @@ impl<'u> ClientBuilder<'u> {
 		&mut self,
 		ssl_config: Option<TlsConnector>,
 	) -> WebSocketResult<Client<TlsStream<TcpStream>>> {
-		let tcp_stream = try!(self.establish_tcp(Some(true)));
+		let tcp_stream = self.establish_tcp(Some(true))?;
 
-		let ssl_stream = try!(self.wrap_ssl(tcp_stream, ssl_config));
+		let ssl_stream = self.wrap_ssl(tcp_stream, ssl_config)?;
 
 		self.connect_on(ssl_stream)
 	}
@@ -474,12 +474,12 @@ impl<'u> ClientBuilder<'u> {
 	{
 		// send request
 		let resource = self.build_request();
-		try!(write!(stream, "GET {} {}\r\n", resource, self.version));
-		try!(write!(stream, "{}\r\n", self.headers));
+		write!(stream, "GET {} {}\r\n", resource, self.version)?;
+		write!(stream, "{}\r\n", self.headers)?;
 
 		// wait for a response
 		let mut reader = BufReader::new(stream);
-		let response = try!(parse_response(&mut reader));
+		let response = parse_response(&mut reader)?;
 
 		// validate
 		self.validate(&response)?;
@@ -868,9 +868,10 @@ impl<'u> ClientBuilder<'u> {
 			return Err(WebSocketError::ResponseError("Status code must be Switching Protocols"));
 		}
 
-		let key = try!(self.headers
-		                   .get::<WebSocketKey>()
-		                   .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid")));
+		let key =
+                self.headers
+                    .get::<WebSocketKey>()
+                    .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid"))?;
 
 		if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
 			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
@@ -941,7 +942,7 @@ impl<'u> ClientBuilder<'u> {
 		connector: Option<TlsConnector>,
 	) -> WebSocketResult<TlsStream<TcpStream>> {
 		let (host, connector) = self.extract_host_ssl_conn(connector)?;
-		let ssl_stream = try!(connector.connect(host, tcp_stream));
+		let ssl_stream = connector.connect(host, tcp_stream)?;
 		Ok(ssl_stream)
 	}
 }

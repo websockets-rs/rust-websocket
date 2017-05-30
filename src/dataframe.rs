@@ -83,7 +83,7 @@ impl DataFrame {
 	pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<Self>
 		where R: Read
 	{
-		let header = try!(dfh::read_header(reader));
+		let header = dfh::read_header(reader)?;
 
 		let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
 		let read = reader.take(header.len).read_to_end(&mut data)?;
