@@ -106,7 +106,7 @@ impl ws::Receiver for Receiver {
 			let first = self.recv_dataframe(reader)?;
 
 			if first.opcode == Opcode::Continuation {
-				return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode"));
+				return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode",),);
 			}
 
 			let finished = first.finished;

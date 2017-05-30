@@ -245,7 +245,7 @@ impl<M> Decoder for MessageCodec<M>
 			match frame.opcode as u8 {
 				// continuation code
 				0 if is_first => {
-					return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode"));
+					return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode",),);
 				}
 				// control frame
 				8...15 => {

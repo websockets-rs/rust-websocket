@@ -82,8 +82,7 @@ fn get_case_count(addr: String) -> usize {
 			Ok(message) => message,
 			Err(e) => {
 				println!("Error: {:?}", e);
-				let _ =
-					sender.send_message(&Message::close_because(1002, "".to_string()));
+				let _ = sender.send_message(&Message::close_because(1002, "".to_string()));
 				break;
 			}
 		};

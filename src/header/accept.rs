@@ -27,7 +27,7 @@ impl FromStr for WebSocketAccept {
 		match base64::decode(accept) {
 			Ok(vec) => {
 				if vec.len() != 20 {
-					return Err(WebSocketError::ProtocolError("Sec-WebSocket-Accept must be 20 bytes"));
+					return Err(WebSocketError::ProtocolError("Sec-WebSocket-Accept must be 20 bytes",),);
 				}
 				let mut array = [0u8; 20];
 				let mut iter = vec.into_iter();

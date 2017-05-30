@@ -59,12 +59,10 @@ impl<'a> Message<'a> {
 	pub fn text<S>(data: S) -> Self
 		where S: Into<Cow<'a, str>>
 	{
-		Message::new(Type::Text,
-		             None,
-		             match data.into() {
-		                 Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
-		                 Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
-		             })
+		Message::new(Type::Text, None, match data.into() {
+			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+		})
 	}
 
 	/// Create a new WebSocket message with binary data
@@ -86,12 +84,10 @@ impl<'a> Message<'a> {
 	pub fn close_because<S>(code: u16, reason: S) -> Self
 		where S: Into<Cow<'a, str>>
 	{
-		Message::new(Type::Close,
-		             Some(code),
-		             match reason.into() {
-		                 Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
-		                 Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
-		             })
+		Message::new(Type::Close, Some(code), match reason.into() {
+			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+		})
 	}
 
 	/// Create a ping WebSocket message, a pong is usually sent back
@@ -179,8 +175,8 @@ impl<'a> ws::Message for Message<'a> {
 		where D: DataFrameTrait
 	{
 		let opcode = frames.first()
-                           .ok_or(WebSocketError::ProtocolError("No dataframes provided"))
-                           .map(|d| d.opcode())?;
+		                   .ok_or(WebSocketError::ProtocolError("No dataframes provided",),)
+		                   .map(|d| d.opcode())?;
 		let opcode = Opcode::new(opcode);
 
 		let payload_size = frames.iter().map(|d| d.size()).sum();
@@ -435,10 +431,14 @@ impl<'m> From<Message<'m>> for OwnedMessage {
 			}
 			Type::Close => {
 				match message.cd_status_code {
-					Some(code) => OwnedMessage::Close(Some(CloseData {
-                status_code: code,
-                reason: String::from_utf8_lossy(&message.payload).into_owned(),
-            })),
+					Some(code) => {
+						OwnedMessage::Close(Some(CloseData {
+						                             status_code: code,
+						                             reason:
+							                             String::from_utf8_lossy(&message.payload)
+							                                 .into_owned(),
+						                         }))
+					}
 					None => OwnedMessage::Close(None),
 				}
 			}

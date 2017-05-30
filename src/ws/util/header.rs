@@ -45,7 +45,7 @@ pub fn write_header(writer: &mut Write, header: DataFrameHeader) -> WebSocketRes
 	writer.write_u8((header.flags.bits) | header.opcode)?;
 
 	writer.write_u8(// Write the 'MASK'
-	                     if header.mask.is_some() { 0x80 } else { 0x00 } |
+	                if header.mask.is_some() { 0x80 } else { 0x00 } |
 		// Write the 'Payload len'
 		if header.len <= 125 { header.len as u8 }
 		else if header.len <= 65535 { 126 }

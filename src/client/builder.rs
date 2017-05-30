@@ -561,25 +561,23 @@ impl<'u> ClientBuilder<'u> {
 				}
 			};
 			// secure connection, wrap with ssl
-			let future =
-				tcp_stream.map_err(|e| e.into())
-				          .and_then(move |s| {
-					                    connector.connect_async(&host, s)
-					                             .map_err(|e| e.into())
-					                   })
-				          .and_then(move |stream| {
-					                    let stream: Box<stream::async::Stream + Send> = Box::new(stream);
-					                    builder.async_connect_on(stream)
-					                   });
+			let future = tcp_stream.map_err(|e| e.into())
+			                       .and_then(move |s| {
+				                                 connector.connect_async(&host, s)
+				                                          .map_err(|e| e.into())
+				                                })
+			                       .and_then(move |stream| {
+				let stream: Box<stream::async::Stream + Send> = Box::new(stream);
+				builder.async_connect_on(stream)
+			});
 			Box::new(future)
 		} else {
 			// insecure connection, connect normally
-			let future =
-				tcp_stream.map_err(|e| e.into())
-				          .and_then(move |stream| {
-					                    let stream: Box<stream::async::Stream + Send> = Box::new(stream);
-					                    builder.async_connect_on(stream)
-					                   });
+			let future = tcp_stream.map_err(|e| e.into())
+			                       .and_then(move |stream| {
+				let stream: Box<stream::async::Stream + Send> = Box::new(stream);
+				builder.async_connect_on(stream)
+			});
 			Box::new(future)
 		}
 	}
@@ -648,14 +646,13 @@ impl<'u> ClientBuilder<'u> {
 		};
 
 		// put it all together
-		let future = tcp_stream.map_err(|e| e.into())
-		                       .and_then(move |s| {
-			                                 connector.connect_async(&host, s)
-			                                          .map_err(|e| e.into())
-			                                })
-		                       .and_then(move |stream| {
-			                                 builder.async_connect_on(stream)
-			                                });
+		let future =
+			tcp_stream.map_err(|e| e.into())
+			          .and_then(move |s| {
+				                    connector.connect_async(&host, s)
+				                             .map_err(|e| e.into())
+				                   })
+			          .and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
 
@@ -707,10 +704,9 @@ impl<'u> ClientBuilder<'u> {
 			key_set: self.key_set,
 		};
 
-		let future = tcp_stream.map_err(|e| e.into())
-		                       .and_then(move |stream| {
-			                                 builder.async_connect_on(stream)
-			                                });
+		let future =
+			tcp_stream.map_err(|e| e.into())
+			          .and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
 
@@ -869,9 +865,9 @@ impl<'u> ClientBuilder<'u> {
 		}
 
 		let key =
-                self.headers
-                    .get::<WebSocketKey>()
-                    .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid"))?;
+			self.headers
+			    .get::<WebSocketKey>()
+			    .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid"))?;
 
 		if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
 			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
