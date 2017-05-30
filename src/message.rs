@@ -59,12 +59,10 @@ impl<'a> Message<'a> {
 	pub fn text<S>(data: S) -> Self
 		where S: Into<Cow<'a, str>>
 	{
-		Message::new(Type::Text,
-		             None,
-		             match data.into() {
-		                 Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
-		                 Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
-		             })
+		Message::new(Type::Text, None, match data.into() {
+			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+		})
 	}
 
 	/// Create a new WebSocket message with binary data
@@ -86,12 +84,10 @@ impl<'a> Message<'a> {
 	pub fn close_because<S>(code: u16, reason: S) -> Self
 		where S: Into<Cow<'a, str>>
 	{
-		Message::new(Type::Close,
-		             Some(code),
-		             match reason.into() {
-		                 Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
-		                 Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
-		             })
+		Message::new(Type::Close, Some(code), match reason.into() {
+			Cow::Owned(msg) => Cow::Owned(msg.into_bytes()),
+			Cow::Borrowed(msg) => Cow::Borrowed(msg.as_bytes()),
+		})
 	}
 
 	/// Create a ping WebSocket message, a pong is usually sent back
@@ -144,9 +140,9 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 
 	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
 		if let Some(reason) = self.cd_status_code {
-			try!(socket.write_u16::<BigEndian>(reason));
+			socket.write_u16::<BigEndian>(reason)?;
 		}
-		try!(socket.write_all(&*self.payload));
+		socket.write_all(&*self.payload)?;
 		Ok(())
 	}
 
@@ -178,9 +174,9 @@ impl<'a> ws::Message for Message<'a> {
 	fn from_dataframes<D>(frames: Vec<D>) -> WebSocketResult<Self>
 		where D: DataFrameTrait
 	{
-		let opcode = try!(frames.first()
-		                        .ok_or(WebSocketError::ProtocolError("No dataframes provided"))
-		                        .map(|d| d.opcode()));
+		let opcode = frames.first()
+		                   .ok_or(WebSocketError::ProtocolError("No dataframes provided",),)
+		                   .map(|d| d.opcode())?;
 		let opcode = Opcode::new(opcode);
 
 		let payload_size = frames.iter().map(|d| d.size()).sum();
@@ -214,8 +210,8 @@ impl<'a> ws::Message for Message<'a> {
 			Some(Opcode::Binary) => Message::binary(data),
 			Some(Opcode::Close) => {
 				if data.len() > 0 {
-					let status_code = try!((&data[..]).read_u16::<BigEndian>());
-					let reason = try!(bytes_to_string(&data[2..]));
+					let status_code = (&data[..]).read_u16::<BigEndian>()?;
+					let reason = bytes_to_string(&data[2..])?;
 					Message::close_because(status_code, reason)
 				} else {
 					Message::close()
@@ -387,18 +383,10 @@ impl ws::dataframe::DataFrame for OwnedMessage {
 
 	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
 		match *self {
-			OwnedMessage::Text(ref txt) => {
-				socket.write_all(txt.as_bytes())?
-			}
-			OwnedMessage::Binary(ref bin) => {
-				socket.write_all(bin.as_slice())?
-			}
-			OwnedMessage::Ping(ref data) => {
-				socket.write_all(data.as_slice())?
-			}
-			OwnedMessage::Pong(ref data) => {
-				socket.write_all(data.as_slice())?
-			}
+			OwnedMessage::Text(ref txt) => socket.write_all(txt.as_bytes())?,
+			OwnedMessage::Binary(ref bin) => socket.write_all(bin.as_slice())?,
+			OwnedMessage::Ping(ref data) => socket.write_all(data.as_slice())?,
+			OwnedMessage::Pong(ref data) => socket.write_all(data.as_slice())?,
 			OwnedMessage::Close(ref data) => {
 				match data {
 					&Some(ref c) => {
@@ -443,10 +431,14 @@ impl<'m> From<Message<'m>> for OwnedMessage {
 			}
 			Type::Close => {
 				match message.cd_status_code {
-					Some(code) => OwnedMessage::Close(Some(CloseData {
-                status_code: code,
-                reason: String::from_utf8_lossy(&message.payload).into_owned(),
-            })),
+					Some(code) => {
+						OwnedMessage::Close(Some(CloseData {
+						                             status_code: code,
+						                             reason:
+							                             String::from_utf8_lossy(&message.payload)
+							                                 .into_owned(),
+						                         }))
+					}
 					None => OwnedMessage::Close(None),
 				}
 			}
@@ -494,7 +486,7 @@ impl CloseData {
 	/// Convert this into a vector of bytes
 	pub fn into_bytes(self) -> io::Result<Vec<u8>> {
 		let mut buf = Vec::new();
-		try!(buf.write_u16::<BigEndian>(self.status_code));
+		buf.write_u16::<BigEndian>(self.status_code)?;
 		for i in self.reason.as_bytes().iter() {
 			buf.push(*i);
 		}

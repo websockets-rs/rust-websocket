@@ -68,9 +68,9 @@ impl FromStr for Extension {
 
 impl fmt::Display for Extension {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		try!(write!(f, "{}", self.name));
+		write!(f, "{}", self.name)?;
 		for param in &self.params {
-			try!(write!(f, "; {}", param));
+			write!(f, "; {}", param)?;
 		}
 		Ok(())
 	}
@@ -97,9 +97,9 @@ impl Parameter {
 
 impl fmt::Display for Parameter {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		try!(write!(f, "{}", self.name));
+		write!(f, "{}", self.name)?;
 		if let Some(ref x) = self.value {
-			try!(write!(f, "={}", x));
+			write!(f, "={}", x)?;
 		}
 		Ok(())
 	}

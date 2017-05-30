@@ -103,10 +103,10 @@ impl ws::Receiver for Receiver {
 		where R: Read
 	{
 		let mut finished = if self.buffer.is_empty() {
-			let first = try!(self.recv_dataframe(reader));
+			let first = self.recv_dataframe(reader)?;
 
 			if first.opcode == Opcode::Continuation {
-				return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode"));
+				return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode",),);
 			}
 
 			let finished = first.finished;
@@ -117,7 +117,7 @@ impl ws::Receiver for Receiver {
 		};
 
 		while !finished {
-			let next = try!(self.recv_dataframe(reader));
+			let next = self.recv_dataframe(reader)?;
 			finished = next.finished;
 
 			match next.opcode as u8 {

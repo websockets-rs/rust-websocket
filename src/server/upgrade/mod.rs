@@ -126,8 +126,8 @@ impl<S, B> WsUpgrade<S, B>
 
 	#[cfg(feature="sync")]
 	fn send(&mut self, status: StatusCode) -> io::Result<()> {
-		try!(write!(&mut self.stream, "{} {}\r\n", self.request.version, status));
-		try!(write!(&mut self.stream, "{}\r\n", self.headers));
+		write!(&mut self.stream, "{} {}\r\n", self.request.version, status)?;
+		write!(&mut self.stream, "{}\r\n", self.headers)?;
 		Ok(())
 	}
 

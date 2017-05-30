@@ -65,8 +65,8 @@ pub enum WebSocketError {
 
 impl fmt::Display for WebSocketError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-		try!(fmt.write_str("WebSocketError: "));
-		try!(fmt.write_str(self.description()));
+		fmt.write_str("WebSocketError: ")?;
+		fmt.write_str(self.description())?;
 		Ok(())
 	}
 }
@@ -199,8 +199,8 @@ pub enum WSUrlErrorKind {
 
 impl fmt::Display for WSUrlErrorKind {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-		try!(fmt.write_str("WebSocket Url Error: "));
-		try!(fmt.write_str(self.description()));
+		fmt.write_str("WebSocket Url Error: ")?;
+		fmt.write_str(self.description())?;
 		Ok(())
 	}
 }
