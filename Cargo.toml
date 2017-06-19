@@ -1,6 +1,6 @@
 [package]
 name = "websocket"
-version = "0.20.1"
+version = "0.20.2"
 authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.com>"]
 
 description = "A WebSocket (RFC6455) library for Rust."
@@ -20,7 +20,7 @@ license = "MIT"
 hyper = "^0.10.6"
 unicase = "1.0"
 url = "1.0"
-bitflags = "0.8"
+bitflags = "0.9"
 rand = "0.3"
 byteorder = "1.0"
 sha1 = "0.2"
