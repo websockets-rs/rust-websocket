@@ -32,6 +32,9 @@ tokio-tls = { version = "0.1", optional = true }
 bytes = { version = "0.4", optional = true }
 native-tls = { version = "^0.1.2", optional = true }
 
+[dev-dependencies]
+futures-cpupool = "0.1"
+
 [features]
 default = ["sync", "sync-ssl", "async", "async-ssl"]
 sync = []
