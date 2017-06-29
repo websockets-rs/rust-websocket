@@ -6,15 +6,15 @@ use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 
 bitflags! {
 	/// Flags relevant to a WebSocket data frame.
-	pub flags DataFrameFlags: u8 {
+	pub struct DataFrameFlags: u8 {
 		/// Marks this dataframe as the last dataframe
-		const FIN = 0x80,
+		const FIN = 0x80;
 		/// First reserved bit
-		const RSV1 = 0x40,
+		const RSV1 = 0x40;
 		/// Second reserved bit
-		const RSV2 = 0x20,
+		const RSV2 = 0x20;
 		/// Third reserved bit
-		const RSV3 = 0x10,
+		const RSV3 = 0x10;
 	}
 }
 
