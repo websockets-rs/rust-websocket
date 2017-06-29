@@ -108,7 +108,7 @@ fn main() {
 	});
 
 	// Main 'logic' loop
-	let game_loop = pool.spawn_fn(move || {
+	let main_loop = pool.spawn_fn(move || {
 		future::loop_fn(send_channel_out, move |send_channel_out| {
 			thread::sleep(Duration::from_millis(100));
 
@@ -122,7 +122,7 @@ fn main() {
 	});
 
 	let handlers =
-		game_loop.select2(connection_handler.select2(receive_handler.select(send_handler)));
+		main_loop.select2(connection_handler.select2(receive_handler.select(send_handler)));
 	core.run(handlers).map_err(|_| println!("Error while running core loop")).unwrap();
 }
 
