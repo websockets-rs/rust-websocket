@@ -25,18 +25,19 @@ use std::fmt::Debug;
 type Id = u32;
 
 fn main() {
-    let mut core = Core::new().expect("Failed to create Tokio event loop");
-    let handle = core.handle();
-    let remote = core.remote();
-    let server = Server::bind("localhost:8081", &handle).expect("Failed to create server");
-    let pool = Rc::new(CpuPool::new_num_cpus());
-    let connections = Arc::new(RwLock::new(HashMap::new()));
-    let (receive_channel_out, receive_channel_in) = mpsc::unbounded();
+	let mut core = Core::new().expect("Failed to create Tokio event loop");
+	let handle = core.handle();
+	let remote = core.remote();
+	let server = Server::bind("localhost:8081", &handle).expect("Failed to create server");
+	let pool = Rc::new(CpuPool::new_num_cpus());
+	let connections = Arc::new(RwLock::new(HashMap::new()));
+	let (receive_channel_out, receive_channel_in) = mpsc::unbounded();
 
-    let conn_id = Rc::new(RefCell::new(Counter::new()));
-    let connections_inner = connections.clone();
-    // Handle new connection
-    let connection_handler = server.incoming()
+	let conn_id = Rc::new(RefCell::new(Counter::new()));
+	let connections_inner = connections.clone();
+	// Handle new connection
+	let connection_handler =
+		server.incoming()
         // we don't wanna save the stream if it drops
         .map_err(|InvalidConnection { error, .. }| error)
         .for_each(move |(upgrade, addr)| {
@@ -64,119 +65,120 @@ fn main() {
         .map_err(|_| ());
 
 
-    // Handle receiving messages from a client
-    let remote_inner = remote.clone();
-    let receive_handler = pool.spawn_fn(|| {
-        receive_channel_in.for_each(move |(id, stream)| {
-            remote_inner.spawn(move |_| {
-                stream.for_each(move |msg| {
-                                    process_message(id, &msg);
-                                    Ok(())
-                                })
-                    .map_err(|_| ())
-            });
-            Ok(())
-        })
-    });
+	// Handle receiving messages from a client
+	let remote_inner = remote.clone();
+	let receive_handler = pool.spawn_fn(|| {
+		receive_channel_in.for_each(move |(id, stream)| {
+			remote_inner.spawn(move |_| {
+				stream.for_each(move |msg| {
+					                process_message(id, &msg);
+					                Ok(())
+					               })
+				      .map_err(|_| ())
+			});
+			Ok(())
+		})
+	});
 
-    let (send_channel_out, send_channel_in) = mpsc::unbounded();
+	let (send_channel_out, send_channel_in) = mpsc::unbounded();
 
-    // Handle sending messages to a client
-    let connections_inner = connections.clone();
-    let remote_inner = remote.clone();
-    let send_handler =
-        pool.spawn_fn(move || {
-            let connections = connections_inner.clone();
-            let remote = remote_inner.clone();
-            send_channel_in.for_each(move |(id, msg): (Id, String)| {
-                    let connections = connections.clone();
-                    let sink = connections.write()
-                        .unwrap()
-                        .remove(&id)
-                        .expect("Tried to send to invalid client id");
+	// Handle sending messages to a client
+	let connections_inner = connections.clone();
+	let remote_inner = remote.clone();
+	let send_handler = pool.spawn_fn(move || {
+		let connections = connections_inner.clone();
+		let remote = remote_inner.clone();
+		send_channel_in.for_each(move |(id, msg): (Id, String)| {
+			let connections = connections.clone();
+			let sink = connections.write()
+			                      .unwrap()
+			                      .remove(&id)
+			                      .expect("Tried to send to invalid client id");
 
-                    println!("Sending message '{}' to id {}", msg, id);
-                    let f = sink.send(OwnedMessage::Text(msg)).and_then(move |sink| {
-                        connections.write().unwrap().insert(id, sink);
-                        Ok(())
-                    });
-                    remote.spawn(move |_| f.map_err(|_| ()));
-                    Ok(())
-                })
-                .map_err(|_| ())
-        });
+			println!("Sending message '{}' to id {}", msg, id);
+			let f =
+				sink.send(OwnedMessage::Text(msg)).and_then(move |sink| {
+					connections.write().unwrap().insert(id, sink);
+					Ok(())
+				});
+			remote.spawn(move |_| f.map_err(|_| ()));
+			Ok(())
+		})
+		               .map_err(|_| ())
+	});
 
-    // Main 'logic' loop
-    let game_loop = pool.spawn_fn(move || {
-        future::loop_fn(send_channel_out, move |send_channel_out| {
-            thread::sleep(Duration::from_millis(100));
+	// Main 'logic' loop
+	let game_loop = pool.spawn_fn(move || {
+		future::loop_fn(send_channel_out, move |send_channel_out| {
+			thread::sleep(Duration::from_millis(100));
 
-            let should_continue = update(connections.clone(), send_channel_out.clone(), &remote);
-            match should_continue {
-                Ok(true) => Ok(Loop::Continue(send_channel_out)),
-                Ok(false) => Ok(Loop::Break(())),
-                Err(()) => Err(()),
-            }
-        })
-    });
+			let should_continue = update(connections.clone(), send_channel_out.clone(), &remote);
+			match should_continue {
+				Ok(true) => Ok(Loop::Continue(send_channel_out)),
+				Ok(false) => Ok(Loop::Break(())),
+				Err(()) => Err(()),
+			}
+		})
+	});
 
-    let handlers =
+	let handlers =
         game_loop.select2(connection_handler.select2(receive_handler.select(send_handler)));
-    core.run(handlers).map_err(|_| println!("Error while running core loop")).unwrap();
+	core.run(handlers).map_err(|_| println!("Error while running core loop")).unwrap();
 }
 
 fn spawn_future<F, I, E>(f: F, desc: &'static str, handle: &Handle)
-    where F: Future<Item = I, Error = E> + 'static,
-          E: Debug
+	where F: Future<Item = I, Error = E> + 'static,
+	      E: Debug
 {
-    handle.spawn(f.map_err(move |e| println!("Error in {}: '{:?}'", desc, e))
-                     .map(move |_| println!("{}: Finished.", desc)));
+	handle.spawn(f.map_err(move |e| println!("Error in {}: '{:?}'", desc, e))
+	              .map(move |_| println!("{}: Finished.", desc)));
 }
 
 
 fn process_message(id: u32, msg: &OwnedMessage) {
-    if let OwnedMessage::Text(ref txt) = *msg {
-        println!("Received message '{}' from id {}", txt, id);
-    }
+	if let OwnedMessage::Text(ref txt) = *msg {
+		println!("Received message '{}' from id {}", txt, id);
+	}
 }
 
 type SinkContent = websocket::client::async::Framed<tokio_core::net::TcpStream,
                                                     websocket::async::MessageCodec<OwnedMessage>>;
 type SplitSink = futures::stream::SplitSink<SinkContent>;
 // Represents one tick in the main loop
-fn update(connections: Arc<RwLock<HashMap<Id, SplitSink>>>,
-          channel: mpsc::UnboundedSender<(Id, String)>,
-          remote: &Remote)
-          -> Result<bool, ()> {
-    remote.spawn(move |handle| {
-        for (id, _) in connections.read().unwrap().iter() {
-            let f = channel.clone().send((*id, "Hi there!".to_owned()));
-            spawn_future(f, "Send message to write handler", handle);
-        }
-        Ok(())
-    });
-    Ok(true)
+fn update(
+	connections: Arc<RwLock<HashMap<Id, SplitSink>>>,
+	channel: mpsc::UnboundedSender<(Id, String)>,
+	remote: &Remote
+) -> Result<bool, ()> {
+	remote.spawn(move |handle| {
+		for (id, _) in connections.read().unwrap().iter() {
+			let f = channel.clone().send((*id, "Hi there!".to_owned()));
+			spawn_future(f, "Send message to write handler", handle);
+		}
+		Ok(())
+	});
+	Ok(true)
 }
 
 struct Counter {
-    count: Id,
+	count: Id,
 }
 impl Counter {
-    fn new() -> Self {
-        Counter { count: 0 }
-    }
+	fn new() -> Self {
+		Counter { count: 0 }
+	}
 }
 
 
 impl Iterator for Counter {
-    type Item = Id;
+	type Item = Id;
 
-    fn next(&mut self) -> Option<Id> {
-        if self.count != Id::max_value() {
-            self.count += 1;
-            Some(self.count)
-        } else {
-            None
-        }
-    }
+	fn next(&mut self) -> Option<Id> {
+		if self.count != Id::max_value() {
+			self.count += 1;
+			Some(self.count)
+		} else {
+			None
+		}
+	}
 }
