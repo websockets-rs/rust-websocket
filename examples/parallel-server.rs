@@ -70,12 +70,12 @@ fn main() {
 	let receive_handler = pool.spawn_fn(|| {
 		receive_channel_in.for_each(move |(id, stream)| {
 			remote_inner.spawn(move |_| {
-				stream.for_each(move |msg| {
-					                process_message(id, &msg);
-					                Ok(())
-					               })
-				      .map_err(|_| ())
-			});
+				                   stream.for_each(move |msg| {
+					                                   process_message(id, &msg);
+					                                   Ok(())
+					                                  })
+				                         .map_err(|_| ())
+				                  });
 			Ok(())
 		})
 	});
@@ -93,14 +93,14 @@ fn main() {
 			let sink = connections.write()
 			                      .unwrap()
 			                      .remove(&id)
-			                      .expect("Tried to send to invalid client id");
+			                      .expect("Tried to send to invalid client id",);
 
 			println!("Sending message '{}' to id {}", msg, id);
-			let f =
-				sink.send(OwnedMessage::Text(msg)).and_then(move |sink| {
-					connections.write().unwrap().insert(id, sink);
-					Ok(())
-				});
+			let f = sink.send(OwnedMessage::Text(msg))
+			            .and_then(move |sink| {
+				                      connections.write().unwrap().insert(id, sink);
+				                      Ok(())
+				                     });
 			remote.spawn(move |_| f.map_err(|_| ()));
 			Ok(())
 		})
@@ -122,7 +122,7 @@ fn main() {
 	});
 
 	let handlers =
-        game_loop.select2(connection_handler.select2(receive_handler.select(send_handler)));
+		game_loop.select2(connection_handler.select2(receive_handler.select(send_handler)));
 	core.run(handlers).map_err(|_| println!("Error while running core loop")).unwrap();
 }
 
@@ -148,15 +148,15 @@ type SplitSink = futures::stream::SplitSink<SinkContent>;
 fn update(
 	connections: Arc<RwLock<HashMap<Id, SplitSink>>>,
 	channel: mpsc::UnboundedSender<(Id, String)>,
-	remote: &Remote
+	remote: &Remote,
 ) -> Result<bool, ()> {
 	remote.spawn(move |handle| {
-		for (id, _) in connections.read().unwrap().iter() {
-			let f = channel.clone().send((*id, "Hi there!".to_owned()));
-			spawn_future(f, "Send message to write handler", handle);
-		}
-		Ok(())
-	});
+		             for (id, _) in connections.read().unwrap().iter() {
+			             let f = channel.clone().send((*id, "Hi there!".to_owned()));
+			             spawn_future(f, "Send message to write handler", handle);
+			            }
+		             Ok(())
+		            });
 	Ok(true)
 }
 
