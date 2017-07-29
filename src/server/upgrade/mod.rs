@@ -231,7 +231,8 @@ impl From<::codec::http::HttpCodecError> for HyperIntoWsError {
 }
 
 #[cfg(any(feature="sync", feature="async"))]
-fn validate(
+/// Check whether an incoming request is a valid WebSocket upgrade attempt.
+pub fn validate(
 	method: &Method,
 	version: &HttpVersion,
 	headers: &Headers,
