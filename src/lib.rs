@@ -26,7 +26,7 @@
 //! `bind_secure()` functions will bind the server to the given `SocketAddr`.
 //!
 //! # Extending Rust-WebSocket
-//! The `ws` module contains the traits and functions used by Rust-WebSockt at a lower
+//! The `ws` module contains the traits and functions used by Rust-WebSocket at a lower
 //! level. Their usage is explained in the module documentation.
 extern crate hyper;
 extern crate unicase;

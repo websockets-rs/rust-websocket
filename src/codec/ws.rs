@@ -45,7 +45,7 @@ pub enum Context {
  * Dataframes *
  **************/
 
-/// A codec for deconding and encoding websocket dataframes.
+/// A codec for decoding and encoding websocket dataframes.
 ///
 /// This codec decodes dataframes into the crates default implementation
 /// of `Dataframe` but can encode and send any struct that implements the

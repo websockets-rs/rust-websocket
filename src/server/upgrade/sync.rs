@@ -148,7 +148,7 @@ pub trait IntoWs {
 	/// or something went wrong. It is common to also include the stream here.
 	type Error;
 	/// Attempt to parse the start of a Websocket handshake, later with the  returned
-	/// `WsUpgrade` struct, call `accept to start a websocket client, and `reject` to
+	/// `WsUpgrade` struct, call `accept` to start a websocket client, and `reject` to
 	/// send a handshake rejection response.
 	fn into_ws(self) -> Result<Upgrade<Self::Stream>, Self::Error>;
 }

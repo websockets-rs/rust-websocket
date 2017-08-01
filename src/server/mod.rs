@@ -18,7 +18,7 @@ pub mod sync;
 pub struct NoTlsAcceptor;
 /// Trait that is implemented over NoSslAcceptor and SslAcceptor that
 /// serves as a generic bound to make a struct with.
-/// Used in the Server to specify impls based on wether the server
+/// Used in the Server to specify impls based on whether the server
 /// is running over SSL or not.
 pub trait OptionalTlsAcceptor {}
 impl OptionalTlsAcceptor for NoTlsAcceptor {}
@@ -56,7 +56,7 @@ pub struct InvalidConnection<S, B>
 ///
 /// # Synchronous Servers
 /// Synchronous implementations of a websocket server are available below, each method is
-/// documented so the reader knows wether is it synchronous or asynchronous.
+/// documented so the reader knows whether is it synchronous or asynchronous.
 ///
 /// To use the synchronous implementation, you must have the `sync` feature enabled
 /// (it is enabled by default).
@@ -65,7 +65,7 @@ pub struct InvalidConnection<S, B>
 ///
 /// # Asynchronous Servers
 /// Asynchronous implementations of a websocket server are available below, each method is
-/// documented so the reader knows wether is it synchronous or asynchronous.
+/// documented so the reader knows whether is it synchronous or asynchronous.
 /// Simply look out for the implementation of `Server` whose methods only return `Future`s
 /// (it is also written in the docs if the method is async).
 ///

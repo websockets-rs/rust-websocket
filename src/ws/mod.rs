@@ -16,7 +16,7 @@
 //!
 //! When sending a message, the message is converted into an iterator with its `into_iter()`
 //! method, which allows the message to output data frames forming a fragmented message
-//! where each data frame is sent immediately to be reassembled a the remote endpoint.
+//! where each data frame is sent immediately to be reassembled at the remote endpoint.
 //!
 //! The type of data frame can be any type, however, if you choose a data frame type other than
 //! `DataFrame`, you will also have to implement the `Sender` and `Receiver` traits to
