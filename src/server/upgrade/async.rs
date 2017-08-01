@@ -4,7 +4,7 @@
 //! This module contains the trait that transforms stream into
 //! an intermediate struct called `Upgrade` and the `Upgrade` struct itself.
 //! The `Upgrade` struct is used to inspect details of the websocket connection
-//! (e.g. what protocols it wants to use) and decide wether to accept or reject it.
+//! (e.g. what protocols it wants to use) and decide whether to accept or reject it.
 use super::{HyperIntoWsError, WsUpgrade, Request, validate};
 use std::io::{self, ErrorKind};
 use tokio_io::codec::{Framed, FramedParts};

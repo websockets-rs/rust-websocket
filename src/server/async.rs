@@ -22,7 +22,7 @@ pub type Server<S> = WsServer<S, TcpListener>;
 /// A stream of websocket connections and addresses the server generates.
 ///
 /// Each item of the stream is the address of the incoming connection and an `Upgrade`
-/// struct which lets the user decide wether to turn the connection into a websocket
+/// struct which lets the user decide whether to turn the connection into a websocket
 /// connection or reject it.
 pub type Incoming<S> = Box<Stream<Item = (Upgrade<S>, SocketAddr),
                                   Error = InvalidConnection<S, BytesMut>>>;
@@ -44,7 +44,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 	/// Turns the server into a stream of connection objects.
 	///
 	/// Each item of the stream is the address of the incoming connection and an `Upgrade`
-	/// struct which lets the user decide wether to turn the connection into a websocket
+	/// struct which lets the user decide whether to turn the connection into a websocket
 	/// connection or reject it.
 	///
 	/// See the [`examples/async-server.rs`]
@@ -102,7 +102,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 	/// Turns the server into a stream of connection objects.
 	///
 	/// Each item of the stream is the address of the incoming connection and an `Upgrade`
-	/// struct which lets the user decide wether to turn the connection into a websocket
+	/// struct which lets the user decide whether to turn the connection into a websocket
 	/// connection or reject it.
 	///
 	/// See the [`examples/async-server.rs`]

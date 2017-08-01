@@ -14,7 +14,7 @@ pub struct Masker<'w> {
 
 impl<'w> Masker<'w> {
 	/// Create a new Masker with the key and the endpoint
-	/// to be writter to.
+	/// to be writer to.
 	pub fn new(key: [u8; 4], endpoint: &'w mut Write) -> Self {
 		Masker {
 			key: key,

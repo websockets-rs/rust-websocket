@@ -1,6 +1,6 @@
 //! Describes the generic DataFrame, defining a trait
 //! that all dataframes should share. This is so one can
-//! optomize the memory footprint of a dataframe for their
+//! optimize the memory footprint of a dataframe for their
 //! own needs, and be able to use custom dataframes quickly
 use std::io::Write;
 use result::WebSocketResult;
