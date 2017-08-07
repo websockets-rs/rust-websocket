@@ -28,9 +28,9 @@
 //! # Extending Rust-WebSocket
 //! The `ws` module contains the traits and functions used by Rust-WebSockt at a lower
 //! level. Their usage is explained in the module documentation.
-extern crate hyper;
 extern crate unicase;
 pub extern crate url;
+extern crate httparse;
 extern crate rand;
 extern crate byteorder;
 extern crate sha1;
@@ -54,26 +54,10 @@ extern crate bitflags;
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
 
-macro_rules! upsert_header {
-    ($headers:expr; $header:ty; {
-        Some($pat:pat) => $some_match:expr,
-        None => $default:expr
-    }) => {{
-        if $headers.has::<$header>() {
-            if let Some($pat) = $headers.get_mut::<$header>() {
-                $some_match
-            }
-        } else {
-            $headers.set($default);
-        }
-    }}
-}
-
 pub mod ws;
 pub mod dataframe;
 pub mod message;
 pub mod result;
-pub mod header;
 
 #[cfg(feature="async")]
 pub mod codec;

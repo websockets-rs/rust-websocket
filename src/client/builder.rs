@@ -2,31 +2,21 @@
 
 use std::borrow::Cow;
 pub use url::{Url, ParseError};
-use header::extensions::Extension;
-use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensions, Origin};
-use hyper::header::{Headers, Header, HeaderFormat};
-use hyper::version::HttpVersion;
 
 #[cfg(any(feature="sync", feature="async"))]
 mod common_imports {
 	pub use std::net::TcpStream;
 	pub use std::net::ToSocketAddrs;
 	pub use url::Position;
-	pub use hyper::http::h1::Incoming;
-	pub use hyper::http::RawStatus;
-	pub use hyper::status::StatusCode;
-	pub use hyper::buffer::BufReader;
-	pub use hyper::method::Method;
-	pub use hyper::uri::RequestUri;
-	pub use hyper::http::h1::parse_response;
-	pub use hyper::header::{Host, Connection, ConnectionOption, Upgrade, Protocol, ProtocolName};
 	pub use unicase::UniCase;
-	pub use header::WebSocketAccept;
 	pub use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
 	pub use stream::{self, Stream};
 }
 #[cfg(any(feature="sync", feature="async"))]
 use self::common_imports::*;
+
+#[cfg(any(feature="sync", feature="async"))]
+pub use httparse::Header;
 
 #[cfg(feature="sync")]
 use super::sync::Client;
@@ -101,15 +91,14 @@ use self::async_imports::*;
 /// One can use `connect_secure` to connect to an SSL service, or simply `connect`
 /// to choose either SSL or not based on the protocol (`ws://` or `wss://`).
 #[derive(Clone, Debug)]
-pub struct ClientBuilder<'u> {
+pub struct ClientBuilder<'u, 'h> {
 	url: Cow<'u, Url>,
-	version: HttpVersion,
-	headers: Headers,
+	headers: Vec<Header<'h>>,
 	version_set: bool,
 	key_set: bool,
 }
 
-impl<'u> ClientBuilder<'u> {
+impl<'u, 'h> ClientBuilder<'u, 'h> {
 	/// Create a client builder from an already parsed Url,
 	/// because there is no need to parse this will never error.
 	///
@@ -149,10 +138,9 @@ impl<'u> ClientBuilder<'u> {
 	fn init(url: Cow<'u, Url>) -> Self {
 		ClientBuilder {
 			url: url,
-			version: HttpVersion::Http11,
 			version_set: false,
 			key_set: false,
-			headers: Headers::new(),
+			headers: Vec::new(),
 		}
 	}
 

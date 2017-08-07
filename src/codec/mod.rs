@@ -10,5 +10,4 @@
 //! more low level) in the `ws` module.
 //! See it's module level documentation for more info.
 
-pub mod http;
 pub mod ws;

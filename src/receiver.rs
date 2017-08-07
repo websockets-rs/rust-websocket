@@ -3,8 +3,6 @@
 use std::io::Read;
 use std::io::Result as IoResult;
 
-use hyper::buffer::BufReader;
-
 use dataframe::{DataFrame, Opcode};
 use result::{WebSocketResult, WebSocketError};
 use ws;
@@ -20,7 +18,7 @@ pub struct Reader<R>
 	where R: Read
 {
 	/// the stream to be read from
-	pub stream: BufReader<R>,
+	pub stream: R,
 	/// the parser to parse bytes into messages
 	pub receiver: Receiver,
 }
@@ -34,7 +32,7 @@ impl<R> Reader<R>
 	}
 
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes(&mut self) -> DataFrameIterator<Receiver, BufReader<R>> {
+	pub fn incoming_dataframes(&mut self) -> DataFrameIterator<Receiver, R> {
 		self.receiver.incoming_dataframes(&mut self.stream)
 	}
 
@@ -47,7 +45,7 @@ impl<R> Reader<R>
 
 	/// An iterator over incoming messsages.
 	/// This iterator will block until new messages arrive and will never halt.
-	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, BufReader<R>> {
+	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, R> {
 		self.receiver.incoming_messages(&mut self.stream)
 	}
 }

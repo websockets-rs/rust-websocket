@@ -5,7 +5,6 @@ use std::str::Utf8Error;
 use std::error::Error;
 use std::convert::From;
 use std::fmt;
-use hyper::Error as HttpError;
 use url::ParseError;
 use server::upgrade::HyperIntoWsError;
 
@@ -45,7 +44,8 @@ pub enum WebSocketError {
 	/// An input/output error
 	IoError(io::Error),
 	/// An HTTP parsing error
-	HttpError(HttpError),
+    // TODO: new http parse error
+	// HttpError(HttpError),
 	/// A URL parsing error
 	UrlError(ParseError),
 	/// A WebSocket URL error
@@ -80,7 +80,6 @@ impl Error for WebSocketError {
 			WebSocketError::DataFrameError(_) => "WebSocket data frame error",
 			WebSocketError::NoDataAvailable => "No data available",
 			WebSocketError::IoError(_) => "I/O failure",
-			WebSocketError::HttpError(_) => "HTTP failure",
 			WebSocketError::UrlError(_) => "URL failure",
 			#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
 			      WebSocketError::TlsError(_) => "TLS failure",
@@ -96,7 +95,6 @@ impl Error for WebSocketError {
 	fn cause(&self) -> Option<&Error> {
 		match *self {
 			WebSocketError::IoError(ref error) => Some(error),
-			WebSocketError::HttpError(ref error) => Some(error),
 			WebSocketError::UrlError(ref error) => Some(error),
 			#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
 			      WebSocketError::TlsError(ref error) => Some(error),
@@ -113,12 +111,6 @@ impl From<io::Error> for WebSocketError {
 			return WebSocketError::NoDataAvailable;
 		}
 		WebSocketError::IoError(err)
-	}
-}
-
-impl From<HttpError> for WebSocketError {
-	fn from(err: HttpError) -> WebSocketError {
-		WebSocketError::HttpError(err)
 	}
 }
 
