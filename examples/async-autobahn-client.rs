@@ -37,32 +37,30 @@ fn main() {
 						               println!("Could not receive message: {:?}", err);
 						               stream.send(OwnedMessage::Close(None)).map(|s| (None, s))
 						              })
-					      .and_then(|(msg, stream)| match msg {
-					                    Some(OwnedMessage::Text(txt)) => {
-						                    stream.send(OwnedMessage::Text(txt))
-					                              .map(|s| Loop::Continue(s))
-					                              .boxed()
-					                    }
-					                    Some(OwnedMessage::Binary(bin)) => {
-						                    stream.send(OwnedMessage::Binary(bin))
-					                              .map(|s| Loop::Continue(s))
-					                              .boxed()
-					                    }
-					                    Some(OwnedMessage::Ping(data)) => {
-						                    stream.send(OwnedMessage::Pong(data))
-					                              .map(|s| Loop::Continue(s))
-					                              .boxed()
-					                    }
-					                    Some(OwnedMessage::Close(_)) => {
-						                    stream.send(OwnedMessage::Close(None))
-					                              .map(|_| Loop::Break(()))
-					                              .boxed()
-					                    }
-					                    Some(OwnedMessage::Pong(_)) => {
-						                    future::ok(Loop::Continue(stream)).boxed()
-					                    }
-					                    None => future::ok(Loop::Break(())).boxed(),
-					                })
+					      .and_then(|(msg, stream)| -> Box<Future<Item = _, Error = _>> {
+						               match msg {
+					                       Some(OwnedMessage::Text(txt)) => {
+						                       Box::new(stream.send(OwnedMessage::Text(txt))
+					                                 .map(|s| Loop::Continue(s)))
+					                       }
+					                       Some(OwnedMessage::Binary(bin)) => {
+						                       Box::new(stream.send(OwnedMessage::Binary(bin))
+					                                 .map(|s| Loop::Continue(s)))
+					                       }
+					                       Some(OwnedMessage::Ping(data)) => {
+						                          Box::new(stream.send(OwnedMessage::Pong(data))
+					                                    .map(|s| Loop::Continue(s)))
+					                       }
+					                       Some(OwnedMessage::Close(_)) => {
+						                          Box::new(stream.send(OwnedMessage::Close(None))
+					                                    .map(|_| Loop::Break(())))
+					                       }
+					                       Some(OwnedMessage::Pong(_)) => {
+						                          Box::new(future::ok(Loop::Continue(stream)))
+					                       }
+					                       None => Box::new(future::ok(Loop::Break(()))),
+					                   }
+						              })
 				})
 			})
 			.map(move |_| {

@@ -540,7 +540,7 @@ impl<'u> ClientBuilder<'u> {
 		// connect to the tcp stream
 		let tcp_stream = match self.async_tcpstream(None, handle) {
 			Ok(t) => t,
-			Err(e) => return future::err(e).boxed(),
+			Err(e) => return Box::new(future::err(e)),
 		};
 
 		let builder = ClientBuilder {
@@ -557,7 +557,7 @@ impl<'u> ClientBuilder<'u> {
 			let (host, connector) = {
 				match builder.extract_host_ssl_conn(ssl_config) {
 					Ok((h, conn)) => (h.to_string(), conn),
-					Err(e) => return future::err(e).boxed(),
+					Err(e) => return Box::new(future::err(e)),
 				}
 			};
 			// secure connection, wrap with ssl
@@ -626,14 +626,14 @@ impl<'u> ClientBuilder<'u> {
 		// connect to the tcp stream
 		let tcp_stream = match self.async_tcpstream(Some(true), handle) {
 			Ok(t) => t,
-			Err(e) => return future::err(e).boxed(),
+			Err(e) => return Box::new(future::err(e)),
 		};
 
 		// configure the tls connection
 		let (host, connector) = {
 			match self.extract_host_ssl_conn(ssl_config) {
 				Ok((h, conn)) => (h.to_string(), conn),
-				Err(e) => return future::err(e).boxed(),
+				Err(e) => return Box::new(future::err(e)),
 			}
 		};
 
@@ -693,7 +693,7 @@ impl<'u> ClientBuilder<'u> {
 	pub fn async_connect_insecure(self, handle: &Handle) -> async::ClientNew<async::TcpStream> {
 		let tcp_stream = match self.async_tcpstream(Some(false), handle) {
 			Ok(t) => t,
-			Err(e) => return future::err(e).boxed(),
+			Err(e) => return Box::new(future::err(e)),
 		};
 
 		let builder = ClientBuilder {
