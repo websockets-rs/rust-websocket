@@ -84,28 +84,28 @@ fn main() {
 
 	// Handle sending messages to a client
 	let connections_inner = connections.clone();
-	let remote_inner = remote.clone();
 	let send_handler = pool.spawn_fn(move || {
 		let connections = connections_inner.clone();
-		let remote = remote_inner.clone();
-		send_channel_in.for_each(move |(id, msg): (Id, String)| {
-			let connections = connections.clone();
-			let sink = connections.write()
-			                      .unwrap()
-			                      .remove(&id)
-			                      .expect("Tried to send to invalid client id",);
 
-			println!("Sending message '{}' to id {}", msg, id);
-			let f = sink.send(OwnedMessage::Text(msg))
-			            .and_then(move |sink| {
-				                      connections.write().unwrap().insert(id, sink);
-				                      Ok(())
-				                     });
-			remote.spawn(move |_| f.map_err(|_| ()));
-			Ok(())
-		})
-		               .map_err(|_| ())
-	});
+		send_channel_in
+            .and_then({
+                let connections = connections.clone();
+                move |(id, msg): (Id, String)| {
+                    let sink = connections.write()
+                                          .unwrap()
+                                          .remove(&id)
+                                          .expect("Tried to send to invalid client id",);
+                    println!("Sending message '{}' to id {}", msg, id);
+                    sink.send(OwnedMessage::Text(msg))
+                        .map(move |sink| (sink, id))
+                        .map_err(|_| ())
+                }
+            })
+            .for_each(move |(sink, id)| {
+                connections.write().unwrap().insert(id, sink);
+                Ok(())
+            })
+	}).map_err(|_| ());
 
 	// Main 'logic' loop
 	let main_loop = pool.spawn_fn(move || {
