@@ -33,8 +33,8 @@ pub enum Type {
 /// chunks that get written in order when the message gets sent. This makes the `write_payload`
 /// allocate less memory than the `payload` method (which creates a new buffer every time).
 ///
-/// Incidentally this (the default implementation of Message) implements the DataFrame trait
-/// because this message just gets sent as one single DataFrame.
+/// Incidentally this (the default implementation of `Message`) implements the `DataFrame` trait
+/// because this message just gets sent as one single `DataFrame`.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub struct Message<'a> {
 	/// Type of WebSocket message
@@ -232,7 +232,7 @@ impl<'a> ws::Message for Message<'a> {
 /// If you would like to create a message out of borrowed data to use for sending
 /// please use the `Message` struct (which contains a `Cow`).
 ///
-/// Note that `OwnedMessage` can `Message` can be converted into each other.
+/// Note that `OwnedMessage` and `Message` can be converted into each other.
 #[derive(Eq, PartialEq, Clone, Debug)]
 pub enum OwnedMessage {
 	/// A message containing UTF-8 text data
