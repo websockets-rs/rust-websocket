@@ -119,6 +119,11 @@ impl<S, B> WsUpgrade<S, B>
 		self.request.headers.get::<WebSocketVersion>()
 	}
 
+	/// The original request URI.
+	pub fn uri(&self) -> String {
+		format!("{}", self.request.subject.1)
+	}
+
 	/// Origin of the client
 	pub fn origin(&self) -> Option<&str> {
 		self.request.headers.get::<Origin>().map(|o| &o.0 as &str)
