@@ -475,8 +475,8 @@ impl<'u> ClientBuilder<'u> {
 	{
 		// send request
 		let resource = self.build_request();
-		write!(stream, "GET {} {}\r\n", resource, self.version)?;
-		write!(stream, "{}\r\n", self.headers)?;
+		let data = format!("GET {} {}\r\n{}\r\n", resource, self.version, self.headers);
+		stream.write_all(data.as_bytes())?;
 
 		// wait for a response
 		let mut reader = BufReader::new(stream);
