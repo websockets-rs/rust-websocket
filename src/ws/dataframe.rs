@@ -77,16 +77,17 @@ pub trait DataFrame {
 			len: self.size() as u64,
 		};
 
-		dfh::write_header(writer, header)?;
+		let mut data = Vec::<u8>::new();
+		dfh::write_header(&mut data, header)?;
 
 		match masking_key {
 			Some(mask) => {
-				let mut masker = Masker::new(mask, writer);
+				let mut masker = Masker::new(mask, &mut data);
 				self.write_payload(&mut masker)?
 			}
-			None => self.write_payload(writer)?,
+			None => self.write_payload(&mut data)?,
 		};
-		writer.flush()?;
+		writer.write_all(data.as_slice())?;
 		Ok(())
 	}
 }

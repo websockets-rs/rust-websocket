@@ -130,8 +130,11 @@ where
 
 	#[cfg(feature = "sync")]
 	fn send(&mut self, status: StatusCode) -> io::Result<()> {
-		write!(&mut self.stream, "{} {}\r\n", self.request.version, status)?;
-		write!(&mut self.stream, "{}\r\n", self.headers)?;
+		let data = format!(
+			"{} {}\r\n{}\r\n",
+			self.request.version, status, self.headers
+		);
+		self.stream.write_all(data.as_bytes())?;
 		Ok(())
 	}
 
