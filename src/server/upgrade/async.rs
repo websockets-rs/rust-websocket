@@ -219,7 +219,7 @@ impl<S> IntoWs for S
               if let Some(msg) = m {
                   match validate(&msg.subject.0, &msg.version, &msg.headers) {
                       Ok(()) => Ok((msg, inner, readbuf)),
-                      Err(e) => Err((inner, None, readbuf, e)),
+                      Err(e) => Err((inner, Some(msg), readbuf, e)),
                   }
               } else {
                   let err = HyperIntoWsError::Io(io::Error::new(
