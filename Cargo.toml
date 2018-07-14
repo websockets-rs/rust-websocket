@@ -5,9 +5,8 @@ authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.
 
 description = "A WebSocket (RFC6455) library for Rust."
 
-documentation = "http://cyderize.github.io/rust-websocket/doc/websocket/"
-homepage = "http://cyderize.github.io/rust-websocket/"
-repository = "https://github.com/cyderize/rust-websocket.git"
+documentation = "https://docs.rs/websocket/"
+repository = "https://github.com/websockets-rs/rust-websocket"
 
 readme = "README.md"
 
