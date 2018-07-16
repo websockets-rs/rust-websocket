@@ -14,10 +14,10 @@
 //! `websocket::{sync, async}::client` module which will have all sync or all async things.
 
 pub mod builder;
-pub use self::builder::{ClientBuilder, Url, ParseError};
+pub use self::builder::{ClientBuilder, ParseError, Url};
 
-#[cfg(feature="async")]
+#[cfg(feature = "async")]
 pub mod async;
 
-#[cfg(feature="sync")]
+#[cfg(feature = "sync")]
 pub mod sync;

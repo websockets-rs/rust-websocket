@@ -8,21 +8,21 @@
 //! dataframes see the documentation for `DataFrameCodec`
 
 use std::borrow::Borrow;
-use std::marker::PhantomData;
 use std::io::Cursor;
+use std::marker::PhantomData;
 use std::mem;
 
+use bytes::BufMut;
+use bytes::BytesMut;
 use tokio_io::codec::Decoder;
 use tokio_io::codec::Encoder;
-use bytes::BytesMut;
-use bytes::BufMut;
 
 use dataframe::DataFrame;
 use message::OwnedMessage;
+use result::WebSocketError;
 use ws::dataframe::DataFrame as DataFrameTrait;
 use ws::message::Message as MessageTrait;
 use ws::util::header::read_header;
-use result::WebSocketError;
 
 /// Even though a websocket connection may look perfectly symmetrical
 /// in reality there are small differences between clients and servers.
@@ -31,7 +31,7 @@ use result::WebSocketError;
 ///
 /// For those familiar with the protocol, this decides wether the data should be
 /// masked or not.
-#[derive(Clone,PartialEq,Eq,Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub enum Context {
 	/// Set the codec to act in `Server` mode, used when
 	/// implementing a websocket server.
@@ -117,12 +117,17 @@ impl<D> Decoder for DataFrameCodec<D> {
 		let body = src.split_to(header.len as usize).to_vec();
 
 		// construct a dataframe
-		Ok(Some(DataFrame::read_dataframe_body(header, body, self.is_server)?))
+		Ok(Some(DataFrame::read_dataframe_body(
+			header,
+			body,
+			self.is_server,
+		)?))
 	}
 }
 
 impl<D> Encoder for DataFrameCodec<D>
-    where D: Borrow<DataFrameTrait>
+where
+	D: Borrow<DataFrameTrait>,
 {
 	type Item = D;
 	type Error = WebSocketError;
@@ -192,7 +197,8 @@ impl<D> Encoder for DataFrameCodec<D>
 ///core.run(f).unwrap();
 ///# }
 pub struct MessageCodec<M>
-	where M: MessageTrait
+where
+	M: MessageTrait,
 {
 	buffer: Vec<DataFrame>,
 	dataframe_codec: DataFrameCodec<DataFrame>,
@@ -215,7 +221,8 @@ impl MessageCodec<OwnedMessage> {
 }
 
 impl<M> MessageCodec<M>
-    where M: MessageTrait
+where
+	M: MessageTrait,
 {
 	/// Creates a codec that can encode a custom implementation of a websocket
 	/// message.
@@ -232,7 +239,8 @@ impl<M> MessageCodec<M>
 }
 
 impl<M> Decoder for MessageCodec<M>
-    where M: MessageTrait
+where
+	M: MessageTrait,
 {
 	type Item = OwnedMessage;
 	type Error = WebSocketError;
@@ -245,7 +253,9 @@ impl<M> Decoder for MessageCodec<M>
 			match frame.opcode as u8 {
 				// continuation code
 				0 if is_first => {
-					return Err(WebSocketError::ProtocolError("Unexpected continuation data frame opcode",),);
+					return Err(WebSocketError::ProtocolError(
+						"Unexpected continuation data frame opcode",
+					));
 				}
 				// control frame
 				8...15 => {
@@ -253,7 +263,9 @@ impl<M> Decoder for MessageCodec<M>
 				}
 				// data frame
 				1...7 if !is_first => {
-					return Err(WebSocketError::ProtocolError("Unexpected data frame opcode"));
+					return Err(WebSocketError::ProtocolError(
+						"Unexpected data frame opcode",
+					));
 				}
 				// its good
 				_ => {
@@ -272,7 +284,8 @@ impl<M> Decoder for MessageCodec<M>
 }
 
 impl<M> Encoder for MessageCodec<M>
-    where M: MessageTrait
+where
+	M: MessageTrait,
 {
 	type Item = M;
 	type Error = WebSocketError;
@@ -290,13 +303,13 @@ impl<M> Encoder for MessageCodec<M>
 #[cfg(test)]
 mod tests {
 	use super::*;
-	use tokio_io::AsyncRead;
-	use tokio_core::reactor::Core;
-	use futures::{Stream, Sink, Future};
-	use std::io::Cursor;
-	use stream::ReadWritePair;
+	use futures::{Future, Sink, Stream};
 	use message::CloseData;
 	use message::Message;
+	use std::io::Cursor;
+	use stream::ReadWritePair;
+	use tokio_core::reactor::Core;
+	use tokio_io::AsyncRead;
 
 	#[test]
 	fn owned_message_predicts_size() {
@@ -310,9 +323,9 @@ mod tests {
 			OwnedMessage::Pong("boop".to_string().into_bytes()),
 			OwnedMessage::Close(None),
 			OwnedMessage::Close(Some(CloseData {
-			                             status_code: 64,
-			                             reason: "because".to_string(),
-			                         })),
+				status_code: 64,
+				reason: "because".to_string(),
+			})),
 		];
 
 		for message in messages.into_iter() {
@@ -359,17 +372,18 @@ mod tests {
 	fn message_codec_client_send_receive() {
 		let mut core = Core::new().unwrap();
 		let mut input = Vec::new();
-		Message::text("50 schmeckels").serialize(&mut input, false).unwrap();
+		Message::text("50 schmeckels")
+			.serialize(&mut input, false)
+			.unwrap();
 
 		let f = ReadWritePair(Cursor::new(input), Cursor::new(vec![]))
 			.framed(MessageCodec::new(Context::Client))
 			.into_future()
 			.map_err(|e| e.0)
 			.map(|(m, s)| {
-				     assert_eq!(m, Some(OwnedMessage::Text("50 schmeckels".to_string())));
-				     s
-				    })
-			.and_then(|s| s.send(Message::text("ethan bradberry")))
+				assert_eq!(m, Some(OwnedMessage::Text("50 schmeckels".to_string())));
+				s
+			}).and_then(|s| s.send(Message::text("ethan bradberry")))
 			.and_then(|s| {
 				let mut stream = s.into_parts().inner;
 				stream.1.set_position(0);
@@ -379,8 +393,8 @@ mod tests {
 					.into_future()
 					.map_err(|e| e.0)
 					.map(|(message, _)| {
-						     assert_eq!(message, Some(Message::text("ethan bradberry").into()))
-						    })
+						assert_eq!(message, Some(Message::text("ethan bradberry").into()))
+					})
 			});
 
 		core.run(f).unwrap();
@@ -390,22 +404,25 @@ mod tests {
 	fn message_codec_server_send_receive() {
 		let mut core = Core::new().unwrap();
 		let mut input = Vec::new();
-		Message::text("50 schmeckels").serialize(&mut input, true).unwrap();
+		Message::text("50 schmeckels")
+			.serialize(&mut input, true)
+			.unwrap();
 
 		let f = ReadWritePair(Cursor::new(input.as_slice()), Cursor::new(vec![]))
 			.framed(MessageCodec::new(Context::Server))
 			.into_future()
 			.map_err(|e| e.0)
 			.map(|(m, s)| {
-				     assert_eq!(m, Some(OwnedMessage::Text("50 schmeckels".to_string())));
-				     s
-				    })
-			.and_then(|s| s.send(Message::text("ethan bradberry")))
+				assert_eq!(m, Some(OwnedMessage::Text("50 schmeckels".to_string())));
+				s
+			}).and_then(|s| s.send(Message::text("ethan bradberry")))
 			.map(|s| {
-				     let mut written = vec![];
-				     Message::text("ethan bradberry").serialize(&mut written, false).unwrap();
-				     assert_eq!(written, s.into_parts().inner.1.into_inner());
-				    });
+				let mut written = vec![];
+				Message::text("ethan bradberry")
+					.serialize(&mut written, false)
+					.unwrap();
+				assert_eq!(written, s.into_parts().inner.1.into_inner());
+			});
 
 		core.run(f).unwrap();
 	}

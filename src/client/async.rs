@@ -44,17 +44,17 @@
 //! # }
 //! ```
 
-pub use tokio_core::reactor::Handle;
-pub use tokio_io::codec::Framed;
-pub use tokio_core::net::TcpStream;
 pub use futures::Future;
 use hyper::header::Headers;
+pub use tokio_core::net::TcpStream;
+pub use tokio_core::reactor::Handle;
+pub use tokio_io::codec::Framed;
 
-use result::WebSocketError;
 use codec::ws::MessageCodec;
 use message::OwnedMessage;
+use result::WebSocketError;
 
-#[cfg(feature="async-ssl")]
+#[cfg(feature = "async-ssl")]
 pub use tokio_tls::TlsStream;
 
 /// An asynchronous websocket client.

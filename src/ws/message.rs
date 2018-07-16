@@ -2,9 +2,9 @@
 //!
 //! See the `ws` module documentation for more information.
 
+use result::WebSocketResult;
 use std::io::Write;
 use ws::dataframe::DataFrame as DataFrameable;
-use result::WebSocketResult;
 
 /// A trait for WebSocket messages
 pub trait Message: Sized {

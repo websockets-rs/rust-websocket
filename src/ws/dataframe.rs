@@ -2,11 +2,11 @@
 //! that all dataframes should share. This is so one can
 //! optimize the memory footprint of a dataframe for their
 //! own needs, and be able to use custom dataframes quickly
-use std::io::Write;
 use result::WebSocketResult;
+use std::io::Write;
 use ws::util::header as dfh;
-use ws::util::mask::Masker;
 use ws::util::mask;
+use ws::util::mask::Masker;
 
 /// A generic DataFrame. Every dataframe should be able to
 /// provide these methods. (If the payload is not known in advance then

@@ -2,21 +2,21 @@
 //!
 //! This module has both an `HttpClientCodec` for an async HTTP client and an
 //! `HttpServerCodec` for an async HTTP server.
-use std::io::{self, Write};
-use std::error::Error;
-use std::fmt::{self, Formatter, Display};
-use hyper;
-use hyper::http::h1::Incoming;
-use hyper::http::h1::parse_response;
-use hyper::http::h1::parse_request;
-use hyper::http::RawStatus;
-use hyper::status::StatusCode;
-use hyper::method::Method;
-use hyper::uri::RequestUri;
-use hyper::buffer::BufReader;
-use tokio_io::codec::{Decoder, Encoder};
-use bytes::BytesMut;
 use bytes::BufMut;
+use bytes::BytesMut;
+use hyper;
+use hyper::buffer::BufReader;
+use hyper::http::h1::parse_request;
+use hyper::http::h1::parse_response;
+use hyper::http::h1::Incoming;
+use hyper::http::RawStatus;
+use hyper::method::Method;
+use hyper::status::StatusCode;
+use hyper::uri::RequestUri;
+use std::error::Error;
+use std::fmt::{self, Display, Formatter};
+use std::io::{self, Write};
+use tokio_io::codec::{Decoder, Encoder};
 
 #[derive(Copy, Clone, Debug)]
 ///A codec to be used with `tokio` codecs that can serialize HTTP requests and
@@ -77,11 +77,10 @@ impl Encoder for HttpClientCodec {
 
 	fn encode(&mut self, item: Self::Item, dst: &mut BytesMut) -> Result<(), Self::Error> {
 		// TODO: optomize this!
-		let request = format!("{} {} {}\r\n{}\r\n",
-		                      item.subject.0,
-		                      item.subject.1,
-		                      item.version,
-		                      item.headers);
+		let request = format!(
+			"{} {} {}\r\n{}\r\n",
+			item.subject.0, item.subject.1, item.version, item.headers
+		);
 		let byte_len = request.as_bytes().len();
 		if byte_len > dst.remaining_mut() {
 			dst.reserve(byte_len);
@@ -260,13 +259,13 @@ impl From<hyper::Error> for HttpCodecError {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use futures::{Future, Sink, Stream};
+	use hyper::header::Headers;
+	use hyper::version::HttpVersion;
 	use std::io::Cursor;
 	use stream::ReadWritePair;
 	use tokio_core::reactor::Core;
-	use futures::{Stream, Sink, Future};
 	use tokio_io::AsyncRead;
-	use hyper::version::HttpVersion;
-	use hyper::header::Headers;
 
 	#[test]
 	fn test_client_http_codec() {
@@ -278,17 +277,15 @@ mod tests {
 		let f = ReadWritePair(input, output)
 			.framed(HttpClientCodec)
 			.send(Incoming {
-			          version: HttpVersion::Http11,
-			          subject: (Method::Get, RequestUri::AbsolutePath("/".to_string())),
-			          headers: Headers::new(),
-			      })
-			.map_err(|e| e.into())
+				version: HttpVersion::Http11,
+				subject: (Method::Get, RequestUri::AbsolutePath("/".to_string())),
+				headers: Headers::new(),
+			}).map_err(|e| e.into())
 			.and_then(|s| s.into_future().map_err(|(e, _)| e))
 			.and_then(|(m, _)| match m {
-			              Some(ref m) if StatusCode::from_u16(m.subject.0) ==
-			                             StatusCode::NotFound => Ok(()),
-			              _ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
-			          });
+				Some(ref m) if StatusCode::from_u16(m.subject.0) == StatusCode::NotFound => Ok(()),
+				_ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
+			});
 		core.run(f).unwrap();
 	}
 
@@ -296,11 +293,10 @@ mod tests {
 	fn test_server_http_codec() {
 		let mut core = Core::new().unwrap();
 		let request = "\
-		    GET / HTTP/1.0\r\n\
-		    Host: www.rust-lang.org\r\n\
-		    \r\n\
-		    "
-			.as_bytes();
+		               GET / HTTP/1.0\r\n\
+		               Host: www.rust-lang.org\r\n\
+		               \r\n\
+		               ".as_bytes();
 		let input = Cursor::new(request);
 		let output = Cursor::new(Vec::new());
 
@@ -309,17 +305,15 @@ mod tests {
 			.into_future()
 			.map_err(|(e, _)| e)
 			.and_then(|(m, s)| match m {
-			              Some(ref m) if m.subject.0 == Method::Get => Ok(s),
-			              _ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
-			          })
-			.and_then(|s| {
-				          s.send(Incoming {
-				                     version: HttpVersion::Http11,
-				                     subject: StatusCode::NotFound,
-				                     headers: Headers::new(),
-				                 })
-				           .map_err(|e| e.into())
-				         });
+				Some(ref m) if m.subject.0 == Method::Get => Ok(s),
+				_ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
+			}).and_then(|s| {
+				s.send(Incoming {
+					version: HttpVersion::Http11,
+					subject: StatusCode::NotFound,
+					headers: Headers::new(),
+				}).map_err(|e| e.into())
+			});
 		core.run(f).unwrap();
 	}
 }

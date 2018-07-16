@@ -1,19 +1,19 @@
 //! Provides an implementation of a WebSocket server
-use std::net::{SocketAddr, ToSocketAddrs, TcpListener, TcpStream};
-use std::io;
+#[cfg(feature = "sync-ssl")]
+use native_tls::{TlsAcceptor, TlsStream};
+use server::upgrade::sync::{Buffer, IntoWs, Upgrade};
+pub use server::upgrade::{HyperIntoWsError, Request};
+use server::{InvalidConnection, NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
 use std::convert::Into;
-#[cfg(feature="sync-ssl")]
-use native_tls::{TlsStream, TlsAcceptor};
-use server::{WsServer, OptionalTlsAcceptor, NoTlsAcceptor, InvalidConnection};
-use server::upgrade::sync::{Upgrade, IntoWs, Buffer};
-pub use server::upgrade::{Request, HyperIntoWsError};
+use std::io;
+use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 
-#[cfg(feature="async")]
-use tokio_core::reactor::Handle;
-#[cfg(feature="async")]
-use tokio_core::net::TcpListener as AsyncTcpListener;
-#[cfg(feature="async")]
+#[cfg(feature = "async")]
 use server::async;
+#[cfg(feature = "async")]
+use tokio_core::net::TcpListener as AsyncTcpListener;
+#[cfg(feature = "async")]
+use tokio_core::reactor::Handle;
 
 /// Either the stream was established and it sent a websocket handshake
 /// which represents the `Ok` variant, or there was an error (this is the
@@ -30,7 +30,8 @@ pub type Server<S> = WsServer<S, TcpListener>;
 
 /// Synchronous methods for creating a server and accepting incoming connections.
 impl<S> WsServer<S, TcpListener>
-    where S: OptionalTlsAcceptor
+where
+	S: OptionalTlsAcceptor,
 {
 	/// Get the socket address of this server
 	pub fn local_addr(&self) -> io::Result<SocketAddr> {
@@ -83,18 +84,18 @@ impl<S> WsServer<S, TcpListener>
 	/// This will only work if the stream used for this server `S` already implements
 	/// `AsyncRead + AsyncWrite`. Useful if you would like some blocking things to happen
 	/// at the start of your server.
-	#[cfg(feature="async")]
+	#[cfg(feature = "async")]
 	pub fn into_async(self, handle: &Handle) -> io::Result<async::Server<S>> {
 		let addr = self.listener.local_addr()?;
 		Ok(WsServer {
-		       listener: AsyncTcpListener::from_listener(self.listener, &addr, handle)?,
-		       ssl_acceptor: self.ssl_acceptor,
-		   })
+			listener: AsyncTcpListener::from_listener(self.listener, &addr, handle)?,
+			ssl_acceptor: self.ssl_acceptor,
+		})
 	}
 }
 
 /// Synchronous methods for creating an SSL server and accepting incoming connections.
-#[cfg(feature="sync-ssl")]
+#[cfg(feature = "sync-ssl")]
 impl WsServer<TlsAcceptor, TcpListener> {
 	/// Bind this Server to this socket, utilising the given SslContext
 	///
@@ -136,12 +137,13 @@ impl WsServer<TlsAcceptor, TcpListener> {
 	/// # }
 	/// ```
 	pub fn bind_secure<A>(addr: A, acceptor: TlsAcceptor) -> io::Result<Self>
-		where A: ToSocketAddrs
+	where
+		A: ToSocketAddrs,
 	{
 		Ok(Server {
-		       listener: TcpListener::bind(&addr)?,
-		       ssl_acceptor: acceptor,
-		   })
+			listener: TcpListener::bind(&addr)?,
+			ssl_acceptor: acceptor,
+		})
 	}
 
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
@@ -150,11 +152,11 @@ impl WsServer<TlsAcceptor, TcpListener> {
 			Ok(s) => s.0,
 			Err(e) => {
 				return Err(InvalidConnection {
-				               stream: None,
-				               parsed: None,
-				               buffer: None,
-				               error: e.into(),
-				           })
+					stream: None,
+					parsed: None,
+					buffer: None,
+					error: e.into(),
+				})
 			}
 		};
 
@@ -162,29 +164,27 @@ impl WsServer<TlsAcceptor, TcpListener> {
 			Ok(s) => s,
 			Err(err) => {
 				return Err(InvalidConnection {
-				               stream: None,
-				               parsed: None,
-				               buffer: None,
-				               error: io::Error::new(io::ErrorKind::Other, err).into(),
-				           })
+					stream: None,
+					parsed: None,
+					buffer: None,
+					error: io::Error::new(io::ErrorKind::Other, err).into(),
+				})
 			}
 		};
 
 		match stream.into_ws() {
 			Ok(u) => Ok(u),
-			Err((s, r, b, e)) => {
-				Err(InvalidConnection {
-				        stream: Some(s),
-				        parsed: r,
-				        buffer: b,
-				        error: e.into(),
-				    })
-			}
+			Err((s, r, b, e)) => Err(InvalidConnection {
+				stream: Some(s),
+				parsed: r,
+				buffer: b,
+				error: e.into(),
+			}),
 		}
 	}
 }
 
-#[cfg(feature="sync-ssl")]
+#[cfg(feature = "sync-ssl")]
 impl Iterator for WsServer<TlsAcceptor, TcpListener> {
 	type Item = AcceptResult<TlsStream<TcpStream>>;
 
@@ -222,9 +222,9 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 	/// ```
 	pub fn bind<A: ToSocketAddrs>(addr: A) -> io::Result<Self> {
 		Ok(Server {
-		       listener: TcpListener::bind(&addr)?,
-		       ssl_acceptor: NoTlsAcceptor,
-		   })
+			listener: TcpListener::bind(&addr)?,
+			ssl_acceptor: NoTlsAcceptor,
+		})
 	}
 
 	/// Wait for and accept an incoming WebSocket connection, returning a WebSocketRequest
@@ -233,24 +233,22 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 			Ok(s) => s.0,
 			Err(e) => {
 				return Err(InvalidConnection {
-				               stream: None,
-				               parsed: None,
-				               buffer: None,
-				               error: e.into(),
-				           })
+					stream: None,
+					parsed: None,
+					buffer: None,
+					error: e.into(),
+				})
 			}
 		};
 
 		match stream.into_ws() {
 			Ok(u) => Ok(u),
-			Err((s, r, b, e)) => {
-				Err(InvalidConnection {
-				        stream: Some(s),
-				        parsed: r,
-				        buffer: b,
-				        error: e.into(),
-				    })
-			}
+			Err((s, r, b, e)) => Err(InvalidConnection {
+				stream: Some(s),
+				parsed: r,
+				buffer: b,
+				error: e.into(),
+			}),
 		}
 	}
 
@@ -258,9 +256,9 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 	pub fn try_clone(&self) -> io::Result<Self> {
 		let inner = self.listener.try_clone()?;
 		Ok(Server {
-		       listener: inner,
-		       ssl_acceptor: self.ssl_acceptor.clone(),
-		   })
+			listener: inner,
+			ssl_acceptor: self.ssl_acceptor.clone(),
+		})
 	}
 }
 
@@ -278,7 +276,6 @@ mod tests {
 	// Some of this is copied from
 	// https://doc.rust-lang.org/src/std/net/tcp.rs.html#1413
 	fn set_nonblocking() {
-
 		use super::*;
 
 		// Test unsecure server
@@ -294,13 +291,10 @@ mod tests {
 		match result {
 			// nobody tried to establish a connection, so we expect an error
 			Ok(_) => panic!("expected error"),
-			Err(e) => {
-				match e.error {
-					HyperIntoWsError::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
-					_ => panic!("unexpected error {}"),
-				}
-			}
+			Err(e) => match e.error {
+				HyperIntoWsError::Io(ref e) if e.kind() == io::ErrorKind::WouldBlock => {}
+				_ => panic!("unexpected error {}"),
+			},
 		}
-
 	}
 }
