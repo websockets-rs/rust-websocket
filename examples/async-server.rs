@@ -1,15 +1,15 @@
-extern crate websocket;
 extern crate futures;
 extern crate tokio_core;
+extern crate websocket;
 
 use std::fmt::Debug;
 
+use websocket::async::Server;
 use websocket::message::{Message, OwnedMessage};
 use websocket::server::InvalidConnection;
-use websocket::async::Server;
 
-use tokio_core::reactor::{Handle, Core};
 use futures::{Future, Sink, Stream};
+use tokio_core::reactor::{Core, Handle};
 
 fn main() {
 	let mut core = Core::new().unwrap();
@@ -66,9 +66,12 @@ fn main() {
 }
 
 fn spawn_future<F, I, E>(f: F, desc: &'static str, handle: &Handle)
-	where F: Future<Item = I, Error = E> + 'static,
-	      E: Debug
+where
+	F: Future<Item = I, Error = E> + 'static,
+	E: Debug,
 {
-	handle.spawn(f.map_err(move |e| println!("{}: '{:?}'", desc, e))
-	              .map(move |_| println!("{}: Finished.", desc)));
+	handle.spawn(
+		f.map_err(move |e| println!("{}: '{:?}'", desc, e))
+			.map(move |_| println!("{}: Finished.", desc)),
+	);
 }

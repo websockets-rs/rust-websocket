@@ -1,13 +1,13 @@
-extern crate websocket;
 extern crate futures;
 extern crate tokio_core;
+extern crate websocket;
 
+use websocket::async::Server;
 use websocket::message::OwnedMessage;
 use websocket::server::InvalidConnection;
-use websocket::async::Server;
 
-use tokio_core::reactor::Core;
 use futures::{Future, Sink, Stream};
+use tokio_core::reactor::Core;
 
 fn main() {
 	let mut core = Core::new().unwrap();

@@ -1,17 +1,17 @@
 //! Allows you to take an existing request or stream of data and convert it into a
 //! WebSocket client.
+use client::sync::Client;
+use server::upgrade::{validate, HyperIntoWsError, Request, WsUpgrade};
 use std::io;
 use std::net::TcpStream;
-use stream::sync::{Stream, AsTcpStream};
-use server::upgrade::{Request, WsUpgrade, HyperIntoWsError, validate};
-use client::sync::Client;
+use stream::sync::{AsTcpStream, Stream};
 
-use hyper::status::StatusCode;
-use hyper::http::h1::Incoming;
 use hyper::buffer::BufReader;
-use hyper::http::h1::parse_request;
 use hyper::header::Headers;
+use hyper::http::h1::parse_request;
+use hyper::http::h1::Incoming;
 use hyper::net::NetworkStream;
+use hyper::status::StatusCode;
 
 /// This crate uses buffered readers to read in the handshake quickly, in order to
 /// interface with other use cases that don't use buffered readers the buffered readers
@@ -45,7 +45,8 @@ pub type Upgrade<S> = WsUpgrade<S, Option<Buffer>>;
 /// These methods are the synchronous ways of accepting and rejecting a websocket
 /// handshake.
 impl<S> WsUpgrade<S, Option<Buffer>>
-    where S: Stream
+where
+	S: Stream,
 {
 	/// Accept the handshake request and send a response,
 	/// if nothing goes wrong a client will be created.
@@ -98,7 +99,8 @@ impl<S> WsUpgrade<S, Option<Buffer>>
 }
 
 impl<S, B> WsUpgrade<S, B>
-    where S: Stream + AsTcpStream
+where
+	S: Stream + AsTcpStream,
 {
 	/// Get a handle to the underlying TCP stream, useful to be able to set
 	/// TCP options, etc.
@@ -154,7 +156,8 @@ pub trait IntoWs {
 }
 
 impl<S> IntoWs for S
-    where S: Stream
+where
+	S: Stream,
 {
 	type Stream = S;
 	type Error = (S, Option<Request>, Option<Buffer>, HyperIntoWsError);
@@ -165,10 +168,10 @@ impl<S> IntoWs for S
 
 		let (stream, buf, pos, cap) = reader.into_parts();
 		let buffer = Some(Buffer {
-		                      buf: buf,
-		                      cap: cap,
-		                      pos: pos,
-		                  });
+			buf: buf,
+			cap: cap,
+			pos: pos,
+		});
 
 		let request = match request {
 			Ok(r) => r,
@@ -176,35 +179,32 @@ impl<S> IntoWs for S
 		};
 
 		match validate(&request.subject.0, &request.version, &request.headers) {
-			Ok(_) => {
-				Ok(WsUpgrade {
-				       headers: Headers::new(),
-				       stream: stream,
-				       request: request,
-				       buffer: buffer,
-				   })
-			}
+			Ok(_) => Ok(WsUpgrade {
+				headers: Headers::new(),
+				stream: stream,
+				request: request,
+				buffer: buffer,
+			}),
 			Err(e) => Err((stream, Some(request), buffer, e)),
 		}
 	}
 }
 
 impl<S> IntoWs for RequestStreamPair<S>
-    where S: Stream
+where
+	S: Stream,
 {
 	type Stream = S;
 	type Error = (S, Request, HyperIntoWsError);
 
 	fn into_ws(self) -> Result<Upgrade<Self::Stream>, Self::Error> {
 		match validate(&self.1.subject.0, &self.1.version, &self.1.headers) {
-			Ok(_) => {
-				Ok(WsUpgrade {
-				       headers: Headers::new(),
-				       stream: self.0,
-				       request: self.1,
-				       buffer: None,
-				   })
-			}
+			Ok(_) => Ok(WsUpgrade {
+				headers: Headers::new(),
+				stream: self.0,
+				request: self.1,
+				buffer: None,
+			}),
 			Err(e) => Err((self.0, self.1, e)),
 		}
 	}
@@ -261,26 +261,25 @@ impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 			return Err((self.0, e));
 		}
 
-		let (_, method, headers, uri, version, reader) =
-			self.0.deconstruct();
+		let (_, method, headers, uri, version, reader) = self.0.deconstruct();
 
 		let reader = reader.into_inner();
 		let (buf, pos, cap) = reader.take_buf();
 		let stream = reader.get_mut();
 
 		Ok(Upgrade {
-		       headers: Headers::new(),
-		       stream: stream,
-		       buffer: Some(Buffer {
-		                        buf: buf,
-		                        pos: pos,
-		                        cap: cap,
-		                    }),
-		       request: Incoming {
-		           version: version,
-		           headers: headers,
-		           subject: (method, uri),
-		       },
-		   })
+			headers: Headers::new(),
+			stream: stream,
+			buffer: Some(Buffer {
+				buf: buf,
+				pos: pos,
+				cap: cap,
+			}),
+			request: Incoming {
+				version: version,
+				headers: headers,
+				subject: (method, uri),
+			},
+		})
 	}
 }

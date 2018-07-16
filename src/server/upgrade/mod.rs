@@ -1,27 +1,28 @@
 //! Allows you to take an existing request or stream of data and convert it into a
 //! WebSocket client.
-use std::error::Error;
-use std::io;
-use std::fmt::{self, Formatter, Display};
-use stream::Stream;
 use header::extensions::Extension;
-use header::{WebSocketAccept, WebSocketKey, WebSocketVersion, WebSocketProtocol,
-             WebSocketExtensions, Origin};
+use header::{
+	Origin, WebSocketAccept, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion,
+};
+use std::error::Error;
+use std::fmt::{self, Display, Formatter};
+use std::io;
+use stream::Stream;
 
-use unicase::UniCase;
-use hyper::status::StatusCode;
+use hyper::header::{Connection, ConnectionOption, Headers, Protocol, ProtocolName, Upgrade};
 use hyper::http::h1::Incoming;
 use hyper::method::Method;
+use hyper::status::StatusCode;
 use hyper::uri::RequestUri;
-use hyper::header::{Headers, Upgrade, Protocol, ProtocolName, Connection, ConnectionOption};
+use unicase::UniCase;
 
-#[cfg(any(feature="sync", feature="async"))]
+#[cfg(any(feature = "sync", feature = "async"))]
 use hyper::version::HttpVersion;
 
-#[cfg(feature="async")]
+#[cfg(feature = "async")]
 pub mod async;
 
-#[cfg(feature="sync")]
+#[cfg(feature = "sync")]
 pub mod sync;
 
 /// A typical request from hyper
@@ -38,7 +39,8 @@ pub type Request = Incoming<(Method, RequestUri)>;
 /// Otherwise if the stream is simply `Read + Write` blocking functions will be
 /// available to complete the handshake.
 pub struct WsUpgrade<S, B>
-	where S: Stream
+where
+	S: Stream,
 {
 	/// The headers that will be used in the handshake response.
 	pub headers: Headers,
@@ -51,11 +53,13 @@ pub struct WsUpgrade<S, B>
 }
 
 impl<S, B> WsUpgrade<S, B>
-    where S: Stream
+where
+	S: Stream,
 {
 	/// Select a protocol to use in the handshake response.
 	pub fn use_protocol<P>(mut self, protocol: P) -> Self
-		where P: Into<String>
+	where
+		P: Into<String>,
 	{
 		upsert_header!(self.headers; WebSocketProtocol; {
             Some(protos) => protos.0.push(protocol.into()),
@@ -75,10 +79,10 @@ impl<S, B> WsUpgrade<S, B>
 
 	/// Select multiple extensions to use in the connection
 	pub fn use_extensions<I>(mut self, extensions: I) -> Self
-		where I: IntoIterator<Item = Extension>
+	where
+		I: IntoIterator<Item = Extension>,
 	{
-		let mut extensions: Vec<Extension> =
-			extensions.into_iter().collect();
+		let mut extensions: Vec<Extension> = extensions.into_iter().collect();
 		upsert_header!(self.headers; WebSocketExtensions; {
             Some(protos) => protos.0.append(&mut extensions),
             None => WebSocketExtensions(extensions)
@@ -94,19 +98,19 @@ impl<S, B> WsUpgrade<S, B>
 	/// A list of protocols requested from the client.
 	pub fn protocols(&self) -> &[String] {
 		self.request
-		    .headers
-		    .get::<WebSocketProtocol>()
-		    .map(|p| p.0.as_slice())
-		    .unwrap_or(&[])
+			.headers
+			.get::<WebSocketProtocol>()
+			.map(|p| p.0.as_slice())
+			.unwrap_or(&[])
 	}
 
 	/// A list of extensions requested from the client.
 	pub fn extensions(&self) -> &[Extension] {
 		self.request
-		    .headers
-		    .get::<WebSocketExtensions>()
-		    .map(|e| e.0.as_slice())
-		    .unwrap_or(&[])
+			.headers
+			.get::<WebSocketExtensions>()
+			.map(|e| e.0.as_slice())
+			.unwrap_or(&[])
 	}
 
 	/// The client's websocket accept key.
@@ -124,7 +128,7 @@ impl<S, B> WsUpgrade<S, B>
 		self.request.headers.get::<Origin>().map(|o| &o.0 as &str)
 	}
 
-	#[cfg(feature="sync")]
+	#[cfg(feature = "sync")]
 	fn send(&mut self, status: StatusCode) -> io::Result<()> {
 		write!(&mut self.stream, "{} {}\r\n", self.request.version, status)?;
 		write!(&mut self.stream, "{}\r\n", self.headers)?;
@@ -141,10 +145,11 @@ impl<S, B> WsUpgrade<S, B>
 		let key = self.request.headers.get::<WebSocketKey>().unwrap();
 		self.headers.set(WebSocketAccept::new(key));
 		self.headers
-		    .set(Connection(vec![
-			          ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
-		        ]));
-		self.headers.set(Upgrade(vec![Protocol::new(ProtocolName::WebSocket, None)]));
+			.set(Connection(vec![ConnectionOption::ConnectionHeader(
+				UniCase("Upgrade".to_string()),
+			)]));
+		self.headers
+			.set(Upgrade(vec![Protocol::new(ProtocolName::WebSocket, None)]));
 
 		StatusCode::SwitchingProtocols
 	}
@@ -220,7 +225,7 @@ impl From<::hyper::error::Error> for HyperIntoWsError {
 	}
 }
 
-#[cfg(feature="async")]
+#[cfg(feature = "async")]
 impl From<::codec::http::HttpCodecError> for HyperIntoWsError {
 	fn from(src: ::codec::http::HttpCodecError) -> Self {
 		match src {
@@ -230,7 +235,7 @@ impl From<::codec::http::HttpCodecError> for HyperIntoWsError {
 	}
 }
 
-#[cfg(any(feature="sync", feature="async"))]
+#[cfg(any(feature = "sync", feature = "async"))]
 /// Check whether an incoming request is a valid WebSocket upgrade attempt.
 pub fn validate(
 	method: &Method,

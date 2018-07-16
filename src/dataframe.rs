@@ -1,9 +1,9 @@
 //! Module containing the default implementation of data frames.
+use result::{WebSocketError, WebSocketResult};
 use std::io::{self, Read, Write};
-use result::{WebSocketResult, WebSocketError};
 use ws::dataframe::DataFrame as DataFrameable;
-use ws::util::header::DataFrameHeader;
 use ws::util::header as dfh;
+use ws::util::header::DataFrameHeader;
 use ws::util::mask;
 
 /// Represents a WebSocket data frame.
@@ -59,7 +59,9 @@ impl DataFrame {
 		let data = match header.mask {
 			Some(mask) => {
 				if !should_be_masked {
-					return Err(WebSocketError::DataFrameError("Expected unmasked data frame"));
+					return Err(WebSocketError::DataFrameError(
+						"Expected unmasked data frame",
+					));
 				}
 				mask::mask_data(mask, &body)
 			}
@@ -72,16 +74,17 @@ impl DataFrame {
 		};
 
 		Ok(DataFrame {
-		       finished: finished,
-		       reserved: reserved,
-		       opcode: opcode,
-		       data: data,
-		   })
+			finished: finished,
+			reserved: reserved,
+			opcode: opcode,
+			data: data,
+		})
 	}
 
 	/// Reads a DataFrame from a Reader.
 	pub fn read_dataframe<R>(reader: &mut R, should_be_masked: bool) -> WebSocketResult<Self>
-		where R: Read
+	where
+		R: Read,
 	{
 		let header = dfh::read_header(reader)?;
 
@@ -171,32 +174,32 @@ impl Opcode {
 	/// Returns the Opcode, or None if the opcode is out of range.
 	pub fn new(op: u8) -> Option<Opcode> {
 		Some(match op {
-		         0 => Opcode::Continuation,
-		         1 => Opcode::Text,
-		         2 => Opcode::Binary,
-		         3 => Opcode::NonControl1,
-		         4 => Opcode::NonControl2,
-		         5 => Opcode::NonControl3,
-		         6 => Opcode::NonControl4,
-		         7 => Opcode::NonControl5,
-		         8 => Opcode::Close,
-		         9 => Opcode::Ping,
-		         10 => Opcode::Pong,
-		         11 => Opcode::Control1,
-		         12 => Opcode::Control2,
-		         13 => Opcode::Control3,
-		         14 => Opcode::Control4,
-		         15 => Opcode::Control5,
-		         _ => return None,
-		     })
+			0 => Opcode::Continuation,
+			1 => Opcode::Text,
+			2 => Opcode::Binary,
+			3 => Opcode::NonControl1,
+			4 => Opcode::NonControl2,
+			5 => Opcode::NonControl3,
+			6 => Opcode::NonControl4,
+			7 => Opcode::NonControl5,
+			8 => Opcode::Close,
+			9 => Opcode::Ping,
+			10 => Opcode::Pong,
+			11 => Opcode::Control1,
+			12 => Opcode::Control2,
+			13 => Opcode::Control3,
+			14 => Opcode::Control4,
+			15 => Opcode::Control5,
+			_ => return None,
+		})
 	}
 }
 
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use ws::dataframe::DataFrame as DataFrameable;
 	use test::Bencher;
+	use ws::dataframe::DataFrame as DataFrameable;
 
 	#[test]
 	fn test_read_dataframe() {
@@ -240,7 +243,9 @@ mod tests {
 		for i in data.iter() {
 			dataframe.push(*i);
 		}
-		b.iter(|| { DataFrame::read_dataframe(&mut &dataframe[..], false).unwrap(); });
+		b.iter(|| {
+			DataFrame::read_dataframe(&mut &dataframe[..], false).unwrap();
+		});
 	}
 
 	#[test]
@@ -272,6 +277,8 @@ mod tests {
 			data: data.to_vec(),
 		};
 		let mut writer = Vec::with_capacity(45);
-		b.iter(|| { dataframe.write_to(&mut writer, false).unwrap(); });
+		b.iter(|| {
+			dataframe.write_to(&mut writer, false).unwrap();
+		});
 	}
 }

@@ -1,8 +1,8 @@
 extern crate websocket;
 
 use websocket::ClientBuilder;
-use websocket::OwnedMessage;
 use websocket::Message;
+use websocket::OwnedMessage;
 
 fn main() {
 	let addr = "ws://127.0.0.1:9001".to_string();

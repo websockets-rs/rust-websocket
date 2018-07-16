@@ -1,27 +1,27 @@
 //! Contains the WebSocket client.
-use std::net::TcpStream;
-use std::net::SocketAddr;
+use hyper::buffer::BufReader;
+use hyper::header::Headers;
 use std::io::Result as IoResult;
 use std::io::{Read, Write};
-use hyper::header::Headers;
-use hyper::buffer::BufReader;
+use std::net::SocketAddr;
+use std::net::TcpStream;
 
-use ws;
-use ws::sender::Sender as SenderTrait;
-use ws::receiver::{DataFrameIterator, MessageIterator};
-use ws::receiver::Receiver as ReceiverTrait;
+use dataframe::DataFrame;
+use header::extensions::Extension;
+use header::{WebSocketExtensions, WebSocketProtocol};
 use message::OwnedMessage;
 use result::WebSocketResult;
-use stream::sync::{AsTcpStream, Stream, Splittable, Shutdown};
-use dataframe::DataFrame;
-use header::{WebSocketProtocol, WebSocketExtensions};
-use header::extensions::Extension;
+use stream::sync::{AsTcpStream, Shutdown, Splittable, Stream};
+use ws;
+use ws::receiver::Receiver as ReceiverTrait;
+use ws::receiver::{DataFrameIterator, MessageIterator};
+use ws::sender::Sender as SenderTrait;
 
-use ws::dataframe::DataFrame as DataFrameable;
-use sender::Sender;
-use receiver::Receiver;
-pub use sender::Writer;
 pub use receiver::Reader;
+use receiver::Receiver;
+use sender::Sender;
+pub use sender::Writer;
+use ws::dataframe::DataFrame as DataFrameable;
 
 /// Represents a WebSocket client, which can send and receive messages/data frames.
 ///
@@ -53,7 +53,8 @@ pub use receiver::Reader;
 ///# }
 ///```
 pub struct Client<S>
-	where S: Stream
+where
+	S: Stream,
 {
 	stream: BufReader<S>,
 	headers: Headers,
@@ -76,7 +77,8 @@ impl Client<TcpStream> {
 }
 
 impl<S> Client<S>
-    where S: AsTcpStream + Stream
+where
+	S: AsTcpStream + Stream,
 {
 	/// Shuts down the client connection, will cause all pending and future IO to
 	/// return immediately with an appropriate value.
@@ -109,7 +111,8 @@ impl<S> Client<S>
 }
 
 impl<S> Client<S>
-    where S: Stream
+where
+	S: Stream,
 {
 	/// Creates a Client from a given stream
 	/// **without sending any handshake** this is meant to only be used with
@@ -125,21 +128,23 @@ impl<S> Client<S>
 		Client {
 			headers: headers,
 			stream: stream,
-			sender: Sender::new(out_mask), // true
+			sender: Sender::new(out_mask),    // true
 			receiver: Receiver::new(in_mask), // false
 		}
 	}
 
 	/// Sends a single data frame to the remote endpoint.
 	pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
-		where D: DataFrameable
+	where
+		D: DataFrameable,
 	{
 		self.sender.send_dataframe(self.stream.get_mut(), dataframe)
 	}
 
 	/// Sends a single message to the remote endpoint.
 	pub fn send_message<M>(&mut self, message: &M) -> WebSocketResult<()>
-		where M: ws::Message
+	where
+		M: ws::Message,
 	{
 		self.sender.send_message(self.stream.get_mut(), message)
 	}
@@ -194,9 +199,9 @@ impl<S> Client<S>
 	/// ```
 	pub fn protocols(&self) -> &[String] {
 		self.headers
-		    .get::<WebSocketProtocol>()
-		    .map(|p| p.0.as_slice())
-		    .unwrap_or(&[])
+			.get::<WebSocketProtocol>()
+			.map(|p| p.0.as_slice())
+			.unwrap_or(&[])
 	}
 
 	/// If you supplied a protocol, be sure to check if it was accepted by the
@@ -204,9 +209,9 @@ impl<S> Client<S>
 	/// one will require its own implementation.
 	pub fn extensions(&self) -> &[Extension] {
 		self.headers
-		    .get::<WebSocketExtensions>()
-		    .map(|e| e.0.as_slice())
-		    .unwrap_or(&[])
+			.get::<WebSocketExtensions>()
+			.map(|e| e.0.as_slice())
+			.unwrap_or(&[])
 	}
 
 	/// Get a reference to the stream.
@@ -333,7 +338,8 @@ impl<S> Client<S>
 }
 
 impl<S> Client<S>
-    where S: Splittable + Stream
+where
+	S: Splittable + Stream,
 {
 	/// Split this client into its constituent Sender and Receiver pair.
 	///
@@ -360,18 +366,23 @@ impl<S> Client<S>
 	///sender.send_message(&message).unwrap();
 	///# }
 	///```
-	pub fn split
-		(self)
-		 -> IoResult<(Reader<<S as Splittable>::Reader>, Writer<<S as Splittable>::Writer>)> {
+	pub fn split(
+		self,
+	) -> IoResult<(
+		Reader<<S as Splittable>::Reader>,
+		Writer<<S as Splittable>::Writer>,
+	)> {
 		let (stream, buf, pos, cap) = self.stream.into_parts();
 		let (read, write) = stream.split()?;
-		Ok((Reader {
-		        stream: BufReader::from_parts(read, buf, pos, cap),
-		        receiver: self.receiver,
-		    },
-		    Writer {
-		        stream: write,
-		        sender: self.sender,
-		    }))
+		Ok((
+			Reader {
+				stream: BufReader::from_parts(read, buf, pos, cap),
+				receiver: self.receiver,
+			},
+			Writer {
+				stream: write,
+				sender: self.sender,
+			},
+		))
 	}
 }

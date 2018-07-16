@@ -1,16 +1,15 @@
 extern crate websocket;
 
-use std::thread;
-use std::sync::mpsc::channel;
 use std::io::stdin;
+use std::sync::mpsc::channel;
+use std::thread;
 
-use websocket::{Message, OwnedMessage};
 use websocket::client::ClientBuilder;
+use websocket::{Message, OwnedMessage};
 
 const CONNECTION: &'static str = "ws://127.0.0.1:2794";
 
 fn main() {
-
 	println!("Connecting to {}", CONNECTION);
 
 	let client = ClientBuilder::new(CONNECTION)

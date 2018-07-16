@@ -1,14 +1,14 @@
-extern crate websocket;
 extern crate hyper;
+extern crate websocket;
 
-use std::thread;
-use std::io::Write;
-use websocket::{Message, OwnedMessage};
-use websocket::sync::Server;
-use hyper::Server as HttpServer;
 use hyper::net::Fresh;
 use hyper::server::request::Request;
 use hyper::server::response::Response;
+use hyper::Server as HttpServer;
+use std::io::Write;
+use std::thread;
+use websocket::sync::Server;
+use websocket::{Message, OwnedMessage};
 
 const HTML: &'static str = include_str!("websockets.html");
 
@@ -23,9 +23,9 @@ fn http_handler(_: Request, response: Response<Fresh>) {
 fn main() {
 	// Start listening for http connections
 	thread::spawn(move || {
-		              let http_server = HttpServer::http("127.0.0.1:8080").unwrap();
-		              http_server.handle(http_handler).unwrap();
-		             });
+		let http_server = HttpServer::http("127.0.0.1:8080").unwrap();
+		http_server.handle(http_handler).unwrap();
+	});
 
 	// Start listening for WebSocket connections
 	let ws_server = Server::bind("127.0.0.1:2794").unwrap();
@@ -33,7 +33,10 @@ fn main() {
 	for connection in ws_server.filter_map(Result::ok) {
 		// Spawn a new thread for each connection.
 		thread::spawn(move || {
-			if !connection.protocols().contains(&"rust-websocket".to_string()) {
+			if !connection
+				.protocols()
+				.contains(&"rust-websocket".to_string())
+			{
 				connection.reject().unwrap();
 				return;
 			}

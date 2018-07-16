@@ -1,16 +1,16 @@
 //! Provides an implementation of a WebSocket server
-#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 use native_tls::TlsAcceptor;
 
+use self::upgrade::{HyperIntoWsError, Request};
 use stream::Stream;
-use self::upgrade::{Request, HyperIntoWsError};
 
 pub mod upgrade;
 
-#[cfg(feature="async")]
+#[cfg(feature = "async")]
 pub mod async;
 
-#[cfg(feature="sync")]
+#[cfg(feature = "sync")]
 pub mod sync;
 
 /// Marker struct for a struct not being secure
@@ -22,7 +22,7 @@ pub struct NoTlsAcceptor;
 /// is running over SSL or not.
 pub trait OptionalTlsAcceptor {}
 impl OptionalTlsAcceptor for NoTlsAcceptor {}
-#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 impl OptionalTlsAcceptor for TlsAcceptor {}
 
 /// When a sever tries to accept a connection many things can go wrong.
@@ -31,7 +31,8 @@ impl OptionalTlsAcceptor for TlsAcceptor {}
 /// websocket handshake, in case one wants to use the connection for something
 /// else (such as HTTP).
 pub struct InvalidConnection<S, B>
-	where S: Stream
+where
+	S: Stream,
 {
 	/// if the stream was successfully setup it will be included here
 	/// on a failed connection.
@@ -84,9 +85,10 @@ pub struct InvalidConnection<S, B>
 /// All it takes is implementing the `IntoWs` trait for your server's streams,
 /// then calling `.into_ws()` on them.
 /// check out the docs over at `websocket::server::upgrade::sync` for more.
-#[cfg(any(feature="sync", feature="async"))]
+#[cfg(any(feature = "sync", feature = "async"))]
 pub struct WsServer<S, L>
-	where S: OptionalTlsAcceptor
+where
+	S: OptionalTlsAcceptor,
 {
 	listener: L,
 	/// The SSL acceptor given to the server

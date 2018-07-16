@@ -1,13 +1,13 @@
 //! The default implementation of a WebSocket Sender.
 
-use std::io::Write;
-use std::io::Result as IoResult;
 use result::WebSocketResult;
-use ws::dataframe::DataFrame;
+use std::io::Result as IoResult;
+use std::io::Write;
 use stream::sync::AsTcpStream;
-use ws;
-use ws::sender::Sender as SenderTrait;
 pub use stream::sync::Shutdown;
+use ws;
+use ws::dataframe::DataFrame;
+use ws::sender::Sender as SenderTrait;
 
 /// A writer that bundles a stream with a serializer to send the messages.
 /// This is used in the client's `.split()` function as the writing component.
@@ -21,26 +21,30 @@ pub struct Writer<W> {
 }
 
 impl<W> Writer<W>
-    where W: Write
+where
+	W: Write,
 {
 	/// Sends a single data frame to the remote endpoint.
 	pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
-		where D: DataFrame,
-		      W: Write
+	where
+		D: DataFrame,
+		W: Write,
 	{
 		self.sender.send_dataframe(&mut self.stream, dataframe)
 	}
 
 	/// Sends a single message to the remote endpoint.
 	pub fn send_message<M>(&mut self, message: &M) -> WebSocketResult<()>
-		where M: ws::Message
+	where
+		M: ws::Message,
 	{
 		self.sender.send_message(&mut self.stream, message)
 	}
 }
 
 impl<S> Writer<S>
-    where S: AsTcpStream + Write
+where
+	S: AsTcpStream + Write,
 {
 	/// Closes the sender side of the connection, will cause all pending and future IO to
 	/// return immediately with an appropriate value.

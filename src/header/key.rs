@@ -1,12 +1,12 @@
 use base64;
-use hyper::header::{Header, HeaderFormat};
-use hyper::header::parsing::from_one_raw_str;
 use hyper;
-use std::fmt::{self, Debug};
+use hyper::header::parsing::from_one_raw_str;
+use hyper::header::{Header, HeaderFormat};
 use rand;
+use result::{WebSocketError, WebSocketResult};
+use std::fmt::{self, Debug};
 use std::mem;
 use std::str::FromStr;
-use result::{WebSocketResult, WebSocketError};
 
 /// Represents a Sec-WebSocket-Key header.
 #[derive(PartialEq, Clone, Copy, Default)]
@@ -25,7 +25,9 @@ impl FromStr for WebSocketKey {
 		match base64::decode(key) {
 			Ok(vec) => {
 				if vec.len() != 16 {
-					return Err(WebSocketError::ProtocolError("Sec-WebSocket-Key must be 16 bytes"));
+					return Err(WebSocketError::ProtocolError(
+						"Sec-WebSocket-Key must be 16 bytes",
+					));
 				}
 				let mut array = [0u8; 16];
 				let mut iter = vec.into_iter();
@@ -35,7 +37,9 @@ impl FromStr for WebSocketKey {
 
 				Ok(WebSocketKey(array))
 			}
-			Err(_) => Err(WebSocketError::ProtocolError("Invalid Sec-WebSocket-Accept")),
+			Err(_) => Err(WebSocketError::ProtocolError(
+				"Invalid Sec-WebSocket-Accept",
+			)),
 		}
 	}
 }
@@ -77,6 +81,7 @@ mod tests {
 	use super::*;
 	use hyper::header::Header;
 	use test;
+
 	#[test]
 	fn test_header_key() {
 		use header::Headers;
@@ -85,30 +90,35 @@ mod tests {
 		let mut headers = Headers::new();
 		headers.set(extensions);
 
-		assert_eq!(&headers.to_string()[..],
-		           "Sec-WebSocket-Key: QUFBQUFBQUFBQUFBQUFBQQ==\r\n");
+		assert_eq!(
+			&headers.to_string()[..],
+			"Sec-WebSocket-Key: QUFBQUFBQUFBQUFBQUFBQQ==\r\n"
+		);
 	}
+
 	#[bench]
 	fn bench_header_key_new(b: &mut test::Bencher) {
 		b.iter(|| {
-			       let mut key = WebSocketKey::new();
-			       test::black_box(&mut key);
-			      });
+			let mut key = WebSocketKey::new();
+			test::black_box(&mut key);
+		});
 	}
+
 	#[bench]
 	fn bench_header_key_parse(b: &mut test::Bencher) {
 		let value = vec![b"QUFBQUFBQUFBQUFBQUFBQQ==".to_vec()];
 		b.iter(|| {
-			       let mut key: WebSocketKey = Header::parse_header(&value[..]).unwrap();
-			       test::black_box(&mut key);
-			      });
+			let mut key: WebSocketKey = Header::parse_header(&value[..]).unwrap();
+			test::black_box(&mut key);
+		});
 	}
+
 	#[bench]
 	fn bench_header_key_format(b: &mut test::Bencher) {
 		let value = vec![b"QUFBQUFBQUFBQUFBQUFBQQ==".to_vec()];
 		let val: WebSocketKey = Header::parse_header(&value[..]).unwrap();
 		b.iter(|| {
-			       format!("{}", val.serialize());
-			      });
+			format!("{}", val.serialize());
+		});
 	}
 }

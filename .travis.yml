@@ -2,10 +2,10 @@ language: rust
 rust: nightly
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
-  - which rustfmt || cargo install --vers 0.8.4 rustfmt
+  - rustup component add rustfmt-preview
 
 script:
-    - cargo fmt -- --write-mode=diff
+    - cargo fmt -- --check
     - ./scripts/build-all.sh
     - cargo test --features nightly
     - cargo bench --features nightly

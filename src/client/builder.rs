@@ -1,58 +1,58 @@
 //! Everything you need to create a client connection to a websocket.
 
-use std::borrow::Cow;
-pub use url::{Url, ParseError};
 use header::extensions::Extension;
-use header::{WebSocketKey, WebSocketVersion, WebSocketProtocol, WebSocketExtensions, Origin};
-use hyper::header::{Headers, Header, HeaderFormat};
+use header::{Origin, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion};
+use hyper::header::{Header, HeaderFormat, Headers};
 use hyper::version::HttpVersion;
+use std::borrow::Cow;
+pub use url::{ParseError, Url};
 
-#[cfg(any(feature="sync", feature="async"))]
+#[cfg(any(feature = "sync", feature = "async"))]
 mod common_imports {
-	pub use std::net::TcpStream;
-	pub use std::net::ToSocketAddrs;
-	pub use url::Position;
+	pub use header::WebSocketAccept;
+	pub use hyper::buffer::BufReader;
+	pub use hyper::header::{Connection, ConnectionOption, Host, Protocol, ProtocolName, Upgrade};
+	pub use hyper::http::h1::parse_response;
 	pub use hyper::http::h1::Incoming;
 	pub use hyper::http::RawStatus;
-	pub use hyper::status::StatusCode;
-	pub use hyper::buffer::BufReader;
 	pub use hyper::method::Method;
+	pub use hyper::status::StatusCode;
 	pub use hyper::uri::RequestUri;
-	pub use hyper::http::h1::parse_response;
-	pub use hyper::header::{Host, Connection, ConnectionOption, Upgrade, Protocol, ProtocolName};
-	pub use unicase::UniCase;
-	pub use header::WebSocketAccept;
-	pub use result::{WSUrlErrorKind, WebSocketResult, WebSocketError};
+	pub use result::{WSUrlErrorKind, WebSocketError, WebSocketResult};
+	pub use std::net::TcpStream;
+	pub use std::net::ToSocketAddrs;
 	pub use stream::{self, Stream};
+	pub use unicase::UniCase;
+	pub use url::Position;
 }
-#[cfg(any(feature="sync", feature="async"))]
+#[cfg(any(feature = "sync", feature = "async"))]
 use self::common_imports::*;
 
-#[cfg(feature="sync")]
+#[cfg(feature = "sync")]
 use super::sync::Client;
 
-#[cfg(feature="sync-ssl")]
+#[cfg(feature = "sync-ssl")]
 use stream::sync::NetworkStream;
 
-#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 use native_tls::TlsConnector;
-#[cfg(feature="sync-ssl")]
+#[cfg(feature = "sync-ssl")]
 use native_tls::TlsStream;
 
-#[cfg(feature="async")]
+#[cfg(feature = "async")]
 mod async_imports {
 	pub use super::super::async;
-	pub use tokio_io::codec::Framed;
-	pub use tokio_core::net::TcpStreamNew;
-	pub use tokio_core::reactor::Handle;
-	pub use futures::{Future, Sink};
+	pub use codec::ws::{Context, MessageCodec};
 	pub use futures::future;
 	pub use futures::Stream as FutureStream;
-	pub use codec::ws::{MessageCodec, Context};
-	#[cfg(feature="async-ssl")]
+	pub use futures::{Future, Sink};
+	pub use tokio_core::net::TcpStreamNew;
+	pub use tokio_core::reactor::Handle;
+	pub use tokio_io::codec::Framed;
+	#[cfg(feature = "async-ssl")]
 	pub use tokio_tls::TlsConnectorExt;
 }
-#[cfg(feature="async")]
+#[cfg(feature = "async")]
 use self::async_imports::*;
 
 /// Build clients with a builder-style API
@@ -169,7 +169,8 @@ impl<'u> ClientBuilder<'u> {
 	/// assert!(protos.contains(&"my-chat-proto".to_string()));
 	/// ```
 	pub fn add_protocol<P>(mut self, protocol: P) -> Self
-		where P: Into<String>
+	where
+		P: Into<String>,
 	{
 		upsert_header!(self.headers; WebSocketProtocol; {
             Some(protos) => protos.0.push(protocol.into()),
@@ -192,13 +193,11 @@ impl<'u> ClientBuilder<'u> {
 	/// assert!(protos.contains(&"sub.events".to_string()));
 	/// ```
 	pub fn add_protocols<I, S>(mut self, protocols: I) -> Self
-		where I: IntoIterator<Item = S>,
-		      S: Into<String>
+	where
+		I: IntoIterator<Item = S>,
+		S: Into<String>,
 	{
-		let mut protocols: Vec<String> =
-			protocols.into_iter()
-			         .map(Into::into)
-			         .collect();
+		let mut protocols: Vec<String> = protocols.into_iter().map(Into::into).collect();
 
 		upsert_header!(self.headers; WebSocketProtocol; {
             Some(protos) => protos.0.append(&mut protocols),
@@ -265,10 +264,10 @@ impl<'u> ClientBuilder<'u> {
 	/// # assert!(exts.last().unwrap().name == "crypt-omemo");
 	/// ```
 	pub fn add_extensions<I>(mut self, extensions: I) -> Self
-		where I: IntoIterator<Item = Extension>
+	where
+		I: IntoIterator<Item = Extension>,
 	{
-		let mut extensions: Vec<Extension> =
-			extensions.into_iter().collect();
+		let mut extensions: Vec<Extension> = extensions.into_iter().collect();
 		upsert_header!(self.headers; WebSocketExtensions; {
             Some(protos) => protos.0.append(&mut extensions),
             None => WebSocketExtensions(extensions)
@@ -353,7 +352,8 @@ impl<'u> ClientBuilder<'u> {
 	/// Remove a type of header from the handshake, this is to be used
 	/// with the catch all `custom_headers`.
 	pub fn clear_header<H>(mut self) -> Self
-		where H: Header + HeaderFormat
+	where
+		H: Header + HeaderFormat,
 	{
 		self.headers.remove::<H>();
 		self
@@ -361,7 +361,8 @@ impl<'u> ClientBuilder<'u> {
 
 	/// Get a header to inspect it.
 	pub fn get_header<H>(&self) -> Option<&H>
-		where H: Header + HeaderFormat
+	where
+		H: Header + HeaderFormat,
 	{
 		self.headers.get::<H>()
 	}
@@ -385,15 +386,14 @@ impl<'u> ClientBuilder<'u> {
 	/// let message = Message::text("m337 47 7pm");
 	/// client.send_message(&message).unwrap();
 	/// ```
-	#[cfg(feature="sync-ssl")]
+	#[cfg(feature = "sync-ssl")]
 	pub fn connect(
 		&mut self,
 		ssl_config: Option<TlsConnector>,
 	) -> WebSocketResult<Client<Box<NetworkStream + Send>>> {
 		let tcp_stream = self.establish_tcp(None)?;
 
-		let boxed_stream: Box<NetworkStream + Send> = if
-			self.url.scheme() == "wss" {
+		let boxed_stream: Box<NetworkStream + Send> = if self.url.scheme() == "wss" {
 			Box::new(self.wrap_ssl(tcp_stream, ssl_config)?)
 		} else {
 			Box::new(tcp_stream)
@@ -416,7 +416,7 @@ impl<'u> ClientBuilder<'u> {
 	/// // split into two (for some reason)!
 	/// let (receiver, sender) = client.split().unwrap();
 	/// ```
-	#[cfg(feature="sync")]
+	#[cfg(feature = "sync")]
 	pub fn connect_insecure(&mut self) -> WebSocketResult<Client<TcpStream>> {
 		let tcp_stream = self.establish_tcp(Some(false))?;
 
@@ -427,7 +427,7 @@ impl<'u> ClientBuilder<'u> {
 	/// This will only use an `TlsStream`, this is useful
 	/// when you want to be sure to connect over SSL or when you want access
 	/// to the `TlsStream` functions (without having to go through a `Box`).
-	#[cfg(feature="sync-ssl")]
+	#[cfg(feature = "sync-ssl")]
 	pub fn connect_secure(
 		&mut self,
 		ssl_config: Option<TlsConnector>,
@@ -468,9 +468,10 @@ impl<'u> ClientBuilder<'u> {
 	/// let text = String::from_utf8(text).unwrap();
 	/// assert!(text.contains("dGhlIHNhbXBsZSBub25jZQ=="), "{}", text);
 	/// ```
-	#[cfg(feature="sync")]
+	#[cfg(feature = "sync")]
 	pub fn connect_on<S>(&mut self, mut stream: S) -> WebSocketResult<Client<S>>
-		where S: Stream
+	where
+		S: Stream,
 	{
 		// send request
 		let resource = self.build_request();
@@ -531,7 +532,7 @@ impl<'u> ClientBuilder<'u> {
 	/// core.run(echo_future).unwrap();
 	/// # }
 	/// ```
-	#[cfg(feature="async-ssl")]
+	#[cfg(feature = "async-ssl")]
 	pub fn async_connect(
 		self,
 		ssl_config: Option<TlsConnector>,
@@ -561,20 +562,17 @@ impl<'u> ClientBuilder<'u> {
 				}
 			};
 			// secure connection, wrap with ssl
-			let future = tcp_stream.map_err(|e| e.into())
-			                       .and_then(move |s| {
-				                                 connector.connect_async(&host, s)
-				                                          .map_err(|e| e.into())
-				                                })
-			                       .and_then(move |stream| {
-				let stream: Box<stream::async::Stream + Send> = Box::new(stream);
-				builder.async_connect_on(stream)
-			});
+			let future = tcp_stream
+				.map_err(|e| e.into())
+				.and_then(move |s| connector.connect_async(&host, s).map_err(|e| e.into()))
+				.and_then(move |stream| {
+					let stream: Box<stream::async::Stream + Send> = Box::new(stream);
+					builder.async_connect_on(stream)
+				});
 			Box::new(future)
 		} else {
 			// insecure connection, connect normally
-			let future = tcp_stream.map_err(|e| e.into())
-			                       .and_then(move |stream| {
+			let future = tcp_stream.map_err(|e| e.into()).and_then(move |stream| {
 				let stream: Box<stream::async::Stream + Send> = Box::new(stream);
 				builder.async_connect_on(stream)
 			});
@@ -617,7 +615,7 @@ impl<'u> ClientBuilder<'u> {
 	/// core.run(echo_future).unwrap();
 	/// # }
 	/// ```
-	#[cfg(feature="async-ssl")]
+	#[cfg(feature = "async-ssl")]
 	pub fn async_connect_secure(
 		self,
 		ssl_config: Option<TlsConnector>,
@@ -646,13 +644,10 @@ impl<'u> ClientBuilder<'u> {
 		};
 
 		// put it all together
-		let future =
-			tcp_stream.map_err(|e| e.into())
-			          .and_then(move |s| {
-				                    connector.connect_async(&host, s)
-				                             .map_err(|e| e.into())
-				                   })
-			          .and_then(move |stream| builder.async_connect_on(stream));
+		let future = tcp_stream
+			.map_err(|e| e.into())
+			.and_then(move |s| connector.connect_async(&host, s).map_err(|e| e.into()))
+			.and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
 
@@ -689,7 +684,7 @@ impl<'u> ClientBuilder<'u> {
 	/// core.run(echo_future).unwrap();
 	/// # }
 	/// ```
-	#[cfg(feature="async")]
+	#[cfg(feature = "async")]
 	pub fn async_connect_insecure(self, handle: &Handle) -> async::ClientNew<async::TcpStream> {
 		let tcp_stream = match self.async_tcpstream(Some(false), handle) {
 			Ok(t) => t,
@@ -704,9 +699,9 @@ impl<'u> ClientBuilder<'u> {
 			key_set: self.key_set,
 		};
 
-		let future =
-			tcp_stream.map_err(|e| e.into())
-			          .and_then(move |stream| builder.async_connect_on(stream));
+		let future = tcp_stream
+			.map_err(|e| e.into())
+			.and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
 
@@ -752,9 +747,10 @@ impl<'u> ClientBuilder<'u> {
 	///
 	/// core.run(client).unwrap();
 	/// ```
-	#[cfg(feature="async")]
+	#[cfg(feature = "async")]
 	pub fn async_connect_on<S>(self, stream: S) -> async::ClientNew<S>
-		where S: stream::async::Stream + Send + 'static
+	where
+		S: stream::async::Stream + Send + 'static,
 	{
 		let mut builder = ClientBuilder {
 			url: Cow::Owned(self.url.into_owned()),
@@ -796,22 +792,25 @@ impl<'u> ClientBuilder<'u> {
 		Box::new(future)
 	}
 
-	#[cfg(feature="async")]
+	#[cfg(feature = "async")]
 	fn async_tcpstream(
 		&self,
 		secure: Option<bool>,
 		handle: &Handle,
 	) -> WebSocketResult<TcpStreamNew> {
 		// get the address to connect to, return an error future if ther's a problem
-		let address = match self.extract_host_port(secure).and_then(|p| Ok(p.to_socket_addrs()?)) {
-			Ok(mut s) => {
-				match s.next() {
-					Some(a) => a,
-					None => {
-						return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName));
-					}
+		let address = match self
+			.extract_host_port(secure)
+			.and_then(|p| Ok(p.to_socket_addrs()?))
+		{
+			Ok(mut s) => match s.next() {
+				Some(a) => a,
+				None => {
+					return Err(WebSocketError::WebSocketUrlError(
+						WSUrlErrorKind::NoHostName,
+					));
 				}
-			}
+			},
 			Err(e) => return Err(e.into()),
 		};
 
@@ -819,29 +818,25 @@ impl<'u> ClientBuilder<'u> {
 		Ok(async::TcpStream::connect(&address, handle))
 	}
 
-	#[cfg(any(feature="sync", feature="async"))]
+	#[cfg(any(feature = "sync", feature = "async"))]
 	fn build_request(&mut self) -> String {
 		// enter host if available (unix sockets don't have hosts)
 		if let Some(host) = self.url.host_str() {
-			self.headers
-			    .set(Host {
-			             hostname: host.to_string(),
-			             port: self.url.port(),
-			         });
+			self.headers.set(Host {
+				hostname: host.to_string(),
+				port: self.url.port(),
+			});
 		}
 
 		self.headers
-		    .set(Connection(vec![
-                ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string()))
-            ]));
+			.set(Connection(vec![ConnectionOption::ConnectionHeader(
+				UniCase("Upgrade".to_string()),
+			)]));
 
-		self.headers
-		    .set(Upgrade(vec![
-			Protocol {
-				name: ProtocolName::WebSocket,
-				version: None,
-			},
-		]));
+		self.headers.set(Upgrade(vec![Protocol {
+			name: ProtocolName::WebSocket,
+			version: None,
+		}]));
 
 		if !self.version_set {
 			self.headers.set(WebSocketVersion::WebSocket13);
@@ -856,44 +851,54 @@ impl<'u> ClientBuilder<'u> {
 		resource
 	}
 
-	#[cfg(any(feature="sync", feature="async"))]
+	#[cfg(any(feature = "sync", feature = "async"))]
 	fn validate(&self, response: &Incoming<RawStatus>) -> WebSocketResult<()> {
 		let status = StatusCode::from_u16(response.subject.0);
 
 		if status != StatusCode::SwitchingProtocols {
-			return Err(WebSocketError::ResponseError("Status code must be Switching Protocols"));
+			return Err(WebSocketError::ResponseError(
+				"Status code must be Switching Protocols",
+			));
 		}
 
-		let key =
-			self.headers
-			    .get::<WebSocketKey>()
-			    .ok_or(WebSocketError::RequestError("Request Sec-WebSocket-Key was invalid"))?;
+		let key = self
+			.headers
+			.get::<WebSocketKey>()
+			.ok_or(WebSocketError::RequestError(
+				"Request Sec-WebSocket-Key was invalid",
+			))?;
 
 		if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
-			return Err(WebSocketError::ResponseError("Sec-WebSocket-Accept is invalid"));
+			return Err(WebSocketError::ResponseError(
+				"Sec-WebSocket-Accept is invalid",
+			));
 		}
 
-		if response.headers.get() !=
-		   Some(&(Upgrade(vec![
-			Protocol {
+		if response.headers.get() != Some(
+			&(Upgrade(vec![Protocol {
 				name: ProtocolName::WebSocket,
 				version: None,
-			},
-		]))) {
-			return Err(WebSocketError::ResponseError("Upgrade field must be WebSocket"));
+			}])),
+		) {
+			return Err(WebSocketError::ResponseError(
+				"Upgrade field must be WebSocket",
+			));
 		}
 
-		if self.headers.get() !=
-		   Some(&(Connection(vec![
-                ConnectionOption::ConnectionHeader(UniCase("Upgrade".to_string())),
-            ]))) {
-			return Err(WebSocketError::ResponseError("Connection field must be 'Upgrade'"));
+		if self.headers.get() != Some(
+			&(Connection(vec![ConnectionOption::ConnectionHeader(UniCase(
+				"Upgrade".to_string(),
+			))])),
+		) {
+			return Err(WebSocketError::ResponseError(
+				"Connection field must be 'Upgrade'",
+			));
 		}
 
 		Ok(())
 	}
 
-	#[cfg(any(feature="sync", feature="async"))]
+	#[cfg(any(feature = "sync", feature = "async"))]
 	fn extract_host_port(&self, secure: Option<bool>) -> WebSocketResult<(&str, u16)> {
 		let port = match (self.url.port(), secure) {
 			(Some(port), _) => port,
@@ -904,25 +909,33 @@ impl<'u> ClientBuilder<'u> {
 		};
 		let host = match self.url.host_str() {
 			Some(h) => h,
-			None => return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName)),
+			None => {
+				return Err(WebSocketError::WebSocketUrlError(
+					WSUrlErrorKind::NoHostName,
+				))
+			}
 		};
 
 		Ok((host, port))
 	}
 
-	#[cfg(feature="sync")]
+	#[cfg(feature = "sync")]
 	fn establish_tcp(&mut self, secure: Option<bool>) -> WebSocketResult<TcpStream> {
 		Ok(TcpStream::connect(self.extract_host_port(secure)?)?)
 	}
 
-	#[cfg(any(feature="sync-ssl", feature="async-ssl"))]
+	#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 	fn extract_host_ssl_conn(
 		&self,
 		connector: Option<TlsConnector>,
 	) -> WebSocketResult<(&str, TlsConnector)> {
 		let host = match self.url.host_str() {
 			Some(h) => h,
-			None => return Err(WebSocketError::WebSocketUrlError(WSUrlErrorKind::NoHostName)),
+			None => {
+				return Err(WebSocketError::WebSocketUrlError(
+					WSUrlErrorKind::NoHostName,
+				))
+			}
 		};
 		let connector = match connector {
 			Some(c) => c,
@@ -931,7 +944,7 @@ impl<'u> ClientBuilder<'u> {
 		Ok((host, connector))
 	}
 
-	#[cfg(feature="sync-ssl")]
+	#[cfg(feature = "sync-ssl")]
 	fn wrap_ssl(
 		&self,
 		tcp_stream: TcpStream,

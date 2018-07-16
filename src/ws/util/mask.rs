@@ -1,7 +1,7 @@
 //! Utility functions for masking data frame payload data
 use rand;
-use std::io::Write;
 use std::io::Result as IoResult;
+use std::io::Write;
 use std::mem;
 
 /// Struct to pipe data into another writer,
@@ -59,6 +59,7 @@ pub fn mask_data(mask: [u8; 4], data: &[u8]) -> Vec<u8> {
 mod tests {
 	use super::*;
 	use test;
+
 	#[test]
 	fn test_mask_data() {
 		let key = [1u8, 2u8, 3u8, 4u8];
@@ -76,16 +77,16 @@ mod tests {
 		let buffer = b"The quick brown fox jumps over the lazy dog";
 		let key = gen_mask();
 		b.iter(|| {
-			       let mut output = mask_data(key, buffer);
-			       test::black_box(&mut output);
-			      });
+			let mut output = mask_data(key, buffer);
+			test::black_box(&mut output);
+		});
 	}
 
 	#[bench]
 	fn bench_gen_mask(b: &mut test::Bencher) {
 		b.iter(|| {
-			       let mut key = gen_mask();
-			       test::black_box(&mut key);
-			      });
+			let mut key = gen_mask();
+			test::black_box(&mut key);
+		});
 	}
 }
