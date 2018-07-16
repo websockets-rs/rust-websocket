@@ -1,4 +1,4 @@
-Rust-WebSocket [![Build Status](https://travis-ci.org/cyderize/rust-websocket.svg?branch=master)](https://travis-ci.org/cyderize/rust-websocket)
+Rust-WebSocket [![Build Status](https://travis-ci.org/websocket-rs/rust-websocket.svg?branch=master)](https://travis-ci.org/websocket-rs/rust-websocket)
 ==============
 
 Rust-WebSocket is a WebSocket ([RFC6455](http://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
@@ -10,7 +10,7 @@ Rust-WebSocket provides a framework for dealing with WebSocket connections (both
 To add a library release version from [crates.io](https://crates.io/crates/websocket) to a Cargo project, add this to the 'dependencies' section of your Cargo.toml:
 
 ```INI
-websocket = "0.20.2"
+websocket = "0.20.3"
 ```
 
 To add the library's Git repository to a Cargo project, add this to your Cargo.toml:
@@ -18,7 +18,7 @@ To add the library's Git repository to a Cargo project, add this to your Cargo.t
 ```INI
 [dependencies.websocket]
 
-git = "https://github.com/cyderize/rust-websocket.git"
+git = "https://github.com/websocket-rs/rust-websocket.git"
 ```
 
 And add ```extern crate websocket;``` to your project.
@@ -27,7 +27,7 @@ And add ```extern crate websocket;``` to your project.
 
 The library can be compiled with tests and benches and some extra capabilities on Rust nightly. To enable the nightly features, use `cargo --features nightly ...`.
 
-See the documentation for the latest release of the library [here](http://cyderize.github.io/rust-websocket/doc/websocket), and also the examples, which are located in `/examples` and can be run with:
+See the documentation for the latest release of the library [here](https://docs.rs/websocket/), and also the examples, which are located in `/examples` and can be run with:
 
 ```
 cargo run --example server
@@ -61,9 +61,9 @@ wstest -m fuzzingclient
 cargo run --example autobahn-server
 ```
 
-To test the server implementation. The spec files are available [here](http://cyderize.github.io/rust-websocket/autobahn).
+~~To test the server implementation. The spec files are available [here](http://websocket-rs.github.io/rust-websocket/autobahn).~~ No longer correct.
 
-The results of these tests are available [here](http://cyderize.github.io/rust-websocket/autobahn).
+~~The results of these tests are available [here](http://websocket-rs.github.io/rust-websocket/autobahn).~~ No longer correct.
 
 ## License
 
