@@ -3,12 +3,14 @@ rust: nightly
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
   - which rustfmt || cargo install --vers 0.8.4 rustfmt
+  - which clippy  || cargo install clippy
 
 script:
     - cargo fmt -- --write-mode=diff
     - ./scripts/build-all.sh
     - cargo test --features nightly
     - cargo bench --features nightly
+    - cargo clippy
 
 after_success:
   - sudo apt-get install python-unittest2
