@@ -1,4 +1,4 @@
-Rust-WebSocket [![Build Status](https://travis-ci.org/websocket-rs/rust-websocket.svg?branch=master)](https://travis-ci.org/websocket-rs/rust-websocket)
+Rust-WebSocket [![Build Status](https://travis-ci.org/websockets-rs/rust-websocket.svg?branch=master)](https://travis-ci.org/websockets-rs/rust-websocket)
 ==============
 
 Rust-WebSocket is a WebSocket ([RFC6455](http://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
@@ -18,7 +18,7 @@ To add the library's Git repository to a Cargo project, add this to your Cargo.t
 ```INI
 [dependencies.websocket]
 
-git = "https://github.com/websocket-rs/rust-websocket.git"
+git = "https://github.com/websockets-rs/rust-websocket.git"
 ```
 
 And add ```extern crate websocket;``` to your project.
@@ -61,9 +61,9 @@ wstest -m fuzzingclient
 cargo run --example autobahn-server
 ```
 
-~~To test the server implementation. The spec files are available [here](http://websocket-rs.github.io/rust-websocket/autobahn).~~ No longer correct.
+To test the server implementation. The spec files are available [here](http://websockets-rs.github.io/rust-websocket/autobahn).
 
-~~The results of these tests are available [here](http://websocket-rs.github.io/rust-websocket/autobahn).~~ No longer correct.
+The results of these tests are available [here](http://websockets-rs.github.io/rust-websocket/autobahn).
 
 ## License
 
