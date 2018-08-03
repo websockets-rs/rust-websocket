@@ -155,7 +155,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 					stream: None,
 					parsed: None,
 					buffer: None,
-					error: e.into(),
+					error: HyperIntoWsError::Io(e),
 				})
 			}
 		};
@@ -178,7 +178,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 				stream: Some(s),
 				parsed: r,
 				buffer: b,
-				error: e.into(),
+				error: e,
 			}),
 		}
 	}
@@ -247,7 +247,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 				stream: Some(s),
 				parsed: r,
 				buffer: b,
-				error: e.into(),
+				error: e,
 			}),
 		}
 	}

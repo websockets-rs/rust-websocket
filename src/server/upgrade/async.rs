@@ -226,7 +226,7 @@ where
 			}).and_then(|(m, s)| {
 				let FramedParts { inner, readbuf, .. } = s.into_parts();
 				if let Some(msg) = m {
-					match validate(&msg.subject.0, &msg.version, &msg.headers) {
+					match validate(&msg.subject.0, msg.version, &msg.headers) {
 						Ok(()) => Ok((msg, inner, readbuf)),
 						Err(e) => Err((inner, Some(msg), readbuf, e)),
 					}
@@ -239,9 +239,9 @@ where
 				}
 			}).map(|(m, stream, buffer)| WsUpgrade {
 				headers: Headers::new(),
-				stream: stream,
+				stream,
 				request: m,
-				buffer: buffer,
+				buffer,
 			});
 		Box::new(future)
 	}

@@ -30,10 +30,10 @@ impl DataFrame {
 	/// Creates a new DataFrame.
 	pub fn new(finished: bool, opcode: Opcode, data: Vec<u8>) -> DataFrame {
 		DataFrame {
-			finished: finished,
+			finished,
 			reserved: [false; 3],
-			opcode: opcode,
-			data: data,
+			opcode,
+			data,
 		}
 	}
 
@@ -74,10 +74,10 @@ impl DataFrame {
 		};
 
 		Ok(DataFrame {
-			finished: finished,
-			reserved: reserved,
-			opcode: opcode,
-			data: data,
+			finished,
+			reserved,
+			opcode,
+			data,
 		})
 	}
 

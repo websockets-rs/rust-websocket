@@ -239,14 +239,14 @@ impl From<::codec::http::HttpCodecError> for HyperIntoWsError {
 /// Check whether an incoming request is a valid WebSocket upgrade attempt.
 pub fn validate(
 	method: &Method,
-	version: &HttpVersion,
+	version: HttpVersion,
 	headers: &Headers,
 ) -> Result<(), HyperIntoWsError> {
 	if *method != Method::Get {
 		return Err(HyperIntoWsError::MethodNotGet);
 	}
 
-	if *version == HttpVersion::Http09 || *version == HttpVersion::Http10 {
+	if version == HttpVersion::Http09 || version == HttpVersion::Http10 {
 		return Err(HyperIntoWsError::UnsupportedHttpVersion);
 	}
 

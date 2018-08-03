@@ -81,9 +81,9 @@ where
 	let opcode = byte0 & 0x0F;
 
 	let len = match byte1 & 0x7F {
-		0...125 => (byte1 & 0x7F) as u64,
+		0...125 => u64::from(byte1 & 0x7F),
 		126 => {
-			let len = reader.read_u16::<BigEndian>()? as u64;
+			let len = u64::from(reader.read_u16::<BigEndian>()?);
 			if len <= 125 {
 				return Err(WebSocketError::DataFrameError("Invalid data frame length"));
 			}
@@ -124,10 +124,10 @@ where
 	};
 
 	Ok(DataFrameHeader {
-		flags: flags,
-		opcode: opcode,
-		mask: mask,
-		len: len,
+		flags,
+		opcode,
+		mask,
+		len,
 	})
 }
 

@@ -1,14 +1,19 @@
 language: rust
 rust: nightly
+
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
+
+install:
   - rustup component add rustfmt-preview
+  - rustup component add clippy-preview
 
 script:
-    - cargo fmt -- --check
-    - ./scripts/build-all.sh
-    - cargo test --features nightly
-    - cargo bench --features nightly
+  - cargo fmt -- --check
+  - cargo clippy --all-features -- -D clippy
+  - ./scripts/build-all.sh
+  - cargo test --features nightly
+  - cargo bench --features nightly
 
 after_success:
   - sudo apt-get install python-unittest2

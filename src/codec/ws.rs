@@ -31,7 +31,7 @@ use ws::util::header::read_header;
 ///
 /// For those familiar with the protocol, this decides wether the data should be
 /// masked or not.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Context {
 	/// Set the codec to act in `Server` mode, used when
 	/// implementing a websocket server.
