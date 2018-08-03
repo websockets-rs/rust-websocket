@@ -17,7 +17,7 @@ impl<'w> Masker<'w> {
 	/// to be writer to.
 	pub fn new(key: [u8; 4], endpoint: &'w mut Write) -> Self {
 		Masker {
-			key: key,
+			key,
 			pos: 0,
 			end: endpoint,
 		}

@@ -32,13 +32,13 @@ pub trait Receiver: Sized {
 		R: Read,
 	{
 		DataFrameIterator {
-			reader: reader,
+			reader,
 			inner: self,
 		}
 	}
 
 	/// Reads a single message from this receiver.
-	fn recv_message<'m, R>(&mut self, reader: &mut R) -> WebSocketResult<Self::M>
+	fn recv_message<R>(&mut self, reader: &mut R) -> WebSocketResult<Self::M>
 	where
 		R: Read,
 	{
@@ -52,7 +52,7 @@ pub trait Receiver: Sized {
 		R: Read,
 	{
 		MessageIterator {
-			reader: reader,
+			reader,
 			inner: self,
 		}
 	}

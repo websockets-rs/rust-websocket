@@ -148,7 +148,7 @@ impl<'u> ClientBuilder<'u> {
 
 	fn init(url: Cow<'u, Url>) -> Self {
 		ClientBuilder {
-			url: url,
+			url,
 			version: HttpVersion::Http11,
 			version_set: false,
 			key_set: false,
@@ -811,7 +811,7 @@ impl<'u> ClientBuilder<'u> {
 					));
 				}
 			},
-			Err(e) => return Err(e.into()),
+			Err(e) => return Err(e),
 		};
 
 		// connect a tcp stream
@@ -847,8 +847,7 @@ impl<'u> ClientBuilder<'u> {
 		}
 
 		// send request
-		let resource = self.url[Position::BeforePath..Position::AfterQuery].to_owned();
-		resource
+		self.url[Position::BeforePath..Position::AfterQuery].to_owned()
 	}
 
 	#[cfg(any(feature = "sync", feature = "async"))]

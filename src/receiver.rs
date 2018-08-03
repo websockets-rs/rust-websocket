@@ -84,7 +84,7 @@ impl Receiver {
 	pub fn new(mask: bool) -> Receiver {
 		Receiver {
 			buffer: Vec::new(),
-			mask: mask,
+			mask,
 		}
 	}
 }

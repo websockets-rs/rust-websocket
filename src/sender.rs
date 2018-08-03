@@ -68,7 +68,7 @@ pub struct Sender {
 impl Sender {
 	/// Create a new WebSocketSender using the specified Writer.
 	pub fn new(mask: bool) -> Sender {
-		Sender { mask: mask }
+		Sender { mask }
 	}
 }
 

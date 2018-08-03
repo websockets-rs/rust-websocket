@@ -1,5 +1,9 @@
 #![warn(missing_docs)]
 #![cfg_attr(all(test, feature = "nightly"), feature(test))]
+#![cfg_attr(
+	feature = "cargo-clippy",
+	allow(write_with_newline, type_complexity, match_ref_pats)
+)]
 #![deny(unused_mut)]
 
 //! Rust-WebSocket is a WebSocket (RFC6455) library written in Rust.

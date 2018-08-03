@@ -8,7 +8,7 @@ use std::fmt;
 use std::ops::Deref;
 use std::str::FromStr;
 
-const INVALID_EXTENSION: &'static str = "Invalid Sec-WebSocket-Extensions extension name";
+const INVALID_EXTENSION: &str = "Invalid Sec-WebSocket-Extensions extension name";
 
 // TODO: check if extension name is valid according to spec
 
@@ -37,7 +37,7 @@ impl Extension {
 	/// Creates a new extension with the given name
 	pub fn new(name: String) -> Extension {
 		Extension {
-			name: name,
+			name,
 			params: Vec::new(),
 		}
 	}
@@ -88,10 +88,7 @@ pub struct Parameter {
 impl Parameter {
 	/// Creates a new parameter with the given name and value
 	pub fn new(name: String, value: Option<String>) -> Parameter {
-		Parameter {
-			name: name,
-			value: value,
-		}
+		Parameter { name, value }
 	}
 }
 

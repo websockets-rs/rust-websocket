@@ -71,7 +71,7 @@ pub trait DataFrame {
 		let masking_key = if mask { Some(mask::gen_mask()) } else { None };
 
 		let header = dfh::DataFrameHeader {
-			flags: flags,
+			flags,
 			opcode: self.opcode() as u8,
 			mask: masking_key,
 			len: self.size() as u64,

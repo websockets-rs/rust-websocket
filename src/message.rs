@@ -10,7 +10,7 @@ use ws;
 use ws::dataframe::DataFrame as DataFrameTrait;
 use ws::util::bytes_to_string;
 
-const FALSE_RESERVED_BITS: &'static [bool; 3] = &[false; 3];
+const FALSE_RESERVED_BITS: &[bool; 3] = &[false; 3];
 
 /// Valid types of messages (in the default implementation)
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -51,7 +51,7 @@ impl<'a> Message<'a> {
 		Message {
 			opcode: code,
 			cd_status_code: status,
-			payload: payload,
+			payload,
 		}
 	}
 
@@ -119,6 +119,8 @@ impl<'a> Message<'a> {
 		Message::new(Type::Pong, None, data.into())
 	}
 
+	// TODO: change this to match conventions
+	#[cfg_attr(feature = "cargo-clippy", allow(wrong_self_convention))]
 	/// Convert a ping message to a pong, keeping the data.
 	/// This will fail if the original message is not a ping.
 	pub fn into_pong(&mut self) -> Result<(), ()> {
@@ -226,7 +228,7 @@ impl<'a> ws::Message for Message<'a> {
 			},
 			Some(Opcode::Binary) => Message::binary(data),
 			Some(Opcode::Close) => {
-				if data.len() > 0 {
+				if !data.is_empty() {
 					let status_code = (&data[..]).read_u16::<BigEndian>()?;
 					let reason = bytes_to_string(&data[2..])?;
 					Message::close_because(status_code, reason)
@@ -483,8 +485,8 @@ impl CloseData {
 	/// Create a new CloseData object
 	pub fn new(status_code: u16, reason: String) -> CloseData {
 		CloseData {
-			status_code: status_code,
-			reason: reason,
+			status_code,
+			reason,
 		}
 	}
 	/// Convert this into a vector of bytes

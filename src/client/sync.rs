@@ -126,8 +126,8 @@ where
 		in_mask: bool,
 	) -> Self {
 		Client {
-			headers: headers,
-			stream: stream,
+			headers,
+			stream,
 			sender: Sender::new(out_mask),    // true
 			receiver: Receiver::new(in_mask), // false
 		}

@@ -167,23 +167,19 @@ where
 		let request = parse_request(&mut reader);
 
 		let (stream, buf, pos, cap) = reader.into_parts();
-		let buffer = Some(Buffer {
-			buf: buf,
-			cap: cap,
-			pos: pos,
-		});
+		let buffer = Some(Buffer { buf, cap, pos });
 
 		let request = match request {
 			Ok(r) => r,
 			Err(e) => return Err((stream, None, buffer, e.into())),
 		};
 
-		match validate(&request.subject.0, &request.version, &request.headers) {
+		match validate(&request.subject.0, request.version, &request.headers) {
 			Ok(_) => Ok(WsUpgrade {
 				headers: Headers::new(),
-				stream: stream,
-				request: request,
-				buffer: buffer,
+				stream,
+				request,
+				buffer,
 			}),
 			Err(e) => Err((stream, Some(request), buffer, e)),
 		}
@@ -198,7 +194,7 @@ where
 	type Error = (S, Request, HyperIntoWsError);
 
 	fn into_ws(self) -> Result<Upgrade<Self::Stream>, Self::Error> {
-		match validate(&self.1.subject.0, &self.1.version, &self.1.headers) {
+		match validate(&self.1.subject.0, self.1.version, &self.1.headers) {
 			Ok(_) => Ok(WsUpgrade {
 				headers: Headers::new(),
 				stream: self.0,
@@ -257,7 +253,7 @@ impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 	type Error = (::hyper::server::Request<'a, 'b>, HyperIntoWsError);
 
 	fn into_ws(self) -> Result<Upgrade<Self::Stream>, Self::Error> {
-		if let Err(e) = validate(&self.0.method, &self.0.version, &self.0.headers) {
+		if let Err(e) = validate(&self.0.method, self.0.version, &self.0.headers) {
 			return Err((self.0, e));
 		}
 
@@ -269,15 +265,11 @@ impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 
 		Ok(Upgrade {
 			headers: Headers::new(),
-			stream: stream,
-			buffer: Some(Buffer {
-				buf: buf,
-				pos: pos,
-				cap: cap,
-			}),
+			stream,
+			buffer: Some(Buffer { buf, pos, cap }),
 			request: Incoming {
-				version: version,
-				headers: headers,
+				version,
+				headers,
 				subject: (method, uri),
 			},
 		})
