@@ -65,6 +65,23 @@ To test the server implementation. The spec files are available [here](http://we
 
 The results of these tests are available [here](http://websockets-rs.github.io/rust-websocket/autobahn).
 
+## Contributing
+
+Before you make a PR be sure to run all the tests!
+
+```bash
+# install
+rustup component add rustfmt-preview
+rustup component add clippy-preview
+
+# test
+cargo +nightly fmt -- --check
+cargo +nightly clippy --all-features -- -D clippy
+cargo test --features nightly
+cargo bench --features nightly
+./scripts/build-all.sh
+```
+
 ## License
 
 ### The MIT License (MIT)
