@@ -26,7 +26,7 @@ pub mod async {
 
 	/// The most common Future in this library, it is simply some result `I` or
 	/// a `WebSocketError`. This is analogous to the `WebSocketResult` type.
-	pub type WebSocketFuture<I> = Box<Future<Item = I, Error = WebSocketError>>;
+	pub type WebSocketFuture<I> = Box<Future<Item = I, Error = WebSocketError> + Send>;
 }
 
 /// Represents a WebSocket error

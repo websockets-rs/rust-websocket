@@ -25,7 +25,7 @@ pub type Server<S> = WsServer<S, TcpListener>;
 /// struct which lets the user decide whether to turn the connection into a websocket
 /// connection or reject it.
 pub type Incoming<S> =
-	Box<Stream<Item = (Upgrade<S>, SocketAddr), Error = InvalidConnection<S, BytesMut>>>;
+	Box<Stream<Item = (Upgrade<S>, SocketAddr), Error = InvalidConnection<S, BytesMut>> + Send>;
 
 /// Asynchronous methods for creating an async server and accepting incoming connections.
 impl WsServer<NoTlsAcceptor, TcpListener> {

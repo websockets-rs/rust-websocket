@@ -10,7 +10,7 @@ use bytes::BytesMut;
 use client::async::ClientNew;
 use codec::http::HttpServerCodec;
 use codec::ws::{Context, MessageCodec};
-use futures::sink::Send;
+use futures::sink::Send as SinkSend;
 use futures::Stream as StreamTrait;
 use futures::{Future, Sink};
 use hyper::header::Headers;
@@ -66,7 +66,7 @@ pub type Upgrade<S> = WsUpgrade<S, BytesMut>;
 /// module under the name `Upgrade`.
 impl<S> WsUpgrade<S, BytesMut>
 where
-	S: Stream + 'static,
+	S: Stream + Send + 'static,
 {
 	/// Asynchronously accept the websocket handshake, then create a client.
 	/// This will asynchronously send a response accepting the connection
@@ -116,7 +116,7 @@ where
 	/// Asynchronously send a rejection message and deconstruct `self`
 	/// into it's original stream. The stream being returned is framed with the
 	/// `HttpServerCodec` since that was used to send the rejection message.
-	pub fn reject(self) -> Send<Framed<S, HttpServerCodec>> {
+	pub fn reject(self) -> SinkSend<Framed<S, HttpServerCodec>> {
 		self.internal_reject(None)
 	}
 
@@ -124,11 +124,11 @@ where
 	/// deconstruct `self` into it's original stream.
 	///  The stream being returned is framed with the
 	/// `HttpServerCodec` since that was used to send the rejection message.
-	pub fn reject_with(self, headers: &Headers) -> Send<Framed<S, HttpServerCodec>> {
+	pub fn reject_with(self, headers: &Headers) -> SinkSend<Framed<S, HttpServerCodec>> {
 		self.internal_reject(Some(headers))
 	}
 
-	fn internal_reject(mut self, headers: Option<&Headers>) -> Send<Framed<S, HttpServerCodec>> {
+	fn internal_reject(mut self, headers: Option<&Headers>) -> SinkSend<Framed<S, HttpServerCodec>> {
 		if let Some(custom) = headers {
 			self.headers.extend(custom.iter());
 		}
@@ -206,17 +206,17 @@ pub trait IntoWs {
 	///
 	/// Note: this is the asynchronous version, meaning it will not block when
 	/// trying to read a request.
-	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error>>;
+	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error> + Send>;
 }
 
 impl<S> IntoWs for S
 where
-	S: Stream + 'static,
+	S: Stream + Send + 'static,
 {
 	type Stream = S;
 	type Error = (S, Option<Request>, BytesMut, HyperIntoWsError);
 
-	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error>> {
+	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error> + Send> {
 		let future = self
 			.framed(HttpServerCodec)
 			.into_future()
