@@ -128,7 +128,10 @@ where
 		self.internal_reject(Some(headers))
 	}
 
-	fn internal_reject(mut self, headers: Option<&Headers>) -> SinkSend<Framed<S, HttpServerCodec>> {
+	fn internal_reject(
+		mut self,
+		headers: Option<&Headers>,
+	) -> SinkSend<Framed<S, HttpServerCodec>> {
 		if let Some(custom) = headers {
 			self.headers.extend(custom.iter());
 		}
