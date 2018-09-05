@@ -9,6 +9,7 @@ install:
   - rustup component add clippy-preview
 
 script:
+  - cargo fmt -- --version
   - cargo fmt -- --check
   - cargo clippy --all-features -- -D clippy
   - ./scripts/build-all.sh
