@@ -36,32 +36,30 @@ fn main() {
 	let conn_id = Rc::new(RefCell::new(Counter::new()));
 	let connections_inner = connections.clone();
 	// Handle new connection
-	let connection_handler = server.incoming()
-        // we don't wanna save the stream if it drops
-        .map_err(|InvalidConnection { error, .. }| error)
-        .for_each(move |(upgrade, addr)| {
-            let connections_inner = connections_inner.clone();
-            println!("Got a connection from: {}", addr);
-            let channel = receive_channel_out.clone();
-            let handle_inner = handle.clone();
-            let conn_id = conn_id.clone();
-            let f = upgrade
-                .accept()
-                .and_then(move |(framed, _)| {
-                    let id = conn_id
-                        .borrow_mut()
-                        .next()
-                        .expect("maximum amount of ids reached");
-                    let (sink, stream) = framed.split();
-                    let f = channel.send((id, stream));
-                    spawn_future(f, "Senk stream to connection pool", &handle_inner);
-                    connections_inner.write().unwrap().insert(id, sink);
-                    Ok(())
-                });
-            spawn_future(f, "Handle new connection", &handle);
-            Ok(())
-        })
-        .map_err(|_| ());
+	let connection_handler = server
+		.incoming()
+		// we don't wanna save the stream if it drops
+		.map_err(|InvalidConnection { error, .. }| error)
+		.for_each(move |(upgrade, addr)| {
+			let connections_inner = connections_inner.clone();
+			println!("Got a connection from: {}", addr);
+			let channel = receive_channel_out.clone();
+			let handle_inner = handle.clone();
+			let conn_id = conn_id.clone();
+			let f = upgrade.accept().and_then(move |(framed, _)| {
+				let id = conn_id
+					.borrow_mut()
+					.next()
+					.expect("maximum amount of ids reached");
+				let (sink, stream) = framed.split();
+				let f = channel.send((id, stream));
+				spawn_future(f, "Senk stream to connection pool", &handle_inner);
+				connections_inner.write().unwrap().insert(id, sink);
+				Ok(())
+			});
+			spawn_future(f, "Handle new connection", &handle);
+			Ok(())
+		}).map_err(|_| ());
 
 	// Handle receiving messages from a client
 	let remote_inner = remote.clone();

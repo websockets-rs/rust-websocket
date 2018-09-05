@@ -768,26 +768,24 @@ impl<'u> ClientBuilder<'u> {
 		};
 
 		let future = framed
-		      // send request
-          .send(request).map_err(::std::convert::Into::into)
-
-          // wait for a response
-		      .and_then(|stream| stream.into_future().map_err(|e| e.0.into()))
-
-          // validate
-		      .and_then(move |(message, stream)| {
-              message
-                  .ok_or(WebSocketError::ProtocolError(
-                      "Connection closed before handshake could complete."))
-                  .and_then(|message| builder.validate(&message).map(|()| (message, stream)))
-          })
-
-          // output the final client and metadata
-          .map(|(message, stream)| {
-              let codec = MessageCodec::default(Context::Client);
-              let client = Framed::from_parts(stream.into_parts(), codec);
-              (client, message.headers)
-          });
+			// send request
+			.send(request)
+			.map_err(::std::convert::Into::into)
+			// wait for a response
+			.and_then(|stream| stream.into_future().map_err(|e| e.0.into()))
+			// validate
+			.and_then(move |(message, stream)| {
+				message
+					.ok_or(WebSocketError::ProtocolError(
+						"Connection closed before handshake could complete.",
+					)).and_then(|message| builder.validate(&message).map(|()| (message, stream)))
+			})
+			// output the final client and metadata
+			.map(|(message, stream)| {
+				let codec = MessageCodec::default(Context::Client);
+				let client = Framed::from_parts(stream.into_parts(), codec);
+				(client, message.headers)
+			});
 
 		Box::new(future)
 	}

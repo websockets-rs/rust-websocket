@@ -21,46 +21,44 @@ fn main() {
 	// this will be a struct containing everything the server is going to do
 
 	// a stream of incoming connections
-	let f = server.incoming()
-        // we don't wanna save the stream if it drops
-        .map_err(|InvalidConnection { error, .. }| error)
-        .for_each(|(upgrade, addr)| {
-            println!("Got a connection from: {}", addr);
-            // check if it has the protocol we want
-            if !upgrade.protocols().iter().any(|s| s == "rust-websocket") {
-                // reject it if it doesn't
-                spawn_future(upgrade.reject(), "Upgrade Rejection", &handle);
-                return Ok(());
-            }
+	let f = server
+		.incoming()
+		// we don't wanna save the stream if it drops
+		.map_err(|InvalidConnection { error, .. }| error)
+		.for_each(|(upgrade, addr)| {
+			println!("Got a connection from: {}", addr);
+			// check if it has the protocol we want
+			if !upgrade.protocols().iter().any(|s| s == "rust-websocket") {
+				// reject it if it doesn't
+				spawn_future(upgrade.reject(), "Upgrade Rejection", &handle);
+				return Ok(());
+			}
 
-            // accept the request to be a ws connection if it does
-            let f = upgrade
-                .use_protocol("rust-websocket")
-                .accept()
-                // send a greeting!
-                .and_then(|(s, _)| s.send(Message::text("Hello World!").into()))
-                // simple echo server impl
-                .and_then(|s| {
-                    let (sink, stream) = s.split();
-                    stream
-                    .take_while(|m| Ok(!m.is_close()))
-                    .filter_map(|m| {
-                        println!("Message from Client: {:?}", m);
-                        match m {
-                            OwnedMessage::Ping(p) => Some(OwnedMessage::Pong(p)),
-                            OwnedMessage::Pong(_) => None,
-                            _ => Some(m),
-                        }
-                    })
-                    .forward(sink)
-                    .and_then(|(_, sink)| {
-                        sink.send(OwnedMessage::Close(None))
-                    })
-                });
+			// accept the request to be a ws connection if it does
+			let f = upgrade
+				.use_protocol("rust-websocket")
+				.accept()
+				// send a greeting!
+				.and_then(|(s, _)| s.send(Message::text("Hello World!").into()))
+				// simple echo server impl
+				.and_then(|s| {
+					let (sink, stream) = s.split();
+					stream
+						.take_while(|m| Ok(!m.is_close()))
+						.filter_map(|m| {
+							println!("Message from Client: {:?}", m);
+							match m {
+								OwnedMessage::Ping(p) => Some(OwnedMessage::Pong(p)),
+								OwnedMessage::Pong(_) => None,
+								_ => Some(m),
+							}
+						}).forward(sink)
+						.and_then(|(_, sink)| sink.send(OwnedMessage::Close(None)))
+				});
 
-            spawn_future(f, "Client Status", &handle);
-            Ok(())
-        });
+			spawn_future(f, "Client Status", &handle);
+			Ok(())
+		});
 
 	core.run(f).unwrap();
 }
