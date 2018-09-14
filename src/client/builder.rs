@@ -50,7 +50,7 @@ mod async_imports {
 	pub use tokio_core::reactor::Handle;
 	pub use tokio_io::codec::Framed;
 	#[cfg(feature = "async-ssl")]
-	pub use tokio_tls::TlsConnectorExt;
+	pub use tokio_tls::TlsConnector as TlsConnectorExt;
 }
 #[cfg(feature = "async")]
 use self::async_imports::*;
@@ -557,14 +557,14 @@ impl<'u> ClientBuilder<'u> {
 			// configure the tls connection
 			let (host, connector) = {
 				match builder.extract_host_ssl_conn(ssl_config) {
-					Ok((h, conn)) => (h.to_string(), conn),
+					Ok((h, conn)) => (h.to_string(), TlsConnectorExt::from(conn)),
 					Err(e) => return Box::new(future::err(e)),
 				}
 			};
 			// secure connection, wrap with ssl
 			let future = tcp_stream
 				.map_err(|e| e.into())
-				.and_then(move |s| connector.connect_async(&host, s).map_err(|e| e.into()))
+				.and_then(move |s| connector.connect(&host, s).map_err(|e| e.into()))
 				.and_then(move |stream| {
 					let stream: Box<stream::async::Stream + Send> = Box::new(stream);
 					builder.async_connect_on(stream)
@@ -630,7 +630,7 @@ impl<'u> ClientBuilder<'u> {
 		// configure the tls connection
 		let (host, connector) = {
 			match self.extract_host_ssl_conn(ssl_config) {
-				Ok((h, conn)) => (h.to_string(), conn),
+				Ok((h, conn)) => (h.to_string(), TlsConnectorExt::from(conn)),
 				Err(e) => return Box::new(future::err(e)),
 			}
 		};
@@ -646,7 +646,7 @@ impl<'u> ClientBuilder<'u> {
 		// put it all together
 		let future = tcp_stream
 			.map_err(|e| e.into())
-			.and_then(move |s| connector.connect_async(&host, s).map_err(|e| e.into()))
+			.and_then(move |s| connector.connect(&host, s).map_err(|e| e.into()))
 			.and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
@@ -936,7 +936,7 @@ impl<'u> ClientBuilder<'u> {
 		};
 		let connector = match connector {
 			Some(c) => c,
-			None => TlsConnector::builder()?.build()?,
+			None => TlsConnector::builder().build()?,
 		};
 		Ok((host, connector))
 	}

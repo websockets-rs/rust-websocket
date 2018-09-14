@@ -13,7 +13,7 @@ pub use tokio_core::reactor::Handle;
 #[cfg(any(feature = "async-ssl"))]
 use native_tls::TlsAcceptor;
 #[cfg(any(feature = "async-ssl"))]
-use tokio_tls::{TlsAcceptorExt, TlsStream};
+use tokio_tls::{TlsAcceptor as TlsAcceptorExt, TlsStream};
 
 /// The asynchronous specialization of a websocket server.
 /// Use this struct to create asynchronous servers.
@@ -105,7 +105,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 	/// (https://github.com/cyderize/rust-websocket/blob/master/examples/async-server.rs)
 	/// example for a good echo server example.
 	pub fn incoming(self) -> Incoming<TlsStream<TcpStream>> {
-		let acceptor = self.ssl_acceptor;
+		let acceptor = TlsAcceptorExt::from(self.ssl_acceptor);
 		let future = self
 			.listener
 			.incoming()
@@ -116,7 +116,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 				error: e.into(),
 			}).and_then(move |(stream, a)| {
 				acceptor
-					.accept_async(stream)
+					.accept(stream)
 					.map_err(|e| {
 						InvalidConnection {
 							stream: None,

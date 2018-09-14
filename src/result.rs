@@ -140,7 +140,7 @@ impl<T> From<TlsHandshakeError<T>> for WebSocketError {
 	fn from(err: TlsHandshakeError<T>) -> WebSocketError {
 		match err {
 			TlsHandshakeError::Failure(_) => WebSocketError::TlsHandshakeFailure,
-			TlsHandshakeError::Interrupted(_) => WebSocketError::TlsHandshakeInterruption,
+			TlsHandshakeError::WouldBlock(_) => WebSocketError::TlsHandshakeInterruption,
 		}
 	}
 }
