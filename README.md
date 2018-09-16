@@ -1,7 +1,7 @@
 Rust-WebSocket [![Build Status](https://travis-ci.org/websockets-rs/rust-websocket.svg?branch=master)](https://travis-ci.org/websockets-rs/rust-websocket)
 ==============
 
-Rust-WebSocket is a WebSocket ([RFC6455](http://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
+Rust-WebSocket is a WebSocket ([RFC6455](https://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
 
 Rust-WebSocket provides a framework for dealing with WebSocket connections (both clients and servers). The library is currently in an experimental state, but provides functionality for both normal and secure WebSockets, a message level API supporting fragmentation, a data frame level API, and the ability to extend and customize behaviour.
 
@@ -47,7 +47,7 @@ A number of tests are included, which ensure core WebSocket functionality works 
 
 ## Autobahn TestSuite
 
-Rust-WebSocket uses the [Autobahn TestSuite](http://autobahn.ws/testsuite) to test conformance to RFC6455. If you have Autobahn TestSuite installed you can run these tests yourself using the commands:
+Rust-WebSocket uses the [Autobahn TestSuite](https://crossbar.io/autobahn/) to test conformance to RFC6455. If you have Autobahn TestSuite installed you can run these tests yourself using the commands:
 
 ```
 wstest -m fuzzingserver
