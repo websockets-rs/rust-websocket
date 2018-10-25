@@ -1,4 +1,4 @@
-Rust-WebSocket [![Build Status](https://travis-ci.org/websockets-rs/rust-websocket.svg?branch=master)](https://travis-ci.org/websockets-rs/rust-websocket)
+Rust-WebSocket [![Build Status](https://travis-ci.org/websockets-rs/rust-websocket.svg?branch=master)](https://travis-ci.org/websockets-rs/rust-websocket) [![docs.rs](https://docs.rs/websocket/badge.svg)](https://docs.rs/websocket)
 ==============
 
 Rust-WebSocket is a WebSocket ([RFC6455](https://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
