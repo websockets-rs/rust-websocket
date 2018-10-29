@@ -59,7 +59,8 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 				parsed: None,
 				buffer: None,
 				error: e.into(),
-			}).and_then(|(stream, a)| {
+			})
+			.and_then(|(stream, a)| {
 				stream
 					.into_ws()
 					.map_err(|(stream, req, buf, err)| InvalidConnection {
@@ -67,7 +68,8 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 						parsed: req,
 						buffer: Some(buf),
 						error: err,
-					}).map(move |u| (u, a))
+					})
+					.map(move |u| (u, a))
 			});
 		Box::new(future)
 	}
@@ -114,7 +116,8 @@ impl WsServer<TlsAcceptor, TcpListener> {
 				parsed: None,
 				buffer: None,
 				error: e.into(),
-			}).and_then(move |(stream, a)| {
+			})
+			.and_then(move |(stream, a)| {
 				acceptor
 					.accept_async(stream)
 					.map_err(|e| {
@@ -125,8 +128,10 @@ impl WsServer<TlsAcceptor, TcpListener> {
 							// TODO: better error types
 							error: io::Error::new(io::ErrorKind::Other, e).into(),
 						}
-					}).map(move |s| (s, a))
-			}).and_then(|(stream, a)| {
+					})
+					.map(move |s| (s, a))
+			})
+			.and_then(|(stream, a)| {
 				stream
 					.into_ws()
 					.map_err(|(stream, req, buf, err)| InvalidConnection {
@@ -134,7 +139,8 @@ impl WsServer<TlsAcceptor, TcpListener> {
 						parsed: req,
 						buffer: Some(buf),
 						error: err,
-					}).map(move |u| (u, a))
+					})
+					.map(move |u| (u, a))
 			});
 		Box::new(future)
 	}

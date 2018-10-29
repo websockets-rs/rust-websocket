@@ -35,7 +35,8 @@ fn main() {
 						OwnedMessage::Ping(p) => Some(OwnedMessage::Pong(p)),
 						OwnedMessage::Pong(_) => None,
 						_ => Some(m),
-					}).forward(sink)
+					})
+					.forward(sink)
 					.and_then(|(_, sink)| sink.send(OwnedMessage::Close(None)))
 			});
 

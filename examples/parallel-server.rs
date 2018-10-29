@@ -59,7 +59,8 @@ fn main() {
 			});
 			spawn_future(f, "Handle new connection", &handle);
 			Ok(())
-		}).map_err(|_| ());
+		})
+		.map_err(|_| ());
 
 	// Handle receiving messages from a client
 	let remote_inner = remote.clone();
@@ -70,7 +71,8 @@ fn main() {
 					.for_each(move |msg| {
 						process_message(id, &msg);
 						Ok(())
-					}).map_err(|_| ())
+					})
+					.map_err(|_| ())
 			});
 			Ok(())
 		})
@@ -100,7 +102,8 @@ fn main() {
 				});
 				remote.spawn(move |_| f.map_err(|_| ()));
 				Ok(())
-			}).map_err(|_| ())
+			})
+			.map_err(|_| ())
 	});
 
 	// Main 'logic' loop

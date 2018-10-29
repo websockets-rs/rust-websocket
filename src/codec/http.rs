@@ -280,7 +280,8 @@ mod tests {
 				version: HttpVersion::Http11,
 				subject: (Method::Get, RequestUri::AbsolutePath("/".to_string())),
 				headers: Headers::new(),
-			}).map_err(|e| e.into())
+			})
+			.map_err(|e| e.into())
 			.and_then(|s| s.into_future().map_err(|(e, _)| e))
 			.and_then(|(m, _)| match m {
 				Some(ref m) if StatusCode::from_u16(m.subject.0) == StatusCode::NotFound => Ok(()),
@@ -296,7 +297,8 @@ mod tests {
 		               GET / HTTP/1.0\r\n\
 		               Host: www.rust-lang.org\r\n\
 		               \r\n\
-		               ".as_bytes();
+		               "
+		.as_bytes();
 		let input = Cursor::new(request);
 		let output = Cursor::new(Vec::new());
 
@@ -307,12 +309,14 @@ mod tests {
 			.and_then(|(m, s)| match m {
 				Some(ref m) if m.subject.0 == Method::Get => Ok(s),
 				_ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
-			}).and_then(|s| {
+			})
+			.and_then(|s| {
 				s.send(Incoming {
 					version: HttpVersion::Http11,
 					subject: StatusCode::NotFound,
 					headers: Headers::new(),
-				}).map_err(|e| e.into())
+				})
+				.map_err(|e| e.into())
 			});
 		core.run(f).unwrap();
 	}

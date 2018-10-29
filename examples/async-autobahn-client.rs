@@ -37,7 +37,8 @@ fn main() {
 						.or_else(|(err, stream)| {
 							println!("Could not receive message: {:?}", err);
 							stream.send(OwnedMessage::Close(None)).map(|s| (None, s))
-						}).and_then(|(msg, stream)| -> Box<Future<Item = _, Error = _>> {
+						})
+						.and_then(|(msg, stream)| -> Box<Future<Item = _, Error = _>> {
 							match msg {
 								Some(OwnedMessage::Text(txt)) => Box::new(
 									stream
@@ -66,9 +67,11 @@ fn main() {
 							}
 						})
 				})
-			}).map(move |_| {
+			})
+			.map(move |_| {
 				println!("Test case {} is finished!", case_id);
-			}).or_else(move |err| {
+			})
+			.or_else(move |err| {
 				println!("Test case {} ended with an error: {:?}", case_id, err);
 				Ok(()) as Result<(), ()>
 			});
