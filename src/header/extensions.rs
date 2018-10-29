@@ -61,7 +61,8 @@ impl FromStr for Extension {
 						name: pair.next().unwrap(),
 						value: pair.next(),
 					}
-				}).collect(),
+				})
+				.collect(),
 		})
 	}
 }

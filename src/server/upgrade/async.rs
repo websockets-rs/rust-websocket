@@ -105,11 +105,13 @@ where
 				version: request.version,
 				subject: status,
 				headers: headers.clone(),
-			}).map(move |s| {
+			})
+			.map(move |s| {
 				let codec = MessageCodec::default(Context::Server);
 				let client = Framed::from_parts(s.into_parts(), codec);
 				(client, headers)
-			}).map_err(|e| e.into());
+			})
+			.map_err(|e| e.into());
 		Box::new(future)
 	}
 
@@ -223,7 +225,8 @@ where
 			.map_err(|(e, s)| {
 				let FramedParts { inner, readbuf, .. } = s.into_parts();
 				(inner, None, readbuf, e.into())
-			}).and_then(|(m, s)| {
+			})
+			.and_then(|(m, s)| {
 				let FramedParts { inner, readbuf, .. } = s.into_parts();
 				if let Some(msg) = m {
 					match validate(&msg.subject.0, msg.version, &msg.headers) {
@@ -237,7 +240,8 @@ where
 					));
 					Err((inner, None, readbuf, err))
 				}
-			}).map(|(m, stream, buffer)| WsUpgrade {
+			})
+			.map(|(m, stream, buffer)| WsUpgrade {
 				headers: Headers::new(),
 				stream,
 				request: m,

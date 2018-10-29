@@ -59,7 +59,8 @@ fn main() {
 						OwnedMessage::Ping(d) => Some(OwnedMessage::Pong(d)),
 						_ => None,
 					}
-				}).select(stdin_ch.map_err(|_| WebSocketError::NoDataAvailable))
+				})
+				.select(stdin_ch.map_err(|_| WebSocketError::NoDataAvailable))
 				.forward(sink)
 		});
 	core.run(runner).unwrap();

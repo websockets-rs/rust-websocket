@@ -383,7 +383,8 @@ mod tests {
 			.map(|(m, s)| {
 				assert_eq!(m, Some(OwnedMessage::Text("50 schmeckels".to_string())));
 				s
-			}).and_then(|s| s.send(Message::text("ethan bradberry")))
+			})
+			.and_then(|s| s.send(Message::text("ethan bradberry")))
 			.and_then(|s| {
 				let mut stream = s.into_parts().inner;
 				stream.1.set_position(0);
@@ -415,7 +416,8 @@ mod tests {
 			.map(|(m, s)| {
 				assert_eq!(m, Some(OwnedMessage::Text("50 schmeckels".to_string())));
 				s
-			}).and_then(|s| s.send(Message::text("ethan bradberry")))
+			})
+			.and_then(|s| s.send(Message::text("ethan bradberry")))
 			.map(|s| {
 				let mut written = vec![];
 				Message::text("ethan bradberry")
