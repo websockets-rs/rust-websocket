@@ -500,7 +500,7 @@ impl<'u> ClientBuilder<'u> {
 	///
 	///# Example
 	///
-	/// ```rust,no_run
+	/// ```no_run
 	/// # extern crate rand;
 	/// # extern crate tokio_core;
 	/// # extern crate futures;
@@ -592,7 +592,7 @@ impl<'u> ClientBuilder<'u> {
 	///
 	///# Example
 	///
-	/// ```rust
+	/// ```no_run
 	/// # extern crate tokio_core;
 	/// # extern crate futures;
 	/// # extern crate websocket;
@@ -661,7 +661,7 @@ impl<'u> ClientBuilder<'u> {
 	///
 	///# Example
 	///
-	/// ```rust,no_run
+	/// ```no_run
 	/// # extern crate tokio_core;
 	/// # extern crate futures;
 	/// # extern crate websocket;
