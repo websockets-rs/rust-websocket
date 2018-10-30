@@ -900,24 +900,25 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	#[cfg(any(feature = "sync", feature = "async"))]
-	fn extract_host_port(&self, secure: Option<bool>) -> WebSocketResult<(&str, u16)> {
-		let port = match (self.url.port(), secure) {
-			(Some(port), _) => port,
-			(None, None) if self.url.scheme() == "wss" => 443,
-			(None, None) => 80,
-			(None, Some(true)) => 443,
-			(None, Some(false)) => 80,
-		};
-		let host = match self.url.host_str() {
-			Some(h) => h,
-			None => {
-				return Err(WebSocketError::WebSocketUrlError(
-					WSUrlErrorKind::NoHostName,
-				))
-			}
-		};
+	fn extract_host_port(&self, secure: Option<bool>) -> WebSocketResult<url::HostAndPort<&str>> {
+		if self.url.host().is_none() {
+			return Err(WebSocketError::WebSocketUrlError(
+				WSUrlErrorKind::NoHostName,
+			));
+		}
 
-		Ok((host, port))
+		Ok(self.url.with_default_port(|url| {
+			const SECURE_PORT: u16 = 443;
+			const INSECURE_PORT: u16 = 80;
+			const SECURE_WS_SCHEME: &str = "wss";
+
+			Ok(match secure {
+				None if url.scheme() == SECURE_WS_SCHEME => SECURE_PORT,
+				None => INSECURE_PORT,
+				Some(true) => SECURE_PORT,
+				Some(false) => INSECURE_PORT,
+			})
+		})?)
 	}
 
 	#[cfg(feature = "sync")]
