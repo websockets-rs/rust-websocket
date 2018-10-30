@@ -172,6 +172,7 @@ impl Opcode {
 	/// Attempts to form an Opcode from a nibble.
 	///
 	/// Returns the Opcode, or None if the opcode is out of range.
+	#[cfg_attr(feature = "cargo-clippy", warn(new_ret_no_self))]
 	pub fn new(op: u8) -> Option<Opcode> {
 		Some(match op {
 			0 => Opcode::Continuation,

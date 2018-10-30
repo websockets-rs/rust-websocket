@@ -141,6 +141,7 @@ impl<'u> ClientBuilder<'u> {
 	/// # use websocket::ClientBuilder;
 	/// let builder = ClientBuilder::new("wss://mycluster.club");
 	/// ```
+	#[cfg_attr(feature = "cargo-clippy", warn(new_ret_no_self))]
 	pub fn new(address: &str) -> Result<Self, ParseError> {
 		let url = Url::parse(address)?;
 		Ok(ClientBuilder::init(Cow::Owned(url)))
