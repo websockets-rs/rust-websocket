@@ -109,7 +109,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 	/// use std::fs::File;
 	/// use websocket::Message;
 	/// use websocket::sync::Server;
-	/// use native_tls::{Pkcs12, TlsAcceptor};
+	/// use native_tls::{Identity, TlsAcceptor};
 	///
 	/// // In this example we retrieve our keypair and certificate chain from a PKCS #12 archive,
 	/// // but but they can also be retrieved from, for example, individual PEM- or DER-formatted
@@ -117,9 +117,9 @@ impl WsServer<TlsAcceptor, TcpListener> {
 	/// let mut file = File::open("identity.pfx").unwrap();
 	/// let mut pkcs12 = vec![];
 	/// file.read_to_end(&mut pkcs12).unwrap();
-	/// let pkcs12 = Pkcs12::from_der(&pkcs12, "hacktheplanet").unwrap();
+	/// let pkcs12 = Identity::from_pkcs12(&pkcs12, "hacktheplanet").unwrap();
 	///
-	/// let acceptor = TlsAcceptor::builder(pkcs12).unwrap().build().unwrap();
+	/// let acceptor = TlsAcceptor::builder(pkcs12).build().unwrap();
 	///
 	/// let server = Server::bind_secure("127.0.0.1:1234", acceptor).unwrap();
 	///
