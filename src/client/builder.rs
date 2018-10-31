@@ -900,7 +900,7 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	#[cfg(any(feature = "sync", feature = "async"))]
-	fn extract_host_port(&self, secure: Option<bool>) -> WebSocketResult<url::HostAndPort<&str>> {
+	fn extract_host_port(&self, secure: Option<bool>) -> WebSocketResult<::url::HostAndPort<&str>> {
 		if self.url.host().is_none() {
 			return Err(WebSocketError::WebSocketUrlError(
 				WSUrlErrorKind::NoHostName,
