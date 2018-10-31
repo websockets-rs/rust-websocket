@@ -1,0 +1,1 @@
+initSidebarItems({"type":[["AcceptResult","Either the stream was established and it sent a websocket handshake which represents the `Ok` variant, or there was an error (this is the `Err` variant)."],["Server","Represents a WebSocket server which can work with either normal (non-secure) connections, or secure WebSocket connections."]]});

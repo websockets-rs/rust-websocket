@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["Message","A trait for WebSocket messages"]]});

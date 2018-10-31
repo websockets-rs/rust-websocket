@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["Sender","A trait for sending data frames and messages."]]});

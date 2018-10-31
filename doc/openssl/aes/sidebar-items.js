@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["aes_ige","Performs AES IGE encryption or decryption"]],"struct":[["AesKey","The key used to encrypt or decrypt cipher blocks."],["KeyError","Provides Error handling for parsing keys."]]});

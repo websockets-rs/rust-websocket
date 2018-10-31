@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["IntoWs","Trait to take a stream or similar and attempt to recover the start of a websocket handshake from it (asynchronously). Should be used when a stream might contain a request for a websocket session."]],"type":[["Upgrade","An asynchronous websocket upgrade."]]});

@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Client","Represents a WebSocket client, which can send and receive messages/data frames."]]});

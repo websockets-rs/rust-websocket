@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `ws` mod in crate `websocket`."><meta name="keywords" content="rust, rustlang, rust-lang, ws"><title>websocket::ws - Rust</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css"><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script src="../../storage.js"></script></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><p class='location'>Module ws</p><div class="sidebar-elems"><div class="block items"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li></ul></div><p class='location'><a href='../index.html'>websocket</a></p><script>window.sidebarCurrent = {name: 'ws', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../../src/websocket/ws/mod.rs.html#1-56' title='goto source code'>[src]</a></span><span class='in-band'>Module <a href='../index.html'>websocket</a>::<wbr><a class="mod" href=''>ws</a></span></h1><div class='docblock'><p>A module containing the traits and structs that lower layer of Rust-WebSocket is based on.</p>
+<p>This should not need to be used by regular users.</p>
+<p>Rust-WebSocket is based on three core traits: <code>Message</code>, <code>Sender</code> and <code>Receiver</code>. These
+traits have default implementations outside this module, however can be implemented
+by a user to extend the functionality provided.</p>
+<p>If a user wishes to use a different representation of a data frame, all three traits
+must be implemented by the user. If a user wishes to use a different representation
+of a message (but the same data frame), they must implement the <code>Message</code> and <code>Receiver</code>
+traits.</p>
+<p>A WebSocket message type must implement <code>Message&lt;D&gt;</code> where <code>D</code> is the type of data frame
+that the message can be converted to/from.</p>
+<p>When sending a message, the message is converted into an iterator with its <code>into_iter()</code>
+method, which allows the message to output data frames forming a fragmented message
+where each data frame is sent immediately to be reassembled at the remote endpoint.</p>
+<p>The type of data frame can be any type, however, if you choose a data frame type other than
+<code>DataFrame</code>, you will also have to implement the <code>Sender</code> and <code>Receiver</code> traits to
+send and receive data frames.</p>
+<p>A <code>Sender&lt;D&gt;</code> sends a data frame of type <code>D</code>, typically wrapping an underlying Writer,
+by implementing the <code>send_dataframe()</code> method. The <code>send_message()</code> method has a default
+implementation which turns the message into an iterator and then continually calls
+<code>send_dataframe()</code> with the frames from the iterator.</p>
+<p>To make life easier for a <code>Sender</code>, several utility functions are provided which write
+various pieces of data to a Writer. These are found within the <code>util</code> module.</p>
+<p>A Receiver<D> receives data frames of type D and messages of type Receiver::Message,
+typically wrapping an underlying Reader, by implementing the <code>recv_dataframe()</code> and
+<code>recv_message_dataframes()</code> methods. The <code>recv_message_dataframes()</code> method has to
+form a <code>Vec</code> of data frames which comprise one whole, single message.</p>
+<p>To make life easier for a <code>Receiver</code>, several utility functions are provided which read
+various pieces of data from a Reader. These are found within the <code>util</code> module.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Re-exports</a></h2>
+<table><tr><td><code>pub use self::message::<a class="trait" href="../../websocket/ws/message/trait.Message.html" title="trait websocket::ws::message::Message">Message</a>;</code></td></tr><tr><td><code>pub use self::receiver::<a class="trait" href="../../websocket/ws/receiver/trait.Receiver.html" title="trait websocket::ws::receiver::Receiver">Receiver</a>;</code></td></tr><tr><td><code>pub use self::receiver::<a class="struct" href="../../websocket/ws/receiver/struct.DataFrameIterator.html" title="struct websocket::ws::receiver::DataFrameIterator">DataFrameIterator</a>;</code></td></tr><tr><td><code>pub use self::receiver::<a class="struct" href="../../websocket/ws/receiver/struct.MessageIterator.html" title="struct websocket::ws::receiver::MessageIterator">MessageIterator</a>;</code></td></tr><tr><td><code>pub use self::sender::<a class="trait" href="../../websocket/ws/sender/trait.Sender.html" title="trait websocket::ws::sender::Sender">Sender</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="dataframe/index.html"
+                                  title='mod websocket::ws::dataframe'>dataframe</a></td>
+                           <td class='docblock-short'>
+                                <p>Describes the generic DataFrame, defining a trait
+that all dataframes should share. This is so one can
+optimize the memory footprint of a dataframe for their
+own needs, and be able to use custom dataframes quickly</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="message/index.html"
+                                  title='mod websocket::ws::message'>message</a></td>
+                           <td class='docblock-short'>
+                                <p>Provides a trait for WebSocket messages</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="receiver/index.html"
+                                  title='mod websocket::ws::receiver'>receiver</a></td>
+                           <td class='docblock-short'>
+                                <p>Provides a trait for receiving data frames and messages.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="sender/index.html"
+                                  title='mod websocket::ws::sender'>sender</a></td>
+                           <td class='docblock-short'>
+                                <p>Provides a trait for sending data frames and messages.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="util/index.html"
+                                  title='mod websocket::ws::util'>util</a></td>
+                           <td class='docblock-short'>
+                                <p>Utility functions for various portions of Rust-WebSocket.</p>
+
+                           </td>
+                       </tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g. <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g. <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g. <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../../";window.currentCrate = "websocket";</script><script src="../../aliases.js"></script><script src="../../main.js"></script><script defer src="../../search-index.js"></script></body></html>

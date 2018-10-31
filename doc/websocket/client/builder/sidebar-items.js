@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ParseError","Errors that can occur during parsing."]],"struct":[["ClientBuilder","Build clients with a builder-style API This makes it easy to create and configure a websocket connection:"],["Url","A parsed URL record."]]});

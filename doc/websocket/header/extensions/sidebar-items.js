@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["Extension","A WebSocket extension"],["Parameter","A parameter for an Extension"],["WebSocketExtensions","Represents a Sec-WebSocket-Extensions header"]]});

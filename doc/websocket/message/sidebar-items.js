@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["OwnedMessage","Represents an owned WebSocket message."],["Type","Valid types of messages (in the default implementation)"]],"struct":[["CloseData","Represents data contained in a Close message"],["Message","Represents a WebSocket message."]],"trait":[["IntoCowBytes","Trait representing the ability to convert self to a `Cow<'a, [u8]>`"]]});

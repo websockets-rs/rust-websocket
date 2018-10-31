@@ -1,0 +1,105 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `tokio_current_thread` crate."><meta name="keywords" content="rust, rustlang, rust-lang, tokio_current_thread"><title>tokio_current_thread - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><p class='location'>Crate tokio_current_thread</p><div class="sidebar-elems"><a id='all-types' href='all.html'><p>See all tokio_current_thread's items</p></a><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#functions">Functions</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'tokio_current_thread', ty: 'mod', relpath: '../'};</script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/tokio_current_thread/lib.rs.html#1-857' title='goto source code'>[src]</a></span><span class='in-band'>Crate <a class="mod" href=''>tokio_current_thread</a></span></h1><div class='docblock'><p>A single-threaded executor which executes tasks on the same thread from which
+they are spawned.</p>
+<p>The crate provides:</p>
+<ul>
+<li><a href="struct.CurrentThread.html"><code>CurrentThread</code></a> is the main type of this crate. It executes tasks on the current thread.
+The easiest way to start a new <a href="struct.CurrentThread.html"><code>CurrentThread</code></a> executor is to call
+<a href="fn.block_on_all.html"><code>block_on_all</code></a> with an initial task to seed the executor.
+All tasks that are being managed by a <a href="struct.CurrentThread.html"><code>CurrentThread</code></a> executor are able to
+spawn additional tasks by calling <a href="fn.spawn.html"><code>spawn</code></a>.</li>
+</ul>
+<p>Application authors will not use this crate directly. Instead, they will use the
+<code>tokio</code> crate. Library authors should only depend on <code>tokio-current-thread</code> if they
+are building a custom task executor.</p>
+<p>For more details, see <a href="https://docs.rs/tokio/0.1/tokio/executor/index.html">executor module</a> documentation in the Tokio crate.</p>
+</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.BlockError.html"
+                                  title='struct tokio_current_thread::BlockError'>BlockError</a></td>
+                           <td class='docblock-short'>
+                                <p>Error returned by the <code>block_on</code> function.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.CurrentThread.html"
+                                  title='struct tokio_current_thread::CurrentThread'>CurrentThread</a></td>
+                           <td class='docblock-short'>
+                                <p>Executes tasks on the current thread</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Entered.html"
+                                  title='struct tokio_current_thread::Entered'>Entered</a></td>
+                           <td class='docblock-short'>
+                                <p>A <code>CurrentThread</code> instance bound to a supplied execution context.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Handle.html"
+                                  title='struct tokio_current_thread::Handle'>Handle</a></td>
+                           <td class='docblock-short'>
+                                <p>Handle to spawn a future on the corresponding <code>CurrentThread</code> instance</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.RunError.html"
+                                  title='struct tokio_current_thread::RunError'>RunError</a></td>
+                           <td class='docblock-short'>
+                                <p>Error returned by the <code>run</code> function.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.RunTimeoutError.html"
+                                  title='struct tokio_current_thread::RunTimeoutError'>RunTimeoutError</a></td>
+                           <td class='docblock-short'>
+                                <p>Error returned by the <code>run_timeout</code> function.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.TaskExecutor.html"
+                                  title='struct tokio_current_thread::TaskExecutor'>TaskExecutor</a></td>
+                           <td class='docblock-short'>
+                                <p>Executes futures on the current thread.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.Turn.html"
+                                  title='struct tokio_current_thread::Turn'>Turn</a></td>
+                           <td class='docblock-short'>
+                                <p>Returned by the <code>turn</code> function.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="struct" href="struct.TurnError.html"
+                                  title='struct tokio_current_thread::TurnError'>TurnError</a></td>
+                           <td class='docblock-short'>
+                                <p>Error returned by the <code>turn</code> function.</p>
+
+                           </td>
+                       </tr></table><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.block_on_all.html"
+                                  title='fn tokio_current_thread::block_on_all'>block_on_all</a></td>
+                           <td class='docblock-short'>
+                                <p>Run the executor bootstrapping the execution with the provided future.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.spawn.html"
+                                  title='fn tokio_current_thread::spawn'>spawn</a></td>
+                           <td class='docblock-short'>
+                                <p>Executes a future on the current thread.</p>
+
+                           </td>
+                       </tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g. <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g. <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g. <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../";window.currentCrate = "tokio_current_thread";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>

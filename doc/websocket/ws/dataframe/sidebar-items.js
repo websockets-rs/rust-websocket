@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["DataFrame","A generic DataFrame. Every dataframe should be able to provide these methods. (If the payload is not known in advance then rewrite the write_payload method)"]]});

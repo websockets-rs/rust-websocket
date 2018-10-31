@@ -1,0 +1,127 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="API documentation for the Rust `websocket` crate."><meta name="keywords" content="rust, rustlang, rust-lang, websocket"><title>websocket - Rust</title><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../dark.css"><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script src="../storage.js"></script></head><body class="rustdoc mod"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu">&#9776;</div><p class='location'>Crate websocket</p><div class="sidebar-elems"><a id='all-types' href='all.html'><p>See all websocket's items</p></a><div class="block items"><ul><li><a href="#reexports">Re-exports</a></li><li><a href="#modules">Modules</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'websocket', ty: 'mod', relpath: '../'};</script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!"><img src="../brush.svg" width="18" alt="Pick another theme!"></button><div id="theme-choices"></div></div><script src="../theme.js"></script><nav class="sub"><form class="search-form js-only"><div class="search-container"><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><a id="settings-menu" href="../settings.html"><img src="../wheel.svg" width="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class='fqn'><span class='out-of-band'><span id='render-detail'><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class='inner'>&#x2212;</span>]</a></span><a class='srclink' href='../src/websocket/lib.rs.html#1-162' title='goto source code'>[src]</a></span><span class='in-band'>Crate <a class="mod" href=''>websocket</a></span></h1><div class='docblock'><p>Rust-WebSocket is a WebSocket (RFC6455) library written in Rust.</p>
+<h1 id="synchronous-and-asynchronous" class="section-header"><a href="#synchronous-and-asynchronous">Synchronous and Asynchronous</a></h1>
+<p>This crate has both async and sync implementations of websockets, you are free to
+choose which one you would like to use by switching on the <code>async</code> or <code>sync</code> features
+for this crate. By default both are switched on since they do not conflict with each
+other.</p>
+<p>You'll find many modules with <code>::sync</code> and <code>::async</code> submodules that separate these
+behaviours. Since it get's tedious to add these on when appropriate a top-level
+convenience module called <code>websocket::sync</code> and <code>websocket::async</code> has been added that
+groups all the sync and async stuff, respectively.</p>
+<h1 id="clients" class="section-header"><a href="#clients">Clients</a></h1>
+<p>To make a client use the <code>ClientBuilder</code> struct, this builder has methods
+for creating both synchronous and asynchronous clients.</p>
+<h1 id="servers" class="section-header"><a href="#servers">Servers</a></h1>
+<p>WebSocket servers act similarly to the <code>TcpListener</code>, and listen for connections.
+See the <code>Server</code> struct documentation for more information. The <code>bind()</code> and
+<code>bind_secure()</code> functions will bind the server to the given <code>SocketAddr</code>.</p>
+<h1 id="extending-rust-websocket" class="section-header"><a href="#extending-rust-websocket">Extending Rust-WebSocket</a></h1>
+<p>The <code>ws</code> module contains the traits and functions used by Rust-WebSocket at a lower
+level. Their usage is explained in the module documentation.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Re-exports</a></h2>
+<table><tr><td><code>pub extern crate <a class="mod" href="../websocket/async/futures/index.html" title="mod websocket::async::futures">futures</a>;</code></td></tr><tr><td><code>pub extern crate <a class="mod" href="../url/index.html" title="mod url">url</a>;</code></td></tr><tr><td><code>pub use self::client::builder::<a class="struct" href="../websocket/client/builder/struct.ClientBuilder.html" title="struct websocket::client::builder::ClientBuilder">ClientBuilder</a>;</code></td></tr><tr><td><code>pub use self::message::<a class="struct" href="../websocket/message/struct.CloseData.html" title="struct websocket::message::CloseData">CloseData</a>;</code></td></tr><tr><td><code>pub use self::message::<a class="struct" href="../websocket/message/struct.Message.html" title="struct websocket::message::Message">Message</a>;</code></td></tr><tr><td><code>pub use self::message::<a class="enum" href="../websocket/message/enum.OwnedMessage.html" title="enum websocket::message::OwnedMessage">OwnedMessage</a>;</code></td></tr><tr><td><code>pub use self::result::<a class="enum" href="../websocket/result/enum.WebSocketError.html" title="enum websocket::result::WebSocketError">WebSocketError</a>;</code></td></tr><tr><td><code>pub use self::result::<a class="type" href="../websocket/result/type.WebSocketResult.html" title="type websocket::result::WebSocketResult">WebSocketResult</a>;</code></td></tr></table><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="async/index.html"
+                                  title='mod websocket::async'>async</a></td>
+                           <td class='docblock-short'>
+                                <p>A collection of handy asynchronous-only parts of the crate.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="client/index.html"
+                                  title='mod websocket::client'>client</a></td>
+                           <td class='docblock-short'>
+                                <p>Build and use asynchronously or synchronous websocket clients.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="codec/index.html"
+                                  title='mod websocket::codec'>codec</a></td>
+                           <td class='docblock-short'>
+                                <p>Useful <code>Codec</code> types for asynchronously encoding and decoding messages.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="dataframe/index.html"
+                                  title='mod websocket::dataframe'>dataframe</a></td>
+                           <td class='docblock-short'>
+                                <p>Module containing the default implementation of data frames.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="header/index.html"
+                                  title='mod websocket::header'>header</a></td>
+                           <td class='docblock-short'>
+                                <p>Structs representing headers relevant in a WebSocket context.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="message/index.html"
+                                  title='mod websocket::message'>message</a></td>
+                           <td class='docblock-short'>
+                                <p>Module containing the default implementation for messages.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="receiver/index.html"
+                                  title='mod websocket::receiver'>receiver</a></td>
+                           <td class='docblock-short'>
+                                <p>The default implementation of a WebSocket Receiver.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="result/index.html"
+                                  title='mod websocket::result'>result</a></td>
+                           <td class='docblock-short'>
+                                <p>The result type used within Rust-WebSocket</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="sender/index.html"
+                                  title='mod websocket::sender'>sender</a></td>
+                           <td class='docblock-short'>
+                                <p>The default implementation of a WebSocket Sender.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="server/index.html"
+                                  title='mod websocket::server'>server</a></td>
+                           <td class='docblock-short'>
+                                <p>Provides an implementation of a WebSocket server</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="stream/index.html"
+                                  title='mod websocket::stream'>stream</a></td>
+                           <td class='docblock-short'>
+                                <p>Provides the default stream type for WebSocket connections.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="sync/index.html"
+                                  title='mod websocket::sync'>sync</a></td>
+                           <td class='docblock-short'>
+                                <p>A collection of handy synchronous-only parts of the crate.</p>
+
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="ws/index.html"
+                                  title='mod websocket::ws'>ws</a></td>
+                           <td class='docblock-short'>
+                                <p>A module containing the traits and structs that lower layer of Rust-WebSocket is based on.</p>
+
+                           </td>
+                       </tr></table></section><section id="search" class="content hidden"></section><section class="footer"></section><aside id="help" class="hidden"><div><h1 class="hidden">Help</h1><div class="shortcuts"><h2>Keyboard Shortcuts</h2><dl><dt><kbd>?</kbd></dt><dd>Show this help dialog</dd><dt><kbd>S</kbd></dt><dd>Focus the search field</dd><dt><kbd>↑</kbd></dt><dd>Move up in search results</dd><dt><kbd>↓</kbd></dt><dd>Move down in search results</dd><dt><kbd>↹</kbd></dt><dd>Switch tab</dd><dt><kbd>&#9166;</kbd></dt><dd>Go to active search result</dd><dt><kbd>+</kbd></dt><dd>Expand all sections</dd><dt><kbd>-</kbd></dt><dd>Collapse all sections</dd></dl></div><div class="infos"><h2>Search Tricks</h2><p>Prefix searches with a type followed by a colon (e.g. <code>fn:</code>) to restrict the search to a given type.</p><p>Accepted types are: <code>fn</code>, <code>mod</code>, <code>struct</code>, <code>enum</code>, <code>trait</code>, <code>type</code>, <code>macro</code>, and <code>const</code>.</p><p>Search functions by type signature (e.g. <code>vec -> usize</code> or <code>* -> vec</code>)</p><p>Search multiple things at once by splitting your query with comma (e.g. <code>str,u8</code> or <code>String,struct:Vec,test</code>)</p></div></div></aside><script>window.rootPath = "../";window.currentCrate = "websocket";</script><script src="../aliases.js"></script><script src="../main.js"></script><script defer src="../search-index.js"></script></body></html>
