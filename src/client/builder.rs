@@ -46,10 +46,10 @@ mod async_imports {
 	pub use futures::future;
 	pub use futures::Stream as FutureStream;
 	pub use futures::{Future, IntoFuture, Sink};
+	pub use tokio::codec::FramedParts;
+	pub use tokio::codec::{Decoder, Framed};
 	pub use tokio::net::TcpStream as TcpStreamNew;
 	pub use tokio::reactor::Handle;
-	pub use tokio::codec::{Decoder, Framed};
-    pub use tokio::codec::FramedParts;
 	#[cfg(feature = "async-ssl")]
 	pub use tokio_tls::TlsConnector as TlsConnectorExt;
 }
@@ -686,8 +686,7 @@ impl<'u> ClientBuilder<'u> {
 			key_set: self.key_set,
 		};
 
-		let future = tcp_stream
-			.and_then(move |stream| builder.async_connect_on(stream));
+		let future = tcp_stream.and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
 
@@ -781,7 +780,7 @@ impl<'u> ClientBuilder<'u> {
 	fn async_tcpstream(
 		&self,
 		secure: Option<bool>,
-	) -> Box<future::Future<Item=TcpStreamNew, Error=WebSocketError> + Send> {
+	) -> Box<future::Future<Item = TcpStreamNew, Error = WebSocketError> + Send> {
 		// get the address to connect to, return an error future if ther's a problem
 		let address = match self
 			.extract_host_port(secure)
@@ -790,9 +789,12 @@ impl<'u> ClientBuilder<'u> {
 			Ok(mut s) => match s.next() {
 				Some(a) => a,
 				None => {
-					return Box::new(Err(WebSocketError::WebSocketUrlError(
-						WSUrlErrorKind::NoHostName,
-					)).into_future());
+					return Box::new(
+						Err(WebSocketError::WebSocketUrlError(
+							WSUrlErrorKind::NoHostName,
+						))
+						.into_future(),
+					);
 				}
 			},
 			Err(e) => return Box::new(Err(e).into_future()),

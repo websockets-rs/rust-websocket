@@ -371,7 +371,7 @@ mod tests {
 			.unwrap();
 
 		let f = MessageCodec::new(Context::Client)
-            .framed(ReadWritePair(Cursor::new(input), Cursor::new(vec![])))
+			.framed(ReadWritePair(Cursor::new(input), Cursor::new(vec![])))
 			.into_future()
 			.map_err(|e| e.0)
 			.map(|(m, s)| {
@@ -383,8 +383,8 @@ mod tests {
 				let mut stream = s.into_parts().io;
 				stream.1.set_position(0);
 				println!("buffer: {:?}", stream.1);
-                MessageCodec::default(Context::Server)
-                    .framed(ReadWritePair(stream.1, stream.0))
+				MessageCodec::default(Context::Server)
+					.framed(ReadWritePair(stream.1, stream.0))
 					.into_future()
 					.map_err(|e| e.0)
 					.map(|(message, _)| {
@@ -392,19 +392,23 @@ mod tests {
 					})
 			});
 
-        tokio::runtime::Builder::new().build().unwrap().block_on(f).unwrap();
+		tokio::runtime::Builder::new()
+			.build()
+			.unwrap()
+			.block_on(f)
+			.unwrap();
 	}
 
 	#[test]
 	fn message_codec_server_send_receive() {
 		let mut runtime = tokio::runtime::Builder::new().build().unwrap();
-        let mut input = Vec::new();
+		let mut input = Vec::new();
 		Message::text("50 schmeckels")
 			.serialize(&mut input, true)
 			.unwrap();
 
 		let f = MessageCodec::new(Context::Server)
-            .framed(ReadWritePair(Cursor::new(input), Cursor::new(vec![])))
+			.framed(ReadWritePair(Cursor::new(input), Cursor::new(vec![])))
 			.into_future()
 			.map_err(|e| e.0)
 			.map(|(m, s)| {

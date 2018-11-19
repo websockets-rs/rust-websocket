@@ -18,7 +18,7 @@ use hyper::http::h1::Incoming;
 use hyper::status::StatusCode;
 use std::io::{self, ErrorKind};
 use stream::async::Stream;
-use tokio::codec::{Framed, Decoder, FramedParts};
+use tokio::codec::{Decoder, Framed, FramedParts};
 
 /// An asynchronous websocket upgrade.
 ///
@@ -92,8 +92,8 @@ where
 			buffer,
 		} = self;
 
-        let mut parts = FramedParts::new(stream, HttpServerCodec);
-        parts.read_buf = buffer;
+		let mut parts = FramedParts::new(stream, HttpServerCodec);
+		parts.read_buf = buffer;
 		let duplex = Framed::from_parts(parts);
 
 		let future = duplex
@@ -133,8 +133,8 @@ where
 		if let Some(custom) = headers {
 			self.headers.extend(custom.iter());
 		}
-        let mut parts = FramedParts::new(self.stream, HttpServerCodec);
-        parts.read_buf = self.buffer;
+		let mut parts = FramedParts::new(self.stream, HttpServerCodec);
+		parts.read_buf = self.buffer;
 		let duplex = Framed::from_parts(parts);
 		duplex.send(Incoming {
 			version: self.request.version,
@@ -215,7 +215,7 @@ where
 
 	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error> + Send> {
 		let future = HttpServerCodec
-            .framed(self)
+			.framed(self)
 			.into_future()
 			.map_err(|(e, s)| {
 				let FramedParts { io, read_buf, .. } = s.into_parts();

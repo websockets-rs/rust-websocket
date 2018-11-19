@@ -15,7 +15,9 @@ const CONNECTION: &'static str = "wss://echo.websocket.org";
 
 fn main() {
 	println!("Connecting to {}", CONNECTION);
-    let mut runtime = tokio::runtime::current_thread::Builder::new().build().unwrap();
+	let mut runtime = tokio::runtime::current_thread::Builder::new()
+		.build()
+		.unwrap();
 
 	// standard in isn't supported in mio yet, so we use a thread
 	// see https://github.com/carllerche/mio/issues/321

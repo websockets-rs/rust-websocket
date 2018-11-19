@@ -23,7 +23,8 @@ type Id = u32;
 fn main() {
 	let runtime = runtime::Builder::new().build().unwrap();
 	let executor = runtime.executor();
-	let server = Server::bind("127.0.0.1:8081", &runtime.reactor()).expect("Failed to create server");
+	let server =
+		Server::bind("127.0.0.1:8081", &runtime.reactor()).expect("Failed to create server");
 	let connections = Arc::new(RwLock::new(HashMap::new()));
 	let (receive_channel_out, receive_channel_in) = mpsc::unbounded();
 	let conn_id = Arc::new(RwLock::new(Counter::new()));
@@ -42,7 +43,7 @@ fn main() {
 			let f = upgrade.accept().and_then(move |(framed, _)| {
 				let id = conn_id
 					.write()
-                    .unwrap()
+					.unwrap()
 					.next()
 					.expect("maximum amount of ids reached");
 				let (sink, stream) = framed.split();
@@ -58,61 +59,66 @@ fn main() {
 
 	// Handle receiving messages from a client
 	let receive_handler = receive_channel_in.for_each(move |(id, stream)| {
-            stream.for_each(move |msg| {
-                    process_message(id, &msg);
-                    Ok(())
-                })
-                .map_err(|_| ())
-		});
+		stream
+			.for_each(move |msg| {
+				process_message(id, &msg);
+				Ok(())
+			})
+			.map_err(|_| ())
+	});
 
 	let (send_channel_out, send_channel_in) = mpsc::unbounded();
 
 	// Handle sending messages to a client
 	let connections_inner = connections.clone();
-    let executor = runtime.executor();
+	let executor = runtime.executor();
 	let executor_inner = executor.clone();
 	let send_handler = send_channel_in
-			.for_each(move |(id, msg): (Id, String)| {
-				let connections = connections_inner.clone();
-				let sink = connections
-					.write()
-					.unwrap()
-					.remove(&id)
-					.expect("Tried to send to invalid client id");
+		.for_each(move |(id, msg): (Id, String)| {
+			let connections = connections_inner.clone();
+			let sink = connections
+				.write()
+				.unwrap()
+				.remove(&id)
+				.expect("Tried to send to invalid client id");
 
-				println!("Sending message '{}' to id {}", msg, id);
-				let f = sink.send(OwnedMessage::Text(msg)).and_then(move |sink| {
+			println!("Sending message '{}' to id {}", msg, id);
+			let f = sink
+				.send(OwnedMessage::Text(msg))
+				.and_then(move |sink| {
 					connections.write().unwrap().insert(id, sink);
 					Ok(())
-				}).map_err(|_| ());
-                executor_inner.spawn(f);
-				Ok(())
-			})
-			.map_err(|_| ());
+				})
+				.map_err(|_| ());
+			executor_inner.spawn(f);
+			Ok(())
+		})
+		.map_err(|_| ());
 
 	// Main 'logic' loop
 	let main_loop = future::loop_fn((), move |_| {
-        let connections = connections.clone();
-        let send_channel_out = send_channel_out.clone();
-        let executor = executor.clone();
-        tokio::timer::Delay::new(Instant::now() + Duration::from_millis(100))
-            .map_err(|_| ())
-            .and_then(move |_| {
-                let should_continue = update(connections, send_channel_out, &executor);
-                match should_continue {
-                    Ok(true) => Ok(Loop::Continue(())),
-                    Ok(false) => Ok(Loop::Break(())),
-                    Err(()) => Err(()),
-                }
-            })
-		});
+		let connections = connections.clone();
+		let send_channel_out = send_channel_out.clone();
+		let executor = executor.clone();
+		tokio::timer::Delay::new(Instant::now() + Duration::from_millis(100))
+			.map_err(|_| ())
+			.and_then(move |_| {
+				let should_continue = update(connections, send_channel_out, &executor);
+				match should_continue {
+					Ok(true) => Ok(Loop::Continue(())),
+					Ok(false) => Ok(Loop::Break(())),
+					Err(()) => Err(()),
+				}
+			})
+	});
 
-    let handlers =
-        main_loop.select2(connection_handler.select2(receive_handler.select(send_handler)));
+	let handlers =
+		main_loop.select2(connection_handler.select2(receive_handler.select(send_handler)));
 
-    runtime.block_on_all(handlers)
-        .map_err(|_| println!("Error while running core loop"))
-        .unwrap();
+	runtime
+		.block_on_all(handlers)
+		.map_err(|_| println!("Error while running core loop"))
+		.unwrap();
 }
 
 fn spawn_future<F, I, E>(f: F, desc: &'static str, executor: &TaskExecutor)
@@ -120,7 +126,7 @@ where
 	F: Future<Item = I, Error = E> + 'static + Send,
 	E: Debug,
 {
-    executor.spawn(
+	executor.spawn(
 		f.map_err(move |e| println!("Error in {}: '{:?}'", desc, e))
 			.map(move |_| println!("{}: Finished.", desc)),
 	);
@@ -143,8 +149,8 @@ fn update(
 	channel: mpsc::UnboundedSender<(Id, String)>,
 	executor: &TaskExecutor,
 ) -> Result<bool, ()> {
-    let executor_inner = executor.clone();
-    executor.spawn(futures::lazy(move || {
+	let executor_inner = executor.clone();
+	executor.spawn(futures::lazy(move || {
 		for (id, _) in connections.read().unwrap().iter() {
 			let f = channel.clone().send((*id, "Hi there!".to_owned()));
 			spawn_future(f, "Send message to write handler", &executor_inner);

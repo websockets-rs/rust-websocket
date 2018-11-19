@@ -70,9 +70,9 @@ pub mod async {
 	pub use super::ReadWritePair;
 	use futures::Poll;
 	use std::io::{self, Read, Write};
-	pub use tokio::net::TcpStream;
-	pub use tokio::io::{ReadHalf, WriteHalf};
 	pub use tokio::io::{AsyncRead, AsyncWrite};
+	pub use tokio::io::{ReadHalf, WriteHalf};
+	pub use tokio::net::TcpStream;
 
 	/// A stream that can be read from and written to asynchronously.
 	/// This let's us abstract over many async streams like tcp, ssl,

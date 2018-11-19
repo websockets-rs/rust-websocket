@@ -53,9 +53,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 		let future = self
 			.listener
 			.incoming()
-            .and_then(|s| {
-                s.peer_addr().map(|a| (s, a))
-            })
+			.and_then(|s| s.peer_addr().map(|a| (s, a)))
 			.map_err(|e| InvalidConnection {
 				stream: None,
 				parsed: None,
@@ -112,9 +110,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 		let future = self
 			.listener
 			.incoming()
-            .and_then(|s| {
-                s.peer_addr().map(|a| (s, a))
-            })
+			.and_then(|s| s.peer_addr().map(|a| (s, a)))
 			.map_err(|e| InvalidConnection {
 				stream: None,
 				parsed: None,

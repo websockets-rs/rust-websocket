@@ -270,7 +270,7 @@ mod tests {
 		let output = Cursor::new(Vec::new());
 
 		let f = HttpClientCodec
-            .framed(ReadWritePair(input, output))
+			.framed(ReadWritePair(input, output))
 			.send(Incoming {
 				version: HttpVersion::Http11,
 				subject: (Method::Get, RequestUri::AbsolutePath("/".to_string())),
@@ -282,7 +282,7 @@ mod tests {
 				Some(ref m) if StatusCode::from_u16(m.subject.0) == StatusCode::NotFound => Ok(()),
 				_ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
 			});
-        runtime.block_on(f).unwrap();
+		runtime.block_on(f).unwrap();
 	}
 
 	#[test]
@@ -298,7 +298,7 @@ mod tests {
 		let output = Cursor::new(Vec::new());
 
 		let f = HttpServerCodec
-            .framed(ReadWritePair(input, output))
+			.framed(ReadWritePair(input, output))
 			.into_future()
 			.map_err(|(e, _)| e)
 			.and_then(|(m, s)| match m {
@@ -313,6 +313,6 @@ mod tests {
 				})
 				.map_err(|e| e.into())
 			});
-        runtime.block_on(f).unwrap();
+		runtime.block_on(f).unwrap();
 	}
 }

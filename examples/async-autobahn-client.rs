@@ -13,7 +13,9 @@ use websocket::{ClientBuilder, OwnedMessage};
 fn main() {
 	let addr = "ws://127.0.0.1:9001".to_string();
 	let agent = "rust-websocket";
-	let mut runtime = tokio::runtime::current_thread::Builder::new().build().unwrap();
+	let mut runtime = tokio::runtime::current_thread::Builder::new()
+		.build()
+		.unwrap();
 
 	println!("Using fuzzingserver {}", addr);
 	println!("Using agent {}", agent);
@@ -75,7 +77,7 @@ fn main() {
 				Ok(()) as Result<(), ()>
 			});
 
-        runtime.block_on(test_case).ok();
+		runtime.block_on(test_case).ok();
 	}
 
 	update_reports(addr.clone(), agent, &mut runtime);
@@ -94,7 +96,7 @@ fn get_case_count(addr: String, runtime: &mut Runtime) -> usize {
 			Some(OwnedMessage::Text(txt)) => Ok(txt.parse().unwrap()),
 			_ => Err(WebSocketError::ProtocolError(err)),
 		});
-    runtime.block_on(counter).unwrap()
+	runtime.block_on(counter).unwrap()
 }
 
 fn update_reports(addr: String, agent: &str, runtime: &mut Runtime) {
@@ -105,7 +107,7 @@ fn update_reports(addr: String, agent: &str, runtime: &mut Runtime) {
 		.unwrap()
 		.async_connect_insecure()
 		.and_then(|(sink, _)| sink.send(OwnedMessage::Close(None)));
-    runtime.block_on(updater).unwrap();
+	runtime.block_on(updater).unwrap();
 
 	println!("Reports updated.");
 }

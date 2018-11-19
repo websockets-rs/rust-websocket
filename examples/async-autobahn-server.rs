@@ -10,8 +10,8 @@ use futures::{Future, Sink, Stream};
 
 fn main() {
 	let mut runtime = tokio::runtime::Builder::new().build().unwrap();
-    let reactor = runtime.reactor().clone();
-    let executor = runtime.executor();
+	let reactor = runtime.reactor().clone();
+	let executor = runtime.executor();
 	// bind to the server
 	let server = Server::bind("127.0.0.1:9002", &reactor).unwrap();
 
@@ -40,7 +40,7 @@ fn main() {
 					.and_then(|(_, sink)| sink.send(OwnedMessage::Close(None)))
 			});
 
-            executor.spawn(
+			executor.spawn(
 				f.map_err(move |e| println!("{}: '{:?}'", addr, e))
 					.map(move |_| println!("{} closed.", addr)),
 			);

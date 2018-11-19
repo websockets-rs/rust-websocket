@@ -8,13 +8,13 @@ use websocket::async::Server;
 use websocket::message::{Message, OwnedMessage};
 use websocket::server::InvalidConnection;
 
-use tokio::runtime::TaskExecutor;
 use futures::{Future, Sink, Stream};
+use tokio::runtime::TaskExecutor;
 
 fn main() {
-    let mut runtime = tokio::runtime::Builder::new().build().unwrap();
+	let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 	let reactor = runtime.reactor().clone();
-    let executor = runtime.executor();
+	let executor = runtime.executor();
 	// bind to the server
 	let server = Server::bind("127.0.0.1:2794", &reactor).unwrap();
 
@@ -70,7 +70,7 @@ where
 	F: Future<Item = I, Error = E> + 'static + Send,
 	E: Debug,
 {
-    executor.spawn(
+	executor.spawn(
 		f.map_err(move |e| println!("{}: '{:?}'", desc, e))
 			.map(move |_| println!("{}: Finished.", desc)),
 	);
