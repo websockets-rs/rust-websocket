@@ -45,10 +45,11 @@ mod async_imports {
 	pub use codec::ws::{Context, MessageCodec};
 	pub use futures::future;
 	pub use futures::Stream as FutureStream;
-	pub use futures::{Future, Sink};
-	pub use tokio_core::net::TcpStreamNew;
-	pub use tokio_core::reactor::Handle;
-	pub use tokio_io::codec::Framed;
+	pub use futures::{Future, IntoFuture, Sink};
+	pub use tokio::net::TcpStream as TcpStreamNew;
+	pub use tokio::reactor::Handle;
+	pub use tokio::codec::{Decoder, Framed};
+    pub use tokio::codec::FramedParts;
 	#[cfg(feature = "async-ssl")]
 	pub use tokio_tls::TlsConnector as TlsConnectorExt;
 }
@@ -502,17 +503,17 @@ impl<'u> ClientBuilder<'u> {
 	///
 	/// ```no_run
 	/// # extern crate rand;
-	/// # extern crate tokio_core;
+	/// # extern crate tokio;
 	/// # extern crate futures;
 	/// # extern crate websocket;
 	/// use websocket::ClientBuilder;
 	/// use websocket::futures::{Future, Stream, Sink};
 	/// use websocket::Message;
-	/// use tokio_core::reactor::Core;
+	/// use tokio::runtime::Builder;
 	/// # use rand::Rng;
 	///
 	/// # fn main() {
-	/// let mut core = Core::new().unwrap();
+	/// let mut runtime = Builder::new().build().unwrap();
 	///
 	/// // let's randomly do either SSL or plaintext
 	/// let url = if rand::thread_rng().gen() {
@@ -523,27 +524,23 @@ impl<'u> ClientBuilder<'u> {
 	///
 	/// // send a message and hear it come back
 	/// let echo_future = ClientBuilder::new(url).unwrap()
-	///     .async_connect(None, &core.handle())
+	///     .async_connect(None)
 	///     .and_then(|(s, _)| s.send(Message::text("hallo").into()))
 	///     .and_then(|s| s.into_future().map_err(|e| e.0))
 	///     .map(|(m, _)| {
 	///         assert_eq!(m, Some(Message::text("hallo").into()))
 	///     });
 	///
-	/// core.run(echo_future).unwrap();
+	/// runtime.block_on(echo_future).unwrap();
 	/// # }
 	/// ```
 	#[cfg(feature = "async-ssl")]
 	pub fn async_connect(
 		self,
 		ssl_config: Option<TlsConnector>,
-		handle: &Handle,
 	) -> async::ClientNew<Box<stream::async::Stream + Send>> {
 		// connect to the tcp stream
-		let tcp_stream = match self.async_tcpstream(None, handle) {
-			Ok(t) => t,
-			Err(e) => return Box::new(future::err(e)),
-		};
+		let tcp_stream = self.async_tcpstream(None);
 
 		let builder = ClientBuilder {
 			url: Cow::Owned(self.url.into_owned()),
@@ -564,7 +561,6 @@ impl<'u> ClientBuilder<'u> {
 			};
 			// secure connection, wrap with ssl
 			let future = tcp_stream
-				.map_err(|e| e.into())
 				.and_then(move |s| connector.connect(&host, s).map_err(|e| e.into()))
 				.and_then(move |stream| {
 					let stream: Box<stream::async::Stream + Send> = Box::new(stream);
@@ -593,40 +589,35 @@ impl<'u> ClientBuilder<'u> {
 	///# Example
 	///
 	/// ```no_run
-	/// # extern crate tokio_core;
+	/// # extern crate tokio;
 	/// # extern crate futures;
 	/// # extern crate websocket;
 	/// use websocket::ClientBuilder;
 	/// use websocket::futures::{Future, Stream, Sink};
 	/// use websocket::Message;
-	/// use tokio_core::reactor::Core;
 	/// # fn main() {
 	///
-	/// let mut core = Core::new().unwrap();
+	/// let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 	///
 	/// // send a message and hear it come back
 	/// let echo_future = ClientBuilder::new("wss://echo.websocket.org").unwrap()
-	///     .async_connect_secure(None, &core.handle())
+	///     .async_connect_secure(None)
 	///     .and_then(|(s, _)| s.send(Message::text("hallo").into()))
 	///     .and_then(|s| s.into_future().map_err(|e| e.0))
 	///     .map(|(m, _)| {
 	///         assert_eq!(m, Some(Message::text("hallo").into()))
 	///     });
 	///
-	/// core.run(echo_future).unwrap();
+	/// runtime.block_on(echo_future).unwrap();
 	/// # }
 	/// ```
 	#[cfg(feature = "async-ssl")]
 	pub fn async_connect_secure(
 		self,
 		ssl_config: Option<TlsConnector>,
-		handle: &Handle,
 	) -> async::ClientNew<async::TlsStream<async::TcpStream>> {
 		// connect to the tcp stream
-		let tcp_stream = match self.async_tcpstream(Some(true), handle) {
-			Ok(t) => t,
-			Err(e) => return Box::new(future::err(e)),
-		};
+		let tcp_stream = self.async_tcpstream(Some(true));
 
 		// configure the tls connection
 		let (host, connector) = {
@@ -646,7 +637,6 @@ impl<'u> ClientBuilder<'u> {
 
 		// put it all together
 		let future = tcp_stream
-			.map_err(|e| e.into())
 			.and_then(move |s| connector.connect(&host, s).map_err(|e| e.into()))
 			.and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
@@ -662,35 +652,31 @@ impl<'u> ClientBuilder<'u> {
 	///# Example
 	///
 	/// ```no_run
-	/// # extern crate tokio_core;
+	/// # extern crate tokio;
 	/// # extern crate futures;
 	/// # extern crate websocket;
 	/// use websocket::ClientBuilder;
 	/// use websocket::futures::{Future, Stream, Sink};
 	/// use websocket::Message;
-	/// use tokio_core::reactor::Core;
 	/// # fn main() {
 	///
-	/// let mut core = Core::new().unwrap();
+	/// let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 	///
 	/// // send a message and hear it come back
 	/// let echo_future = ClientBuilder::new("ws://echo.websocket.org").unwrap()
-	///     .async_connect_insecure(&core.handle())
+	///     .async_connect_insecure()
 	///     .and_then(|(s, _)| s.send(Message::text("hallo").into()))
 	///     .and_then(|s| s.into_future().map_err(|e| e.0))
 	///     .map(|(m, _)| {
 	///         assert_eq!(m, Some(Message::text("hallo").into()))
 	///     });
 	///
-	/// core.run(echo_future).unwrap();
+	/// runtime.block_on(echo_future).unwrap();
 	/// # }
 	/// ```
 	#[cfg(feature = "async")]
-	pub fn async_connect_insecure(self, handle: &Handle) -> async::ClientNew<async::TcpStream> {
-		let tcp_stream = match self.async_tcpstream(Some(false), handle) {
-			Ok(t) => t,
-			Err(e) => return Box::new(future::err(e)),
-		};
+	pub fn async_connect_insecure(self) -> async::ClientNew<async::TcpStream> {
+		let tcp_stream = self.async_tcpstream(Some(false));
 
 		let builder = ClientBuilder {
 			url: Cow::Owned(self.url.into_owned()),
@@ -701,7 +687,6 @@ impl<'u> ClientBuilder<'u> {
 		};
 
 		let future = tcp_stream
-			.map_err(|e| e.into())
 			.and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
@@ -718,14 +703,14 @@ impl<'u> ClientBuilder<'u> {
 	/// # Example
 	///
 	/// ```rust
+	/// # extern crate tokio;
 	/// use websocket::header::WebSocketProtocol;
 	/// use websocket::ClientBuilder;
 	/// use websocket::sync::stream::ReadWritePair;
 	/// use websocket::futures::Future;
-	/// use websocket::async::Core;
 	/// # use std::io::Cursor;
 	///
-	/// let mut core = Core::new().unwrap();
+	/// let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 	///
 	/// let accept = b"\
 	/// HTTP/1.1 101 Switching Protocols\r\n\
@@ -746,7 +731,7 @@ impl<'u> ClientBuilder<'u> {
 	///         assert_eq!(proto.0.first().unwrap(), "proto-metheus")
 	///     });
 	///
-	/// core.run(client).unwrap();
+	/// runtime.block_on(client).unwrap();
 	/// ```
 	#[cfg(feature = "async")]
 	pub fn async_connect_on<S>(self, stream: S) -> async::ClientNew<S>
@@ -761,7 +746,7 @@ impl<'u> ClientBuilder<'u> {
 			key_set: self.key_set,
 		};
 		let resource = builder.build_request();
-		let framed = stream.framed(::codec::http::HttpClientCodec);
+		let framed = ::codec::http::HttpClientCodec.framed(stream);
 		let request = Incoming {
 			version: builder.version,
 			headers: builder.headers.clone(),
@@ -785,7 +770,7 @@ impl<'u> ClientBuilder<'u> {
 			// output the final client and metadata
 			.map(|(message, stream)| {
 				let codec = MessageCodec::default(Context::Client);
-				let client = Framed::from_parts(stream.into_parts(), codec);
+				let client = codec.framed(stream.into_inner());
 				(client, message.headers)
 			});
 
@@ -796,8 +781,7 @@ impl<'u> ClientBuilder<'u> {
 	fn async_tcpstream(
 		&self,
 		secure: Option<bool>,
-		handle: &Handle,
-	) -> WebSocketResult<TcpStreamNew> {
+	) -> Box<future::Future<Item=TcpStreamNew, Error=WebSocketError> + Send> {
 		// get the address to connect to, return an error future if ther's a problem
 		let address = match self
 			.extract_host_port(secure)
@@ -806,16 +790,16 @@ impl<'u> ClientBuilder<'u> {
 			Ok(mut s) => match s.next() {
 				Some(a) => a,
 				None => {
-					return Err(WebSocketError::WebSocketUrlError(
+					return Box::new(Err(WebSocketError::WebSocketUrlError(
 						WSUrlErrorKind::NoHostName,
-					));
+					)).into_future());
 				}
 			},
-			Err(e) => return Err(e),
+			Err(e) => return Box::new(Err(e).into_future()),
 		};
 
 		// connect a tcp stream
-		Ok(async::TcpStream::connect(&address, handle))
+		Box::new(TcpStreamNew::connect(&address).map_err(|e| e.into()))
 	}
 
 	#[cfg(any(feature = "sync", feature = "async"))]

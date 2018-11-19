@@ -1,5 +1,5 @@
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio;
 extern crate websocket;
 
 use websocket::async::Server;
@@ -7,13 +7,13 @@ use websocket::message::OwnedMessage;
 use websocket::server::InvalidConnection;
 
 use futures::{Future, Sink, Stream};
-use tokio_core::reactor::Core;
 
 fn main() {
-	let mut core = Core::new().unwrap();
-	let handle = core.handle();
+	let mut runtime = tokio::runtime::Builder::new().build().unwrap();
+    let reactor = runtime.reactor().clone();
+    let executor = runtime.executor();
 	// bind to the server
-	let server = Server::bind("127.0.0.1:9002", &handle).unwrap();
+	let server = Server::bind("127.0.0.1:9002", &reactor).unwrap();
 
 	// time to build the server's future
 	// this will be a struct containing everything the server is going to do
@@ -23,7 +23,7 @@ fn main() {
 		.incoming()
 		// we don't wanna save the stream if it drops
 		.map_err(|InvalidConnection { error, .. }| error)
-		.for_each(|(upgrade, addr)| {
+		.for_each(move |(upgrade, addr)| {
 			// accept the request to be a ws connection
 			println!("Got a connection from: {}", addr);
 			let f = upgrade.accept().and_then(|(s, _)| {
@@ -40,12 +40,12 @@ fn main() {
 					.and_then(|(_, sink)| sink.send(OwnedMessage::Close(None)))
 			});
 
-			handle.spawn(
+            executor.spawn(
 				f.map_err(move |e| println!("{}: '{:?}'", addr, e))
 					.map(move |_| println!("{} closed.", addr)),
 			);
 			Ok(())
 		});
 
-	core.run(f).unwrap();
+	runtime.block_on(f).unwrap();
 }

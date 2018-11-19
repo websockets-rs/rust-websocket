@@ -16,7 +16,7 @@ use hyper::uri::RequestUri;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::io::{self, Write};
-use tokio_io::codec::{Decoder, Encoder};
+use tokio::codec::{Decoder, Encoder};
 
 #[derive(Copy, Clone, Debug)]
 ///A codec to be used with `tokio` codecs that can serialize HTTP requests and
@@ -25,15 +25,13 @@ use tokio_io::codec::{Decoder, Encoder};
 ///
 ///# Example
 ///```rust,no_run
-///# extern crate tokio_core;
-///# extern crate tokio_io;
+///# extern crate tokio;
 ///# extern crate websocket;
 ///# extern crate hyper;
 ///use websocket::async::HttpClientCodec;
 ///# use websocket::async::futures::{Future, Sink, Stream};
-///# use tokio_core::net::TcpStream;
-///# use tokio_core::reactor::Core;
-///# use tokio_io::AsyncRead;
+///# use tokio::net::TcpStream;
+///# use tokio::codec::Decoder;
 ///# use hyper::http::h1::Incoming;
 ///# use hyper::version::HttpVersion;
 ///# use hyper::header::Headers;
@@ -41,12 +39,12 @@ use tokio_io::codec::{Decoder, Encoder};
 ///# use hyper::uri::RequestUri;
 ///
 ///# fn main() {
-///let mut core = Core::new().unwrap();
+///let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 ///let addr = "crouton.net".parse().unwrap();
 ///
-///let f = TcpStream::connect(&addr, &core.handle())
+///let f = TcpStream::connect(&addr)
 ///    .and_then(|s| {
-///        Ok(s.framed(HttpClientCodec))
+///        Ok(HttpClientCodec.framed(s))
 ///    })
 ///    .and_then(|s| {
 ///        s.send(Incoming {
@@ -59,7 +57,7 @@ use tokio_io::codec::{Decoder, Encoder};
 ///    .and_then(|s| s.into_future().map_err(|(e, _)| e))
 ///    .map(|(m, _)| println!("You got a crouton: {:?}", m));
 ///
-///core.run(f).unwrap();
+///runtime.block_on(f).unwrap();
 ///# }
 ///```
 pub struct HttpClientCodec;
@@ -125,16 +123,14 @@ impl Decoder for HttpClientCodec {
 ///# Example
 ///
 ///```rust,no_run
-///# extern crate tokio_core;
-///# extern crate tokio_io;
+///# extern crate tokio;
 ///# extern crate websocket;
 ///# extern crate hyper;
 ///# use std::io;
 ///use websocket::async::HttpServerCodec;
 ///# use websocket::async::futures::{Future, Sink, Stream};
-///# use tokio_core::net::TcpStream;
-///# use tokio_core::reactor::Core;
-///# use tokio_io::AsyncRead;
+///# use tokio::net::TcpStream;
+///# use tokio::codec::Decoder;
 ///# use hyper::http::h1::Incoming;
 ///# use hyper::version::HttpVersion;
 ///# use hyper::header::Headers;
@@ -143,11 +139,11 @@ impl Decoder for HttpClientCodec {
 ///# use hyper::status::StatusCode;
 ///# fn main() {
 ///
-///let mut core = Core::new().unwrap();
+///let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 ///let addr = "nothing-to-see-here.com".parse().unwrap();
 ///
-///let f = TcpStream::connect(&addr, &core.handle())
-///   .map(|s| s.framed(HttpServerCodec))
+///let f = TcpStream::connect(&addr)
+///   .map(|s| HttpServerCodec.framed(s))
 ///   .map_err(|e| e.into())
 ///   .and_then(|s| s.into_future().map_err(|(e, _)| e))
 ///   .and_then(|(m, s)| match m {
@@ -164,7 +160,7 @@ impl Decoder for HttpClientCodec {
 ///           .map_err(|e| e.into())
 ///   });
 ///
-///core.run(f).unwrap();
+///runtime.block_on(f).unwrap();
 ///# }
 ///```
 #[derive(Copy, Clone, Debug)]
@@ -264,18 +260,17 @@ mod tests {
 	use hyper::version::HttpVersion;
 	use std::io::Cursor;
 	use stream::ReadWritePair;
-	use tokio_core::reactor::Core;
-	use tokio_io::AsyncRead;
+	use tokio::runtime::current_thread::Builder;
 
 	#[test]
 	fn test_client_http_codec() {
-		let mut core = Core::new().unwrap();
+		let mut runtime = Builder::new().build().unwrap();
 		let response = "HTTP/1.1 404 Not Found\r\n\r\npssst extra data here";
 		let input = Cursor::new(response.as_bytes());
 		let output = Cursor::new(Vec::new());
 
-		let f = ReadWritePair(input, output)
-			.framed(HttpClientCodec)
+		let f = HttpClientCodec
+            .framed(ReadWritePair(input, output))
 			.send(Incoming {
 				version: HttpVersion::Http11,
 				subject: (Method::Get, RequestUri::AbsolutePath("/".to_string())),
@@ -287,12 +282,12 @@ mod tests {
 				Some(ref m) if StatusCode::from_u16(m.subject.0) == StatusCode::NotFound => Ok(()),
 				_ => Err(io::Error::new(io::ErrorKind::Other, "test failed").into()),
 			});
-		core.run(f).unwrap();
+        runtime.block_on(f).unwrap();
 	}
 
 	#[test]
 	fn test_server_http_codec() {
-		let mut core = Core::new().unwrap();
+		let mut runtime = Builder::new().build().unwrap();
 		let request = "\
 		               GET / HTTP/1.0\r\n\
 		               Host: www.rust-lang.org\r\n\
@@ -302,8 +297,8 @@ mod tests {
 		let input = Cursor::new(request);
 		let output = Cursor::new(Vec::new());
 
-		let f = ReadWritePair(input, output)
-			.framed(HttpServerCodec)
+		let f = HttpServerCodec
+            .framed(ReadWritePair(input, output))
 			.into_future()
 			.map_err(|(e, _)| e)
 			.and_then(|(m, s)| match m {
@@ -318,6 +313,6 @@ mod tests {
 				})
 				.map_err(|e| e.into())
 			});
-		core.run(f).unwrap();
+        runtime.block_on(f).unwrap();
 	}
 }

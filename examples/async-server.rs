@@ -1,5 +1,5 @@
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio;
 extern crate websocket;
 
 use std::fmt::Debug;
@@ -8,14 +8,15 @@ use websocket::async::Server;
 use websocket::message::{Message, OwnedMessage};
 use websocket::server::InvalidConnection;
 
+use tokio::runtime::TaskExecutor;
 use futures::{Future, Sink, Stream};
-use tokio_core::reactor::{Core, Handle};
 
 fn main() {
-	let mut core = Core::new().unwrap();
-	let handle = core.handle();
+    let mut runtime = tokio::runtime::Builder::new().build().unwrap();
+	let reactor = runtime.reactor().clone();
+    let executor = runtime.executor();
 	// bind to the server
-	let server = Server::bind("127.0.0.1:2794", &handle).unwrap();
+	let server = Server::bind("127.0.0.1:2794", &reactor).unwrap();
 
 	// time to build the server's future
 	// this will be a struct containing everything the server is going to do
@@ -25,12 +26,12 @@ fn main() {
 		.incoming()
 		// we don't wanna save the stream if it drops
 		.map_err(|InvalidConnection { error, .. }| error)
-		.for_each(|(upgrade, addr)| {
+		.for_each(move |(upgrade, addr)| {
 			println!("Got a connection from: {}", addr);
 			// check if it has the protocol we want
 			if !upgrade.protocols().iter().any(|s| s == "rust-websocket") {
 				// reject it if it doesn't
-				spawn_future(upgrade.reject(), "Upgrade Rejection", &handle);
+				spawn_future(upgrade.reject(), "Upgrade Rejection", &executor);
 				return Ok(());
 			}
 
@@ -57,19 +58,19 @@ fn main() {
 						.and_then(|(_, sink)| sink.send(OwnedMessage::Close(None)))
 				});
 
-			spawn_future(f, "Client Status", &handle);
+			spawn_future(f, "Client Status", &executor);
 			Ok(())
 		});
 
-	core.run(f).unwrap();
+	runtime.block_on(f).unwrap();
 }
 
-fn spawn_future<F, I, E>(f: F, desc: &'static str, handle: &Handle)
+fn spawn_future<F, I, E>(f: F, desc: &'static str, executor: &TaskExecutor)
 where
-	F: Future<Item = I, Error = E> + 'static,
+	F: Future<Item = I, Error = E> + 'static + Send,
 	E: Debug,
 {
-	handle.spawn(
+    executor.spawn(
 		f.map_err(move |e| println!("{}: '{:?}'", desc, e))
 			.map(move |_| println!("{}: Finished.", desc)),
 	);

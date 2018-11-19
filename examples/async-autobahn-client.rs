@@ -1,25 +1,24 @@
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio;
 extern crate websocket;
 
 use futures::future::{self, Loop};
 use futures::sink::Sink;
 use futures::stream::Stream;
 use futures::Future;
-use tokio_core::reactor::Core;
+use tokio::runtime::current_thread::Runtime;
 use websocket::result::WebSocketError;
 use websocket::{ClientBuilder, OwnedMessage};
 
 fn main() {
 	let addr = "ws://127.0.0.1:9001".to_string();
 	let agent = "rust-websocket";
-	let mut core = Core::new().unwrap();
-	let handle = core.handle();
+	let mut runtime = tokio::runtime::current_thread::Builder::new().build().unwrap();
 
 	println!("Using fuzzingserver {}", addr);
 	println!("Using agent {}", agent);
 
-	let case_count = get_case_count(addr.clone(), &mut core);
+	let case_count = get_case_count(addr.clone(), &mut runtime);
 	println!("We will be running {} test cases!", case_count);
 
 	println!("Running test suite...");
@@ -28,7 +27,7 @@ fn main() {
 
 		let test_case = ClientBuilder::new(&url)
 			.unwrap()
-			.async_connect_insecure(&handle)
+			.async_connect_insecure()
 			.and_then(move |(duplex, _)| {
 				println!("Executing test case: {}/{}", case_id, case_count);
 				future::loop_fn(duplex, |stream| {
@@ -76,37 +75,37 @@ fn main() {
 				Ok(()) as Result<(), ()>
 			});
 
-		core.run(test_case).ok();
+        runtime.block_on(test_case).ok();
 	}
 
-	update_reports(addr.clone(), agent, &mut core);
+	update_reports(addr.clone(), agent, &mut runtime);
 	println!("Test suite finished!");
 }
 
-fn get_case_count(addr: String, core: &mut Core) -> usize {
+fn get_case_count(addr: String, runtime: &mut Runtime) -> usize {
 	let url = addr + "/getCaseCount";
 	let err = "Unsupported message in /getCaseCount";
 
 	let counter = ClientBuilder::new(&url)
 		.unwrap()
-		.async_connect_insecure(&core.handle())
+		.async_connect_insecure()
 		.and_then(|(s, _)| s.into_future().map_err(|e| e.0))
 		.and_then(|(msg, _)| match msg {
 			Some(OwnedMessage::Text(txt)) => Ok(txt.parse().unwrap()),
 			_ => Err(WebSocketError::ProtocolError(err)),
 		});
-	core.run(counter).unwrap()
+    runtime.block_on(counter).unwrap()
 }
 
-fn update_reports(addr: String, agent: &str, core: &mut Core) {
+fn update_reports(addr: String, agent: &str, runtime: &mut Runtime) {
 	println!("Updating reports...");
 	let url = addr + "/updateReports?agent=" + agent;
 
 	let updater = ClientBuilder::new(&url)
 		.unwrap()
-		.async_connect_insecure(&core.handle())
+		.async_connect_insecure()
 		.and_then(|(sink, _)| sink.send(OwnedMessage::Close(None)));
-	core.run(updater).unwrap();
+    runtime.block_on(updater).unwrap();
 
 	println!("Reports updated.");
 }

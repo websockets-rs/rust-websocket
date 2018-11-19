@@ -25,8 +25,7 @@ byteorder = "1.0"
 sha1 = "0.6"
 base64 = "0.9"
 futures = { version = "0.1", optional = true }
-tokio-core = { version = "0.1", optional = true }
-tokio-io = { version = "^0.1.2", optional = true }
+tokio = { version = "0.1", optional = true }
 tokio-tls = { version = "0.2.0", optional = true }
 bytes = { version = "0.4", optional = true }
 native-tls = { version = "0.2.1", optional = true }
@@ -38,6 +37,6 @@ futures-cpupool = "0.1"
 default = ["sync", "sync-ssl", "async", "async-ssl"]
 sync = []
 sync-ssl = ["native-tls", "sync"]
-async = ["tokio-core", "tokio-io", "bytes", "futures"]
+async = ["tokio", "bytes", "futures"]
 async-ssl = ["native-tls", "tokio-tls", "async"]
 nightly = ["hyper/nightly"]

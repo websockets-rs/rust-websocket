@@ -14,7 +14,7 @@
 //! # Example with Type Annotations
 //!
 //! ```rust,no_run
-//! # extern crate tokio_core;
+//! # extern crate tokio;
 //! # extern crate futures;
 //! # extern crate websocket;
 //! use websocket::ClientBuilder;
@@ -22,15 +22,15 @@
 //! use websocket::async::TcpStream;
 //! use websocket::futures::{Future, Stream, Sink};
 //! use websocket::Message;
-//! use tokio_core::reactor::Core;
+//! use tokio::runtime::Builder;
 //! # fn main() {
 //!
-//! let mut core = Core::new().unwrap();
+//! let mut runtime = Builder::new().build().unwrap();
 //!
 //! // create a Future of a client
 //! let client_future: ClientNew<TcpStream> =
 //!     ClientBuilder::new("ws://echo.websocket.org").unwrap()
-//!         .async_connect_insecure(&core.handle());
+//!         .async_connect_insecure();
 //!
 //! // send a message
 //! let send_future = client_future
@@ -40,15 +40,15 @@
 //!         client.send(Message::text("hallo").into())
 //!     });
 //!
-//! core.run(send_future).unwrap();
+//! runtime.block_on(send_future).unwrap();
 //! # }
 //! ```
 
 pub use futures::Future;
 use hyper::header::Headers;
-pub use tokio_core::net::TcpStream;
-pub use tokio_core::reactor::Handle;
-pub use tokio_io::codec::Framed;
+pub use tokio::net::TcpStream;
+pub use tokio::reactor::Handle;
+pub use tokio::codec::Framed;
 
 use codec::ws::MessageCodec;
 use message::OwnedMessage;

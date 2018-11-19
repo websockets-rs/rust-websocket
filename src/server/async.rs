@@ -7,8 +7,8 @@ use server::{NoTlsAcceptor, WsServer};
 use std::io;
 use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
-use tokio_core::net::{TcpListener, TcpStream};
-pub use tokio_core::reactor::Handle;
+use tokio::net::{TcpListener, TcpStream};
+pub use tokio::reactor::Handle;
 
 #[cfg(any(feature = "async-ssl"))]
 use native_tls::TlsAcceptor;
@@ -34,9 +34,8 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 	/// return a `Future` but a simple `Result`.
 	pub fn bind<A: ToSocketAddrs>(addr: A, handle: &Handle) -> io::Result<Self> {
 		let tcp = ::std::net::TcpListener::bind(addr)?;
-		let address = tcp.local_addr()?;
 		Ok(Server {
-			listener: TcpListener::from_listener(tcp, &address, handle)?,
+			listener: TcpListener::from_std(tcp, handle)?,
 			ssl_acceptor: NoTlsAcceptor,
 		})
 	}
@@ -54,6 +53,9 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 		let future = self
 			.listener
 			.incoming()
+            .and_then(|s| {
+                s.peer_addr().map(|a| (s, a))
+            })
 			.map_err(|e| InvalidConnection {
 				stream: None,
 				parsed: None,
@@ -90,9 +92,8 @@ impl WsServer<TlsAcceptor, TcpListener> {
 		handle: &Handle,
 	) -> io::Result<Self> {
 		let tcp = ::std::net::TcpListener::bind(addr)?;
-		let address = tcp.local_addr()?;
 		Ok(Server {
-			listener: TcpListener::from_listener(tcp, &address, handle)?,
+			listener: TcpListener::from_std(tcp, handle)?,
 			ssl_acceptor: acceptor,
 		})
 	}
@@ -111,6 +112,9 @@ impl WsServer<TlsAcceptor, TcpListener> {
 		let future = self
 			.listener
 			.incoming()
+            .and_then(|s| {
+                s.peer_addr().map(|a| (s, a))
+            })
 			.map_err(|e| InvalidConnection {
 				stream: None,
 				parsed: None,

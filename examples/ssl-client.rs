@@ -1,5 +1,5 @@
 extern crate futures;
-extern crate tokio_core;
+extern crate tokio;
 extern crate websocket;
 
 use futures::future::Future;
@@ -8,7 +8,6 @@ use futures::stream::Stream;
 use futures::sync::mpsc;
 use std::io::stdin;
 use std::thread;
-use tokio_core::reactor::Core;
 use websocket::result::WebSocketError;
 use websocket::{ClientBuilder, OwnedMessage};
 
@@ -16,7 +15,7 @@ const CONNECTION: &'static str = "wss://echo.websocket.org";
 
 fn main() {
 	println!("Connecting to {}", CONNECTION);
-	let mut core = Core::new().unwrap();
+    let mut runtime = tokio::runtime::current_thread::Builder::new().build().unwrap();
 
 	// standard in isn't supported in mio yet, so we use a thread
 	// see https://github.com/carllerche/mio/issues/321
@@ -47,7 +46,7 @@ fn main() {
 
 	let runner = ClientBuilder::new(CONNECTION)
 		.unwrap()
-		.async_connect_secure(None, &core.handle())
+		.async_connect_secure(None)
 		.and_then(|(duplex, _)| {
 			let (sink, stream) = duplex.split();
 			stream
@@ -62,5 +61,5 @@ fn main() {
 				.select(stdin_ch.map_err(|_| WebSocketError::NoDataAvailable))
 				.forward(sink)
 		});
-	core.run(runner).unwrap();
+	runtime.block_on(runner).unwrap();
 }

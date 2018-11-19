@@ -14,8 +14,8 @@ use std::mem;
 
 use bytes::BufMut;
 use bytes::BytesMut;
-use tokio_io::codec::Decoder;
-use tokio_io::codec::Encoder;
+use tokio::codec::Decoder;
+use tokio::codec::Encoder;
 
 use dataframe::DataFrame;
 use message::OwnedMessage;
@@ -161,8 +161,7 @@ where
 ///# Example
 ///
 ///```rust
-///# extern crate tokio_core;
-///# extern crate tokio_io;
+///# extern crate tokio;
 ///# extern crate websocket;
 ///# extern crate hyper;
 ///# use std::io::{self, Cursor};
@@ -171,30 +170,28 @@ where
 ///# use websocket::ws::Message as MessageTrait;
 ///# use websocket::stream::ReadWritePair;
 ///# use websocket::async::futures::{Future, Sink, Stream};
-///# use tokio_core::net::TcpStream;
-///# use tokio_core::reactor::Core;
-///# use tokio_io::AsyncRead;
 ///# use hyper::http::h1::Incoming;
 ///# use hyper::version::HttpVersion;
 ///# use hyper::header::Headers;
 ///# use hyper::method::Method;
 ///# use hyper::uri::RequestUri;
 ///# use hyper::status::StatusCode;
+///# use tokio::codec::Decoder;
 ///# fn main() {
 ///
-///let mut core = Core::new().unwrap();
+///let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 ///let mut input = Vec::new();
 ///Message::text("50 schmeckels").serialize(&mut input, false);
 ///
-///let f = ReadWritePair(Cursor::new(input), Cursor::new(vec![]))
-///    .framed(MessageCodec::default(MsgCodecCtx::Client))
+///let f = MessageCodec::default(MsgCodecCtx::Client)
+///    .framed(ReadWritePair(Cursor::new(input), Cursor::new(vec![])))
 ///    .into_future()
 ///    .map_err(|e| e.0)
 ///    .map(|(m, _)| {
 ///        assert_eq!(m, Some(OwnedMessage::Text("50 schmeckels".to_string())));
 ///    });
 ///
-///core.run(f).unwrap();
+///runtime.block_on(f).unwrap();
 ///# }
 pub struct MessageCodec<M>
 where
@@ -308,8 +305,6 @@ mod tests {
 	use message::Message;
 	use std::io::Cursor;
 	use stream::ReadWritePair;
-	use tokio_core::reactor::Core;
-	use tokio_io::AsyncRead;
 
 	#[test]
 	fn owned_message_predicts_size() {
@@ -370,14 +365,13 @@ mod tests {
 
 	#[test]
 	fn message_codec_client_send_receive() {
-		let mut core = Core::new().unwrap();
 		let mut input = Vec::new();
 		Message::text("50 schmeckels")
 			.serialize(&mut input, false)
 			.unwrap();
 
-		let f = ReadWritePair(Cursor::new(input), Cursor::new(vec![]))
-			.framed(MessageCodec::new(Context::Client))
+		let f = MessageCodec::new(Context::Client)
+            .framed(ReadWritePair(Cursor::new(input), Cursor::new(vec![])))
 			.into_future()
 			.map_err(|e| e.0)
 			.map(|(m, s)| {
@@ -386,11 +380,11 @@ mod tests {
 			})
 			.and_then(|s| s.send(Message::text("ethan bradberry")))
 			.and_then(|s| {
-				let mut stream = s.into_parts().inner;
+				let mut stream = s.into_parts().io;
 				stream.1.set_position(0);
 				println!("buffer: {:?}", stream.1);
-				ReadWritePair(stream.1, stream.0)
-					.framed(MessageCodec::default(Context::Server))
+                MessageCodec::default(Context::Server)
+                    .framed(ReadWritePair(stream.1, stream.0))
 					.into_future()
 					.map_err(|e| e.0)
 					.map(|(message, _)| {
@@ -398,19 +392,19 @@ mod tests {
 					})
 			});
 
-		core.run(f).unwrap();
+        tokio::runtime::Builder::new().build().unwrap().block_on(f).unwrap();
 	}
 
 	#[test]
 	fn message_codec_server_send_receive() {
-		let mut core = Core::new().unwrap();
-		let mut input = Vec::new();
+		let mut runtime = tokio::runtime::Builder::new().build().unwrap();
+        let mut input = Vec::new();
 		Message::text("50 schmeckels")
 			.serialize(&mut input, true)
 			.unwrap();
 
-		let f = ReadWritePair(Cursor::new(input.as_slice()), Cursor::new(vec![]))
-			.framed(MessageCodec::new(Context::Server))
+		let f = MessageCodec::new(Context::Server)
+            .framed(ReadWritePair(Cursor::new(input), Cursor::new(vec![])))
 			.into_future()
 			.map_err(|e| e.0)
 			.map(|(m, s)| {
@@ -423,9 +417,9 @@ mod tests {
 				Message::text("ethan bradberry")
 					.serialize(&mut written, false)
 					.unwrap();
-				assert_eq!(written, s.into_parts().inner.1.into_inner());
+				assert_eq!(written, s.into_parts().io.1.into_inner());
 			});
 
-		core.run(f).unwrap();
+		runtime.block_on(f).unwrap();
 	}
 }
