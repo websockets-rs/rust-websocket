@@ -569,7 +569,7 @@ impl<'u> ClientBuilder<'u> {
 			Box::new(future)
 		} else {
 			// insecure connection, connect normally
-			let future = tcp_stream.map_err(|e| e.into()).and_then(move |stream| {
+			let future = tcp_stream.and_then(move |stream| {
 				let stream: Box<stream::async::Stream + Send> = Box::new(stream);
 				builder.async_connect_on(stream)
 			});
