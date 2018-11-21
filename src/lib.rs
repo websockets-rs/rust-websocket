@@ -1,8 +1,9 @@
 #![warn(missing_docs)]
 #![cfg_attr(all(test, feature = "nightly"), feature(test))]
-#![cfg_attr(
-	feature = "cargo-clippy",
-	allow(write_with_newline, type_complexity, match_ref_pats)
+#![allow(
+	clippy::write_with_newline,
+	clippy::type_complexity,
+	clippy::match_ref_pats
 )]
 #![deny(unused_mut)]
 

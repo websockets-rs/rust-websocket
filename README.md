@@ -76,7 +76,7 @@ rustup component add clippy-preview
 
 # test
 cargo +nightly fmt -- --check
-cargo +nightly clippy --all-features -- -D clippy
+cargo +nightly clippy --all-features -- -D clippy::all
 cargo test --features nightly
 cargo bench --features nightly
 ./scripts/build-all.sh
