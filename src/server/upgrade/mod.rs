@@ -62,18 +62,18 @@ where
 		P: Into<String>,
 	{
 		upsert_header!(self.headers; WebSocketProtocol; {
-            Some(protos) => protos.0.push(protocol.into()),
-            None => WebSocketProtocol(vec![protocol.into()])
-        });
+			Some(protos) => protos.0.push(protocol.into()),
+			None => WebSocketProtocol(vec![protocol.into()])
+		});
 		self
 	}
 
 	/// Select an extension to use in the handshake response.
 	pub fn use_extension(mut self, extension: Extension) -> Self {
 		upsert_header!(self.headers; WebSocketExtensions; {
-            Some(protos) => protos.0.push(extension),
-            None => WebSocketExtensions(vec![extension])
-        });
+			Some(protos) => protos.0.push(extension),
+			None => WebSocketExtensions(vec![extension])
+		});
 		self
 	}
 
@@ -84,9 +84,9 @@ where
 	{
 		let mut extensions: Vec<Extension> = extensions.into_iter().collect();
 		upsert_header!(self.headers; WebSocketExtensions; {
-            Some(protos) => protos.0.append(&mut extensions),
-            None => WebSocketExtensions(extensions)
-        });
+			Some(protos) => protos.0.append(&mut extensions),
+			None => WebSocketExtensions(extensions)
+		});
 		self
 	}
 

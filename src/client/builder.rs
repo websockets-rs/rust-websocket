@@ -174,9 +174,9 @@ impl<'u> ClientBuilder<'u> {
 		P: Into<String>,
 	{
 		upsert_header!(self.headers; WebSocketProtocol; {
-            Some(protos) => protos.0.push(protocol.into()),
-            None => WebSocketProtocol(vec![protocol.into()])
-        });
+			Some(protos) => protos.0.push(protocol.into()),
+			None => WebSocketProtocol(vec![protocol.into()])
+		});
 		self
 	}
 
@@ -201,9 +201,9 @@ impl<'u> ClientBuilder<'u> {
 		let mut protocols: Vec<String> = protocols.into_iter().map(Into::into).collect();
 
 		upsert_header!(self.headers; WebSocketProtocol; {
-            Some(protos) => protos.0.append(&mut protocols),
-            None => WebSocketProtocol(protocols)
-        });
+			Some(protos) => protos.0.append(&mut protocols),
+			None => WebSocketProtocol(protocols)
+		});
 		self
 	}
 
@@ -234,9 +234,9 @@ impl<'u> ClientBuilder<'u> {
 	/// ```
 	pub fn add_extension(mut self, extension: Extension) -> Self {
 		upsert_header!(self.headers; WebSocketExtensions; {
-            Some(protos) => protos.0.push(extension),
-            None => WebSocketExtensions(vec![extension])
-        });
+			Some(protos) => protos.0.push(extension),
+			None => WebSocketExtensions(vec![extension])
+		});
 		self
 	}
 
@@ -270,9 +270,9 @@ impl<'u> ClientBuilder<'u> {
 	{
 		let mut extensions: Vec<Extension> = extensions.into_iter().collect();
 		upsert_header!(self.headers; WebSocketExtensions; {
-            Some(protos) => protos.0.append(&mut extensions),
-            None => WebSocketExtensions(extensions)
-        });
+			Some(protos) => protos.0.append(&mut extensions),
+			None => WebSocketExtensions(extensions)
+		});
 		self
 	}
 
