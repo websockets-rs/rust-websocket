@@ -24,7 +24,6 @@ mod common_imports {
 	pub use stream::{self, Stream};
 	pub use unicase::UniCase;
 	pub use url::Position;
-    pub use ::ws::util::update_framed_codec;
 }
 #[cfg(any(feature = "sync", feature = "async"))]
 use self::common_imports::*;
@@ -53,6 +52,7 @@ mod async_imports {
 	pub use tokio::reactor::Handle;
 	#[cfg(feature = "async-ssl")]
 	pub use tokio_tls::TlsConnector as TlsConnectorExt;
+    pub use ws::util::update_framed_codec;
 }
 #[cfg(feature = "async")]
 use self::async_imports::*;
@@ -176,9 +176,9 @@ impl<'u> ClientBuilder<'u> {
 		P: Into<String>,
 	{
 		upsert_header!(self.headers; WebSocketProtocol; {
-            Some(protos) => protos.0.push(protocol.into()),
-            None => WebSocketProtocol(vec![protocol.into()])
-        });
+			Some(protos) => protos.0.push(protocol.into()),
+			None => WebSocketProtocol(vec![protocol.into()])
+		});
 		self
 	}
 
@@ -203,9 +203,9 @@ impl<'u> ClientBuilder<'u> {
 		let mut protocols: Vec<String> = protocols.into_iter().map(Into::into).collect();
 
 		upsert_header!(self.headers; WebSocketProtocol; {
-            Some(protos) => protos.0.append(&mut protocols),
-            None => WebSocketProtocol(protocols)
-        });
+			Some(protos) => protos.0.append(&mut protocols),
+			None => WebSocketProtocol(protocols)
+		});
 		self
 	}
 
@@ -236,9 +236,9 @@ impl<'u> ClientBuilder<'u> {
 	/// ```
 	pub fn add_extension(mut self, extension: Extension) -> Self {
 		upsert_header!(self.headers; WebSocketExtensions; {
-            Some(protos) => protos.0.push(extension),
-            None => WebSocketExtensions(vec![extension])
-        });
+			Some(protos) => protos.0.push(extension),
+			None => WebSocketExtensions(vec![extension])
+		});
 		self
 	}
 
@@ -272,9 +272,9 @@ impl<'u> ClientBuilder<'u> {
 	{
 		let mut extensions: Vec<Extension> = extensions.into_iter().collect();
 		upsert_header!(self.headers; WebSocketExtensions; {
-            Some(protos) => protos.0.append(&mut extensions),
-            None => WebSocketExtensions(extensions)
-        });
+			Some(protos) => protos.0.append(&mut extensions),
+			None => WebSocketExtensions(extensions)
+		});
 		self
 	}
 
@@ -923,7 +923,7 @@ impl<'u> ClientBuilder<'u> {
 			None => {
 				return Err(WebSocketError::WebSocketUrlError(
 					WSUrlErrorKind::NoHostName,
-				))
+				));
 			}
 		};
 		let connector = match connector {

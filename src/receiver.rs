@@ -135,7 +135,7 @@ impl ws::Receiver for Receiver {
 				_ => {
 					return Err(WebSocketError::ProtocolError(
 						"Unexpected data frame opcode",
-					))
+					));
 				}
 			}
 		}

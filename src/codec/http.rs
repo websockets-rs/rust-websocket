@@ -99,7 +99,7 @@ impl Decoder for HttpClientCodec {
 				let mut reader = BufReader::with_capacity(&*buf as &[u8], buf.len());
 				let res = match parse_response(&mut reader) {
 					Err(hyper::Error::Io(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
-						return Ok(None)
+						return Ok(None);
 					}
 					Err(hyper::Error::TooLarge) => return Ok(None),
 					Err(e) => return Err(e.into()),

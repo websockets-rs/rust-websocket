@@ -155,7 +155,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 					parsed: None,
 					buffer: None,
 					error: HyperIntoWsError::Io(e),
-				})
+				});
 			}
 		};
 
@@ -167,7 +167,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 					parsed: None,
 					buffer: None,
 					error: io::Error::new(io::ErrorKind::Other, err).into(),
-				})
+				});
 			}
 		};
 
@@ -236,7 +236,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 					parsed: None,
 					buffer: None,
 					error: e.into(),
-				})
+				});
 			}
 		};
 
