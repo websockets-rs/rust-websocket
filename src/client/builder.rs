@@ -24,6 +24,7 @@ mod common_imports {
 	pub use stream::{self, Stream};
 	pub use unicase::UniCase;
 	pub use url::Position;
+    pub use ::ws::util::update_framed_codec;
 }
 #[cfg(any(feature = "sync", feature = "async"))]
 use self::common_imports::*;
@@ -769,7 +770,7 @@ impl<'u> ClientBuilder<'u> {
 			// output the final client and metadata
 			.map(|(message, stream)| {
 				let codec = MessageCodec::default(Context::Client);
-				let client = codec.framed(stream.into_inner());
+				let client = update_framed_codec(stream, codec);
 				(client, message.headers)
 			});
 

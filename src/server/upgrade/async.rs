@@ -19,6 +19,7 @@ use hyper::status::StatusCode;
 use std::io::{self, ErrorKind};
 use stream::async::Stream;
 use tokio::codec::{Decoder, Framed, FramedParts};
+use ::ws::util::update_framed_codec;
 
 /// An asynchronous websocket upgrade.
 ///
@@ -104,7 +105,7 @@ where
 			})
 			.map(move |s| {
 				let codec = MessageCodec::default(Context::Server);
-				let client = codec.framed(s.into_inner());
+				let client = update_framed_codec(s, codec);
 				(client, headers)
 			})
 			.map_err(|e| e.into());
