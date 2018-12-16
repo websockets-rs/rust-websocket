@@ -52,7 +52,7 @@ mod async_imports {
 	pub use tokio::reactor::Handle;
 	#[cfg(feature = "async-ssl")]
 	pub use tokio_tls::TlsConnector as TlsConnectorExt;
-    pub use ws::util::update_framed_codec;
+	pub use ws::util::update_framed_codec;
 }
 #[cfg(feature = "async")]
 use self::async_imports::*;
