@@ -704,6 +704,7 @@ impl<'u> ClientBuilder<'u> {
 	///
 	/// ```rust
 	/// # extern crate tokio;
+	/// # extern crate websocket;
 	/// use websocket::header::WebSocketProtocol;
 	/// use websocket::ClientBuilder;
 	/// use websocket::sync::stream::ReadWritePair;

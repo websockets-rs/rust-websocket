@@ -32,6 +32,7 @@ use ws::util::update_framed_codec;
 ///
 /// ```rust,no_run
 /// # extern crate tokio;
+/// # extern crate websocket;
 /// use websocket::async::{TcpListener, TcpStream};
 /// use websocket::async::futures::{Stream, Future};
 /// use websocket::async::server::upgrade::IntoWs;
@@ -163,6 +164,7 @@ where
 ///
 /// ```rust,no_run
 /// # extern crate tokio;
+/// # extern crate websocket;
 /// use websocket::async::{TcpListener, TcpStream};
 /// use websocket::async::futures::{Stream, Future};
 /// use websocket::async::server::upgrade::IntoWs;

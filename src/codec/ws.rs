@@ -7,6 +7,8 @@
 //! For websocket messages, see the documentation for `MessageCodec`, for
 //! dataframes see the documentation for `DataFrameCodec`
 
+extern crate tokio;
+
 use std::borrow::Borrow;
 use std::io::Cursor;
 use std::marker::PhantomData;
