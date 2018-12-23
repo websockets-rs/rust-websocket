@@ -53,18 +53,18 @@ pub trait DataFrame {
 	fn write_to(&self, writer: &mut Write, mask: bool) -> WebSocketResult<()> {
 		let mut flags = dfh::DataFrameFlags::empty();
 		if self.is_last() {
-			flags.insert(dfh::FIN);
+			flags.insert(dfh::DataFrameFlags::FIN);
 		}
 		{
 			let reserved = self.reserved();
 			if reserved[0] {
-				flags.insert(dfh::RSV1);
+				flags.insert(dfh::DataFrameFlags::RSV1);
 			}
 			if reserved[1] {
-				flags.insert(dfh::RSV2);
+				flags.insert(dfh::DataFrameFlags::RSV2);
 			}
 			if reserved[2] {
-				flags.insert(dfh::RSV3);
+				flags.insert(dfh::DataFrameFlags::RSV3);
 			}
 		}
 

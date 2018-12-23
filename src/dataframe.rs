@@ -46,12 +46,12 @@ impl DataFrame {
 		body: Vec<u8>,
 		should_be_masked: bool,
 	) -> WebSocketResult<Self> {
-		let finished = header.flags.contains(dfh::FIN);
+		let finished = header.flags.contains(dfh::DataFrameFlags::FIN);
 
 		let reserved = [
-			header.flags.contains(dfh::RSV1),
-			header.flags.contains(dfh::RSV2),
-			header.flags.contains(dfh::RSV3),
+			header.flags.contains(dfh::DataFrameFlags::RSV1),
+			header.flags.contains(dfh::DataFrameFlags::RSV2),
+			header.flags.contains(dfh::DataFrameFlags::RSV3),
 		];
 
 		let opcode = Opcode::new(header.opcode).expect("Invalid header opcode!");

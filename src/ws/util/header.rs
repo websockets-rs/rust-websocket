@@ -105,7 +105,7 @@ where
 				"Control frame length too long",
 			));
 		}
-		if !flags.contains(FIN) {
+		if !flags.contains(DataFrameFlags::FIN) {
 			return Err(WebSocketError::ProtocolError(
 				"Illegal fragmented control frame",
 			));
@@ -141,7 +141,7 @@ mod tests {
 		let header = [0x81, 0x2B];
 		let obtained = read_header(&mut &header[..]).unwrap();
 		let expected = DataFrameHeader {
-			flags: FIN,
+			flags: DataFrameFlags::FIN,
 			opcode: 1,
 			mask: None,
 			len: 43,
@@ -152,7 +152,7 @@ mod tests {
 	#[test]
 	fn test_write_header_simple() {
 		let header = DataFrameHeader {
-			flags: FIN,
+			flags: DataFrameFlags::FIN,
 			opcode: 1,
 			mask: None,
 			len: 43,
@@ -169,7 +169,7 @@ mod tests {
 		let header = [0x42, 0xFE, 0x02, 0x00, 0x02, 0x04, 0x08, 0x10];
 		let obtained = read_header(&mut &header[..]).unwrap();
 		let expected = DataFrameHeader {
-			flags: RSV1,
+			flags: DataFrameFlags::RSV1,
 			opcode: 2,
 			mask: Some([2, 4, 8, 16]),
 			len: 512,
@@ -180,7 +180,7 @@ mod tests {
 	#[test]
 	fn test_write_header_complex() {
 		let header = DataFrameHeader {
-			flags: RSV1,
+			flags: DataFrameFlags::RSV1,
 			opcode: 2,
 			mask: Some([2, 4, 8, 16]),
 			len: 512,
@@ -203,7 +203,7 @@ mod tests {
 	#[bench]
 	fn bench_write_header(b: &mut test::Bencher) {
 		let header = DataFrameHeader {
-			flags: RSV1,
+			flags: DataFrameFlags::RSV1,
 			opcode: 2,
 			mask: Some([2, 4, 8, 16]),
 			len: 512,
