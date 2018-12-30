@@ -436,6 +436,18 @@ impl ws::dataframe::DataFrame for OwnedMessage {
 	}
 }
 
+impl From<String> for OwnedMessage {
+    fn from(text: String) -> Self {
+        OwnedMessage::Text(text)
+    }
+}
+
+impl From<Vec<u8>> for OwnedMessage {
+    fn from(buf: Vec<u8>) -> Self {
+        OwnedMessage::Binary(buf)
+    }
+}
+
 impl<'m> From<Message<'m>> for OwnedMessage {
 	fn from(message: Message<'m>) -> Self {
 		match message.opcode {
