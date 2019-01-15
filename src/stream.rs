@@ -177,7 +177,7 @@ pub mod sync {
 
 	impl<T> AsTcpStream for Box<T>
 	where
-		T: AsTcpStream,
+		T: AsTcpStream + ?Sized,
 	{
 		fn as_tcp(&self) -> &TcpStream {
 			self.deref().as_tcp()
