@@ -396,7 +396,7 @@ impl<'u> ClientBuilder<'u> {
 	) -> WebSocketResult<Client<Box<NetworkStream + Send>>> {
 		let tcp_stream = self.establish_tcp(None)?;
 
-		let boxed_stream: Box<NetworkStream + Send> = if self.url.scheme() == "wss" {
+		let boxed_stream: Box<NetworkStream + Send> = if self.is_secure_url() {
 			Box::new(self.wrap_ssl(tcp_stream, ssl_config)?)
 		} else {
 			Box::new(tcp_stream)
@@ -885,6 +885,13 @@ impl<'u> ClientBuilder<'u> {
 		}
 
 		Ok(())
+	}
+
+	/// Check whether the given URL uses a secure scheme, e.g. `wss` or `https`.
+	#[cfg(feature = "sync-ssl")]
+	fn is_secure_url(&self) -> bool {
+		let scheme = self.url.scheme();
+		scheme == "wss" || scheme == "https"
 	}
 
 	#[cfg(any(feature = "sync", feature = "async"))]
