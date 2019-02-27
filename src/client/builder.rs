@@ -888,6 +888,7 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	/// Check whether the given URL uses a secure scheme, e.g. `wss` or `https`.
+	#[cfg(feature = "sync-ssl")]
 	fn is_secure_url(&self) -> bool {
 		let scheme = self.url.scheme();
 		scheme == "wss" || scheme == "https"
