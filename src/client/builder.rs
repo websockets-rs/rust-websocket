@@ -553,7 +553,7 @@ impl<'u> ClientBuilder<'u> {
 		};
 
 		// check if we should connect over ssl or not
-		if builder.url.scheme() == "wss" {
+		if builder.is_secure_url() {
 			// configure the tls connection
 			let (host, connector) = {
 				match builder.extract_host_ssl_conn(ssl_config) {
@@ -889,7 +889,7 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	/// Check whether the given URL uses a secure scheme, e.g. `wss` or `https`.
-	#[cfg(feature = "sync-ssl")]
+	#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 	fn is_secure_url(&self) -> bool {
 		let scheme = self.url.scheme();
 		scheme == "wss" || scheme == "https"
