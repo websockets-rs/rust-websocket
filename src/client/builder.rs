@@ -5,8 +5,8 @@ use header::{Origin, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSo
 use hyper::header::{Header, HeaderFormat, Headers};
 use hyper::version::HttpVersion;
 use std::borrow::Cow;
-pub use url::{ParseError, Url};
 use std::convert::Into;
+pub use url::{ParseError, Url};
 
 #[cfg(any(feature = "sync", feature = "async"))]
 mod common_imports {

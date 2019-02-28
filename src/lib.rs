@@ -2,7 +2,12 @@
 #![cfg_attr(all(test, feature = "nightly"), feature(test))]
 #![cfg_attr(
 	feature = "cargo-clippy",
-	allow(renamed_and_removed_lints, write_with_newline, type_complexity, match_ref_pats)
+	allow(
+		renamed_and_removed_lints,
+		write_with_newline,
+		type_complexity,
+		match_ref_pats
+	)
 )]
 #![deny(unused_mut)]
 
