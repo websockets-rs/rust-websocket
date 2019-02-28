@@ -109,7 +109,7 @@ where
 				let client = update_framed_codec(s, codec);
 				(client, headers)
 			})
-			.map_err(|e| e.into());
+			.map_err(Into::into);
 		Box::new(future)
 	}
 

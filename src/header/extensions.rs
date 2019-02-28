@@ -47,7 +47,7 @@ impl FromStr for Extension {
 	type Err = WebSocketError;
 
 	fn from_str(s: &str) -> WebSocketResult<Extension> {
-		let mut ext = s.split(';').map(|x| x.trim());
+		let mut ext = s.split(';').map(str::trim);
 		Ok(Extension {
 			name: match ext.next() {
 				Some(x) => x.to_string(),

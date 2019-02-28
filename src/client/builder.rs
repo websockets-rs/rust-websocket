@@ -6,6 +6,7 @@ use hyper::header::{Header, HeaderFormat, Headers};
 use hyper::version::HttpVersion;
 use std::borrow::Cow;
 pub use url::{ParseError, Url};
+use std::convert::Into;
 
 #[cfg(any(feature = "sync", feature = "async"))]
 mod common_imports {
@@ -562,7 +563,7 @@ impl<'u> ClientBuilder<'u> {
 			};
 			// secure connection, wrap with ssl
 			let future = tcp_stream
-				.and_then(move |s| connector.connect(&host, s).map_err(|e| e.into()))
+				.and_then(move |s| connector.connect(&host, s).map_err(Into::into))
 				.and_then(move |stream| {
 					let stream: Box<stream::async::Stream + Send> = Box::new(stream);
 					builder.async_connect_on(stream)
@@ -638,7 +639,7 @@ impl<'u> ClientBuilder<'u> {
 
 		// put it all together
 		let future = tcp_stream
-			.and_then(move |s| connector.connect(&host, s).map_err(|e| e.into()))
+			.and_then(move |s| connector.connect(&host, s).map_err(Into::into))
 			.and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
@@ -803,7 +804,7 @@ impl<'u> ClientBuilder<'u> {
 		};
 
 		// connect a tcp stream
-		Box::new(TcpStreamNew::connect(&address).map_err(|e| e.into()))
+		Box::new(TcpStreamNew::connect(&address).map_err(Into::into))
 	}
 
 	#[cfg(any(feature = "sync", feature = "async"))]

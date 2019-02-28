@@ -193,10 +193,10 @@ impl<'a> ws::Message for Message<'a> {
 		let opcode = frames
 			.first()
 			.ok_or(WebSocketError::ProtocolError("No dataframes provided"))
-			.map(|d| d.opcode())?;
+			.map(ws::dataframe::DataFrame::opcode)?;
 		let opcode = Opcode::new(opcode);
 
-		let payload_size = frames.iter().map(|d| d.size()).sum();
+		let payload_size = frames.iter().map(ws::dataframe::DataFrame::size).sum();
 
 		let mut data = Vec::with_capacity(payload_size);
 
