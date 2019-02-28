@@ -889,6 +889,8 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	/// Check whether the given URL uses a secure scheme, e.g. `wss` or `https`.
+	/// Note that `https` is not intended scheme for web sockets, but
+	/// it's still reasonable to wrap TLS if it is encountered.
 	#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 	fn is_secure_url(&self) -> bool {
 		let scheme = self.url.scheme();
