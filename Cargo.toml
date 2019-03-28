@@ -16,7 +16,7 @@ categories = ["asynchronous", "network-programming", "web-programming", "web-pro
 license = "MIT"
 
 [dependencies]
-hyper = "^0.10.6"
+#hyper = "^0.10.6"
 unicase = "1.0"
 url = "1.0"
 bitflags = "1.0.4"
@@ -30,6 +30,16 @@ tokio-tls = { version = "0.2.0", optional = true }
 bytes = { version = "0.4", optional = true }
 native-tls = { version = "0.2.1", optional = true }
 
+httparse = "1.0"
+language-tags = "0.2"
+log = "0.3"
+mime = "0.2"
+num_cpus = "1.0"
+time = "0.1"
+traitobject = "0.1"
+typeable = "0.1"
+
+
 [dev-dependencies]
 futures-cpupool = "0.1"
 
@@ -39,4 +49,4 @@ sync = []
 sync-ssl = ["native-tls", "sync"]
 async = ["tokio", "bytes", "futures"]
 async-ssl = ["native-tls", "tokio-tls", "async"]
-nightly = ["hyper/nightly"]
+#nightly = ["hyper/nightly"]

@@ -1,5 +1,6 @@
-extern crate hyper;
+//extern crate hyper;
 extern crate websocket;
+use websocket::hyper;
 
 use hyper::net::Fresh;
 use hyper::server::request::Request;

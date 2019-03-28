@@ -42,7 +42,7 @@ extern crate byteorder;
 extern crate bytes;
 #[cfg(feature = "async")]
 pub extern crate futures;
-extern crate hyper;
+pub mod hyper;
 #[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 extern crate native_tls;
 extern crate rand;
@@ -52,6 +52,7 @@ extern crate tokio;
 #[cfg(feature = "async-ssl")]
 extern crate tokio_tls;
 extern crate unicase;
+#[macro_use]
 pub extern crate url;
 
 #[macro_use]
@@ -59,6 +60,14 @@ extern crate bitflags;
 
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
+#[macro_use]
+extern crate mime as mime_crate;
+#[macro_use]
+extern crate log;
+
+
+#[cfg_attr(test, macro_use)]
+extern crate language_tags;
 
 macro_rules! upsert_header {
 	($headers:expr; $header:ty;  { Some($pat:pat) => $some_match:expr,None => $default:expr }) => {{
