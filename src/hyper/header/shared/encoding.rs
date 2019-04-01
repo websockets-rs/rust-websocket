@@ -1,12 +1,12 @@
 use std::fmt;
 use std::str;
 
-pub use self::Encoding::{Chunked, Gzip, Deflate, Compress, Identity, EncodingExt};
+pub(crate) use self::Encoding::{Chunked, Gzip, Deflate, Compress, Identity, EncodingExt};
 
 /// A value to represent an encoding used in `Transfer-Encoding`
 /// or `Accept-Encoding` header.
 #[derive(Clone, PartialEq, Debug)]
-pub enum Encoding {
+pub(crate) enum Encoding {
     /// The `chunked` encoding.
     Chunked,
     /// The `gzip` encoding.

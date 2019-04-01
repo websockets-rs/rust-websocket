@@ -3,7 +3,7 @@ use std::fmt;
 #[allow(unused_imports)]
 use std::ascii::AsciiExt;
 
-use header::{Header, HeaderFormat, parsing};
+use ::hyper::header::{Header, HeaderFormat, parsing};
 
 /// The `Pragma` header defined by HTTP/1.0.
 ///
@@ -33,7 +33,7 @@ use header::{Header, HeaderFormat, parsing};
 /// headers.set(Pragma::Ext("foobar".to_owned()));
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub enum Pragma {
+pub(crate) enum Pragma {
     /// Corresponds to the `no-cache` value.
     NoCache,
     /// Every value other than `no-cache`.

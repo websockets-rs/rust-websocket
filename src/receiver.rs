@@ -21,7 +21,7 @@ where
 	R: Read,
 {
 	/// the stream to be read from
-	pub stream: BufReader<R>,
+	pub(crate) stream: BufReader<R>,
 	/// the parser to parse bytes into messages
 	pub receiver: Receiver,
 }
@@ -36,7 +36,7 @@ where
 	}
 
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes(&mut self) -> DataFrameIterator<Receiver, BufReader<R>> {
+	pub(crate) fn incoming_dataframes(&mut self) -> DataFrameIterator<Receiver, BufReader<R>> {
 		self.receiver.incoming_dataframes(&mut self.stream)
 	}
 
@@ -47,7 +47,7 @@ where
 
 	/// An iterator over incoming messsages.
 	/// This iterator will block until new messages arrive and will never halt.
-	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, BufReader<R>> {
+	pub(crate) fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, BufReader<R>> {
 		self.receiver.incoming_messages(&mut self.stream)
 	}
 }

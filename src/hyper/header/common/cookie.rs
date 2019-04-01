@@ -1,4 +1,4 @@
-use header::{Header, HeaderFormat};
+use ::hyper::header::{Header, HeaderFormat};
 use std::fmt::{self, Display};
 use std::str::from_utf8;
 
@@ -28,7 +28,7 @@ use std::str::from_utf8;
 /// );
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub struct Cookie(pub Vec<String>);
+pub(crate) struct Cookie(pub(crate) Vec<String>);
 
 __hyper__deref!(Cookie => Vec<String>);
 

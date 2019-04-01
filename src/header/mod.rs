@@ -9,7 +9,7 @@ pub use self::key::WebSocketKey;
 pub use self::origin::Origin;
 pub use self::protocol::WebSocketProtocol;
 pub use self::version::WebSocketVersion;
-pub use hyper::header::*;
+use ::hyper::header::*;
 
 mod accept;
 pub mod extensions;

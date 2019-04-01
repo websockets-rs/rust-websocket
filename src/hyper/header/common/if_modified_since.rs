@@ -1,4 +1,4 @@
-use header::HttpDate;
+use ::hyper::header::HttpDate;
 
 header! {
     /// `If-Modified-Since` header, defined in

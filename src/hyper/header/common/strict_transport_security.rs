@@ -3,7 +3,7 @@ use std::str::{self, FromStr};
 
 use unicase::UniCase;
 
-use header::{Header, HeaderFormat, parsing};
+use ::hyper::header::{Header, HeaderFormat, parsing};
 
 /// `StrictTransportSecurity` header, defined in [RFC6797](https://tools.ietf.org/html/rfc6797)
 ///
@@ -44,20 +44,20 @@ use header::{Header, HeaderFormat, parsing};
 /// # }
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub struct StrictTransportSecurity {
+pub(crate) struct StrictTransportSecurity {
     /// Signals the UA that the HSTS Policy applies to this HSTS Host as well as
     /// any subdomains of the host's domain name.
-    pub include_subdomains: bool,
+    pub(crate) include_subdomains: bool,
 
     /// Specifies the number of seconds, after the reception of the STS header
     /// field, during which the UA regards the host (from whom the message was
     /// received) as a Known HSTS Host.
-    pub max_age: u64
+    pub(crate) max_age: u64
 }
 
 impl StrictTransportSecurity {
     /// Create an STS header that includes subdomains
-    pub fn including_subdomains(max_age: u64) -> StrictTransportSecurity {
+    pub(crate) fn including_subdomains(max_age: u64) -> StrictTransportSecurity {
         StrictTransportSecurity {
             max_age: max_age,
             include_subdomains: true
@@ -65,7 +65,7 @@ impl StrictTransportSecurity {
     }
 
     /// Create an STS header that excludes subdomains
-    pub fn excluding_subdomains(max_age: u64) -> StrictTransportSecurity {
+    pub(crate) fn excluding_subdomains(max_age: u64) -> StrictTransportSecurity {
         StrictTransportSecurity {
             max_age: max_age,
             include_subdomains: false
@@ -148,7 +148,7 @@ impl fmt::Display for StrictTransportSecurity {
 #[cfg(test)]
 mod tests {
     use super::StrictTransportSecurity;
-    use header::Header;
+    use ::hyper::header::Header;
 
     #[test]
     fn test_parse_max_age() {

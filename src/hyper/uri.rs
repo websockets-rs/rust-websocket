@@ -36,7 +36,7 @@ pub enum RequestUri {
     /// > URI in absolute-form as the request-target.
     ///
     /// An example StartLine with an `AbsoluteUri` would be
-    /// `GET http://www.example.org/pub/WWW/TheProject.html HTTP/1.1`.
+    /// `GET http://www.example.org/pub(crate)/WWW/TheProject.html HTTP/1.1`.
     AbsoluteUri(Url),
 
     /// The authority form is only for use with `CONNECT` requests.

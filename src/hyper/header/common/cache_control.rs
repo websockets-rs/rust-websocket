@@ -45,7 +45,7 @@ use ::hyper::header::parsing::{from_comma_delimited, fmt_comma_delimited};
 /// );
 /// ```
 #[derive(PartialEq, Clone, Debug)]
-pub struct CacheControl(pub Vec<CacheDirective>);
+pub(crate) struct CacheControl(pub(crate) Vec<CacheDirective>);
 
 __hyper__deref!(CacheControl => Vec<CacheDirective>);
 
@@ -78,7 +78,7 @@ impl fmt::Display for CacheControl {
 
 /// `CacheControl` contains a list of these directives.
 #[derive(PartialEq, Clone, Debug)]
-pub enum CacheDirective {
+pub(crate) enum CacheDirective {
     /// "no-cache"
     NoCache,
     /// "no-store"
@@ -169,7 +169,7 @@ impl FromStr for CacheDirective {
 
 #[cfg(test)]
 mod tests {
-    use header::Header;
+    use ::hyper::header::Header;
     use super::*;
 
     #[test]

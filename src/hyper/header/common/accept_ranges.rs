@@ -68,7 +68,7 @@ header! {
 /// other-range-unit = token
 /// ```
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum RangeUnit {
+pub(crate) enum RangeUnit {
     /// Indicating byte-range requests are supported.
     Bytes,
     /// Reserved as keyword, indicating no ranges are supported.

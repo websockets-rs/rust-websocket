@@ -8,8 +8,8 @@ use std::ascii::AsciiExt;
 use ::hyper::mime::Mime;
 use language_tags::LanguageTag;
 
-use header::parsing;
-use header::{Header, HeaderFormat};
+use ::hyper::header::parsing;
+use ::hyper::header::{Header, HeaderFormat};
 
 /// The `Link` header, defined in
 /// [RFC5988](http://tools.ietf.org/html/rfc5988#section-5)
@@ -69,7 +69,7 @@ use header::{Header, HeaderFormat};
 /// );
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub struct Link {
+pub(crate) struct Link {
     /// A list of the `link-value`s of the Link entity-header.
     values: Vec<LinkValue>
 }
@@ -77,7 +77,7 @@ pub struct Link {
 /// A single `link-value` of a `Link` header, based on:
 /// [RFC5988](http://tools.ietf.org/html/rfc5988#section-5)
 #[derive(Clone, PartialEq, Debug)]
-pub struct LinkValue {
+pub(crate) struct LinkValue {
     /// Target IRI: `link-value`.
     link: Cow<'static, str>,
 
@@ -111,7 +111,7 @@ pub struct LinkValue {
 /// A Media Descriptors Enum based on:
 /// https://www.w3.org/TR/html401/types.html#h-6.13
 #[derive(Clone, PartialEq, Debug)]
-pub enum MediaDesc {
+pub(crate) enum MediaDesc {
     /// screen.
     Screen,
     /// tty.
@@ -137,7 +137,7 @@ pub enum MediaDesc {
 /// A Link Relation Type Enum based on:
 /// [RFC5988](https://tools.ietf.org/html/rfc5988#section-6.2.2)
 #[derive(Clone, PartialEq, Debug)]
-pub enum RelationType {
+pub(crate) enum RelationType {
     /// alternate.
     Alternate,
     /// appendix.
@@ -228,24 +228,24 @@ pub enum RelationType {
 
 impl Link {
     /// Create `Link` from a `Vec<LinkValue>`.
-    pub fn new(link_values: Vec<LinkValue>) -> Link {
+    pub(crate) fn new(link_values: Vec<LinkValue>) -> Link {
         Link { values: link_values }
     }
 
     /// Get the `Link` header's `LinkValue`s.
-    pub fn values(&self) -> &[LinkValue] {
+    pub(crate) fn values(&self) -> &[LinkValue] {
         self.values.as_ref()
     }
 
     /// Add a `LinkValue` instance to the `Link` header's values.
-    pub fn push_value(&mut self, link_value: LinkValue) {
+    pub(crate) fn push_value(&mut self, link_value: LinkValue) {
         self.values.push(link_value);
     }
 }
 
 impl LinkValue {
     /// Create `LinkValue` from URI-Reference.
-    pub fn new<T>(uri: T) -> LinkValue
+    pub(crate) fn new<T>(uri: T) -> LinkValue
         where T: Into<Cow<'static, str>> {
         LinkValue {
             link: uri.into(),
@@ -261,52 +261,52 @@ impl LinkValue {
     }
 
     /// Get the `LinkValue`'s value.
-    pub fn link(&self) -> &str {
+    pub(crate) fn link(&self) -> &str {
         self.link.as_ref()
     }
 
     /// Get the `LinkValue`'s `rel` parameter(s).
-    pub fn rel(&self) -> Option<&[RelationType]> {
+    pub(crate) fn rel(&self) -> Option<&[RelationType]> {
         self.rel.as_ref().map(AsRef::as_ref)
     }
 
     /// Get the `LinkValue`'s `anchor` parameter.
-    pub fn anchor(&self) -> Option<&str> {
+    pub(crate) fn anchor(&self) -> Option<&str> {
         self.anchor.as_ref().map(AsRef::as_ref)
     }
 
     /// Get the `LinkValue`'s `rev` parameter(s).
-    pub fn rev(&self) -> Option<&[RelationType]> {
+    pub(crate) fn rev(&self) -> Option<&[RelationType]> {
         self.rev.as_ref().map(AsRef::as_ref)
     }
 
     /// Get the `LinkValue`'s `hreflang` parameter(s).
-    pub fn href_lang(&self) -> Option<&[LanguageTag]> {
+    pub(crate) fn href_lang(&self) -> Option<&[LanguageTag]> {
         self.href_lang.as_ref().map(AsRef::as_ref)
     }
 
     /// Get the `LinkValue`'s `media` parameter(s).
-    pub fn media_desc(&self) -> Option<&[MediaDesc]> {
+    pub(crate) fn media_desc(&self) -> Option<&[MediaDesc]> {
         self.media_desc.as_ref().map(AsRef::as_ref)
     }
 
     /// Get the `LinkValue`'s `title` parameter.
-    pub fn title(&self) -> Option<&str> {
+    pub(crate) fn title(&self) -> Option<&str> {
         self.title.as_ref().map(AsRef::as_ref)
     }
 
     /// Get the `LinkValue`'s `title*` parameter.
-    pub fn title_star(&self) -> Option<&str> {
+    pub(crate) fn title_star(&self) -> Option<&str> {
         self.title_star.as_ref().map(AsRef::as_ref)
     }
 
     /// Get the `LinkValue`'s `type` parameter.
-    pub fn media_type(&self) -> Option<&Mime> {
+    pub(crate) fn media_type(&self) -> Option<&Mime> {
         self.media_type.as_ref()
     }
 
     /// Add a `RelationType` to the `LinkValue`'s `rel` parameter.
-    pub fn push_rel(mut self, rel: RelationType) -> LinkValue {
+    pub(crate) fn push_rel(mut self, rel: RelationType) -> LinkValue {
         let mut v = self.rel.take().unwrap_or(Vec::new());
 
         v.push(rel);
@@ -317,14 +317,14 @@ impl LinkValue {
     }
 
     /// Set `LinkValue`'s `anchor` parameter.
-    pub fn set_anchor<T: Into<String>>(mut self, anchor: T) -> LinkValue {
+    pub(crate) fn set_anchor<T: Into<String>>(mut self, anchor: T) -> LinkValue {
         self.anchor = Some(anchor.into());
 
         self
     }
 
     /// Add a `RelationType` to the `LinkValue`'s `rev` parameter.
-    pub fn push_rev(mut self, rev: RelationType) -> LinkValue {
+    pub(crate) fn push_rev(mut self, rev: RelationType) -> LinkValue {
         let mut v = self.rev.take().unwrap_or(Vec::new());
 
         v.push(rev);
@@ -335,7 +335,7 @@ impl LinkValue {
     }
 
     /// Add a `LanguageTag` to the `LinkValue`'s `hreflang` parameter.
-    pub fn push_href_lang(mut self, language_tag: LanguageTag) -> LinkValue {
+    pub(crate) fn push_href_lang(mut self, language_tag: LanguageTag) -> LinkValue {
         let mut v = self.href_lang.take().unwrap_or(Vec::new());
 
         v.push(language_tag);
@@ -346,7 +346,7 @@ impl LinkValue {
     }
 
     /// Add a `MediaDesc` to the `LinkValue`'s `media_desc` parameter.
-    pub fn push_media_desc(mut self, media_desc: MediaDesc) -> LinkValue {
+    pub(crate) fn push_media_desc(mut self, media_desc: MediaDesc) -> LinkValue {
         let mut v = self.media_desc.take().unwrap_or(Vec::new());
 
         v.push(media_desc);
@@ -357,21 +357,21 @@ impl LinkValue {
     }
 
     /// Set `LinkValue`'s `title` parameter.
-    pub fn set_title<T: Into<String>>(mut self, title: T) -> LinkValue {
+    pub(crate) fn set_title<T: Into<String>>(mut self, title: T) -> LinkValue {
         self.title = Some(title.into());
 
         self
     }
 
     /// Set `LinkValue`'s `title*` parameter.
-    pub fn set_title_star<T: Into<String>>(mut self, title_star: T) -> LinkValue {
+    pub(crate) fn set_title_star<T: Into<String>>(mut self, title_star: T) -> LinkValue {
         self.title_star = Some(title_star.into());
 
         self
     }
 
     /// Set `LinkValue`'s `type` parameter.
-    pub fn set_media_type(mut self, media_type: Mime) -> LinkValue {
+    pub(crate) fn set_media_type(mut self, media_type: Mime) -> LinkValue {
         self.media_type = Some(media_type);
 
         self

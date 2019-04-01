@@ -23,10 +23,10 @@ use self::Error::{
     Utf8
 };
 
-pub use url::ParseError;
+pub(crate) use url::ParseError;
 
 /// Result type often returned from methods that can have hyper `Error`s.
-pub type Result<T> = ::std::result::Result<T, Error>;
+pub(crate) type Result<T> = ::std::result::Result<T, Error>;
 
 /// A set of errors that can occur parsing HTTP streams.
 #[derive(Debug)]

@@ -3,7 +3,7 @@ use std::fmt::{self, Display};
 use std::str::{FromStr, from_utf8};
 use std::ops::{Deref, DerefMut};
 use base64::{encode, decode};
-use header::{Header, HeaderFormat};
+use ::hyper::header::{Header, HeaderFormat};
 
 /// `Authorization` header, defined in [RFC7235](https://tools.ietf.org/html/rfc7235#section-4.2)
 ///
@@ -55,7 +55,7 @@ use header::{Header, HeaderFormat};
 /// );
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub struct Authorization<S: Scheme>(pub S);
+pub(crate) struct Authorization<S: Scheme>(pub(crate) S);
 
 impl<S: Scheme> Deref for Authorization<S> {
     type Target = S;
@@ -109,7 +109,7 @@ impl<S: Scheme + Any> HeaderFormat for Authorization<S> where <S as FromStr>::Er
 }
 
 /// An Authorization scheme to be used in the header.
-pub trait Scheme: FromStr + fmt::Debug + Clone + Send + Sync {
+pub(crate) trait Scheme: FromStr + fmt::Debug + Clone + Send + Sync {
     /// An optional Scheme name.
     ///
     /// Will be replaced with an associated constant once available.
@@ -130,12 +130,12 @@ impl Scheme for String {
 
 /// Credential holder for Basic Authentication
 #[derive(Clone, PartialEq, Debug)]
-pub struct Basic {
+pub(crate) struct Basic {
     /// The username as a possibly empty string
-    pub username: String,
+    pub(crate) username: String,
     /// The password. `None` if the `:` delimiter character was not
     /// part of the parsed input.
-    pub password: Option<String>
+    pub(crate) password: Option<String>
 }
 
 impl Scheme for Basic {
@@ -192,9 +192,9 @@ impl FromStr for Basic {
 
 #[derive(Clone, PartialEq, Debug)]
 ///Token holder for Bearer Authentication, most often seen with oauth
-pub struct Bearer {
+pub(crate) struct Bearer {
 	///Actual bearer token as a string
-	pub token: String
+	pub(crate) token: String
 }
 
 impl Scheme for Bearer {

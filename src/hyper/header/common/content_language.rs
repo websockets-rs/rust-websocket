@@ -1,5 +1,5 @@
 use language_tags::LanguageTag;
-use header::QualityItem;
+use ::hyper::header::QualityItem;
 
 header! {
     /// `Content-Language` header, defined in

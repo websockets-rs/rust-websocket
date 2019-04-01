@@ -1,4 +1,4 @@
-use header::EntityTag;
+use ::hyper::header::EntityTag;
 
 header! {
     /// `If-Match` header, defined in

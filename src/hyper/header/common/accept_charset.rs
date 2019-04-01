@@ -1,4 +1,4 @@
-use header::{Charset, QualityItem};
+use ::hyper::header::{Charset, QualityItem};
 
 header! {
     /// `Accept-Charset` header, defined in

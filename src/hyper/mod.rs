@@ -1,23 +1,23 @@
 #![allow(warnings)]
 
-pub extern crate httparse;
-pub extern crate mime;
-pub extern crate language_tags;
-pub extern crate traitobject;
-pub extern crate typeable;
-pub extern crate time;
-pub extern crate url;
+pub(crate) extern crate httparse;
+pub(crate) extern crate mime;
+pub(crate) extern crate language_tags;
+pub(crate) extern crate traitobject;
+pub(crate) extern crate typeable;
+pub(crate) extern crate time;
+pub(crate) extern crate url;
 
-pub mod http;
-pub mod buffer;
-pub mod error;
-pub mod method;
-pub mod header;
-pub mod status;
-pub mod version;
-pub mod uri;
-pub mod net;
-pub mod server;
+pub(crate) mod http;
+pub(crate) mod buffer;
+pub(crate) mod error;
+pub(crate) mod method;
+pub(crate) mod header;
+pub(crate) mod status;
+pub(crate) mod version;
+pub(crate) mod uri;
+pub(crate) mod net;
+pub(crate) mod server;
 
-pub use self::error::{Error,Result};
-pub use self::server::Server;
+pub(crate) use self::error::{Error,Result};
+pub(crate) use self::server::Server;

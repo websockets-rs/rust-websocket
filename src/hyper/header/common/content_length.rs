@@ -1,6 +1,6 @@
 use std::fmt;
 
-use header::{HeaderFormat, Header, parsing};
+use ::hyper::header::{HeaderFormat, Header, parsing};
 
 /// `Content-Length` header, defined in
 /// [RFC7230](http://tools.ietf.org/html/rfc7230#section-3.3.2)
@@ -30,7 +30,7 @@ use header::{HeaderFormat, Header, parsing};
 /// headers.set(ContentLength(1024u64));
 /// ```
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct ContentLength(pub u64);
+pub(crate) struct ContentLength(pub(crate) u64);
 
 impl Header for ContentLength {
     #[inline]

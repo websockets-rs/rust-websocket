@@ -1,4 +1,4 @@
-use header::{Encoding, QualityItem};
+use ::hyper::header::{Encoding, QualityItem};
 
 header! {
     /// `Accept-Encoding` header, defined in

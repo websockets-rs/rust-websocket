@@ -1,4 +1,4 @@
-use header::Encoding;
+use ::hyper::header::Encoding;
 
 header! {
     /// `Transfer-Encoding` header, defined in

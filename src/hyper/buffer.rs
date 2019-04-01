@@ -1,7 +1,7 @@
 use std::cmp;
 use std::io::{self, Read, BufRead};
 
-pub struct BufReader<R> {
+pub(crate) struct BufReader<R> {
     inner: R,
     buf: Vec<u8>,
     pos: usize,
@@ -9,16 +9,16 @@ pub struct BufReader<R> {
 }
 
 const INIT_BUFFER_SIZE: usize = 4096;
-pub const MAX_BUFFER_SIZE: usize = 8192 + 4096 * 100;
+pub(crate) const MAX_BUFFER_SIZE: usize = 8192 + 4096 * 100;
 
 impl<R: Read> BufReader<R> {
     #[inline]
-    pub fn new(rdr: R) -> BufReader<R> {
+    pub(crate) fn new(rdr: R) -> BufReader<R> {
         BufReader::with_capacity(rdr, INIT_BUFFER_SIZE)
     }
 
     #[inline]
-    pub fn from_parts(rdr: R, buf: Vec<u8>, pos: usize, cap: usize) -> BufReader<R> {
+    pub(crate) fn from_parts(rdr: R, buf: Vec<u8>, pos: usize, cap: usize) -> BufReader<R> {
         BufReader {
             inner: rdr,
             buf: buf,
@@ -28,7 +28,7 @@ impl<R: Read> BufReader<R> {
     }
 
     #[inline]
-    pub fn with_capacity(rdr: R, cap: usize) -> BufReader<R> {
+    pub(crate) fn with_capacity(rdr: R, cap: usize) -> BufReader<R> {
         BufReader {
             inner: rdr,
             buf: vec![0; cap],
@@ -38,13 +38,13 @@ impl<R: Read> BufReader<R> {
     }
 
     #[inline]
-    pub fn get_ref(&self) -> &R { &self.inner }
+    pub(crate) fn get_ref(&self) -> &R { &self.inner }
 
     #[inline]
-    pub fn get_mut(&mut self) -> &mut R { &mut self.inner }
+    pub(crate) fn get_mut(&mut self) -> &mut R { &mut self.inner }
 
     #[inline]
-    pub fn get_buf(&self) -> &[u8] {
+    pub(crate) fn get_buf(&self) -> &[u8] {
         if self.pos < self.cap {
             trace!("get_buf [u8; {}][{}..{}]", self.buf.len(), self.pos, self.cap);
             &self.buf[self.pos..self.cap]
@@ -63,7 +63,7 @@ impl<R: Read> BufReader<R> {
     /// include the returned buffered contents. Note that subsequent reads may
     /// buffer.
     #[inline]
-    pub fn take_buf(&mut self) -> (Vec<u8>, usize, usize) {
+    pub(crate) fn take_buf(&mut self) -> (Vec<u8>, usize, usize) {
         let (pos, cap) = (self.pos, self.cap);
         self.pos = 0;
         self.cap = 0;
@@ -74,15 +74,15 @@ impl<R: Read> BufReader<R> {
     }
 
     #[inline]
-    pub fn into_inner(self) -> R { self.inner }
+    pub(crate) fn into_inner(self) -> R { self.inner }
 
     #[inline]
-    pub fn into_parts(self) -> (R, Vec<u8>, usize, usize) {
+    pub(crate) fn into_parts(self) -> (R, Vec<u8>, usize, usize) {
         (self.inner, self.buf, self.pos, self.cap)
     }
 
     #[inline]
-    pub fn read_into_buf(&mut self) -> io::Result<usize> {
+    pub(crate) fn read_into_buf(&mut self) -> io::Result<usize> {
         self.maybe_reserve();
         let v = &mut self.buf;
         trace!("read_into_buf buf[{}..{}]", self.cap, v.len());

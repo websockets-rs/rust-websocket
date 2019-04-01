@@ -1,4 +1,4 @@
-use header::Encoding;
+use ::hyper::header::Encoding;
 
 header! {
     /// `Content-Encoding` header, defined in

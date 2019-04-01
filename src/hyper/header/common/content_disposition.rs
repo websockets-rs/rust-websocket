@@ -17,7 +17,7 @@ use ::hyper::header::shared::Charset;
 
 /// The implied disposition of the content of the HTTP body
 #[derive(Clone, Debug, PartialEq)]
-pub enum DispositionType {
+pub(crate) enum DispositionType {
     /// Inline implies default processing
     Inline,
     /// Attachment implies that the recipient should prompt the user to save the response locally,
@@ -29,7 +29,7 @@ pub enum DispositionType {
 
 /// A parameter to the disposition type
 #[derive(Clone, Debug, PartialEq)]
-pub enum DispositionParam {
+pub(crate) enum DispositionParam {
     /// A Filename consisting of a Charset, an optional LanguageTag, and finally a sequence of
     /// bytes representing the filename
     Filename(Charset, Option<LanguageTag>, Vec<u8>),
@@ -81,11 +81,11 @@ pub enum DispositionParam {
 /// });
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-pub struct ContentDisposition {
+pub(crate) struct ContentDisposition {
     /// The disposition
-    pub disposition: DispositionType,
+    pub(crate) disposition: DispositionType,
     /// Disposition parameters
-    pub parameters: Vec<DispositionParam>,
+    pub(crate) parameters: Vec<DispositionParam>,
 }
 
 impl Header for ContentDisposition {

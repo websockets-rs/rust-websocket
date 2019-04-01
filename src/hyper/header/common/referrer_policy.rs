@@ -3,7 +3,7 @@ use std::fmt;
 #[allow(unused_imports)]
 use std::ascii::AsciiExt;
 
-use header::{Header, HeaderFormat, parsing};
+use ::hyper::header::{Header, HeaderFormat, parsing};
 
 /// `Referrer-Policy` header, part of
 /// [Referrer Policy](https://www.w3.org/TR/referrer-policy/#referrer-policy-header)
@@ -33,7 +33,7 @@ use header::{Header, HeaderFormat, parsing};
 /// headers.set(ReferrerPolicy::NoReferrer);
 /// ```
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub enum ReferrerPolicy {
+pub(crate) enum ReferrerPolicy {
     /// `no-referrer`
     NoReferrer,
     /// `no-referrer-when-downgrade`

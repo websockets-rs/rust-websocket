@@ -41,19 +41,19 @@ struct Wrapper<T> {
 }
 
 impl<T> Wrapper<T> {
-    pub fn new(obj: T) -> Wrapper<T> {
+    pub(crate) fn new(obj: T) -> Wrapper<T> {
         Wrapper { obj: Some(obj) }
     }
 
-    pub fn map_in_place<F>(&mut self, f: F) where F: FnOnce(T) -> T {
+    pub(crate) fn map_in_place<F>(&mut self, f: F) where F: FnOnce(T) -> T {
         let obj = self.obj.take().unwrap();
         let res = f(obj);
         self.obj = Some(res);
     }
 
-    pub fn into_inner(self) -> T { self.obj.unwrap() }
-    pub fn as_mut(&mut self) -> &mut T { self.obj.as_mut().unwrap() }
-    pub fn as_ref(&self) -> &T { self.obj.as_ref().unwrap() }
+    pub(crate) fn into_inner(self) -> T { self.obj.unwrap() }
+    pub(crate) fn as_mut(&mut self) -> &mut T { self.obj.as_mut().unwrap() }
+    pub(crate) fn as_ref(&self) -> &T { self.obj.as_ref().unwrap() }
 }
 
 #[derive(Debug)]
@@ -90,7 +90,7 @@ impl Stream {
 
 /// An implementation of the `HttpMessage` trait for HTTP/1.1.
 #[derive(Debug)]
-pub struct Http11Message {
+pub(crate) struct Http11Message {
     is_proxied: bool,
     method: Option<Method>,
     stream: Wrapper<Stream>,
@@ -369,7 +369,7 @@ impl HttpMessage for Http11Message {
 
 impl Http11Message {
     /// Consumes the `Http11Message` and returns the underlying `NetworkStream`.
-    pub fn into_inner(self) -> Box<NetworkStream + Send> {
+    pub(crate) fn into_inner(self) -> Box<NetworkStream + Send> {
         match self.stream.into_inner() {
             Stream::Idle(stream) => stream,
             Stream::Writing(stream) => stream.into_inner().into_inner().unwrap(),
@@ -379,7 +379,7 @@ impl Http11Message {
 
     /// Gets a borrowed reference to the underlying `NetworkStream`, regardless of the state of the
     /// `Http11Message`.
-    pub fn get_ref(&self) -> &(NetworkStream + Send) {
+    pub(crate) fn get_ref(&self) -> &(NetworkStream + Send) {
         match *self.stream.as_ref() {
             Stream::Idle(ref stream) => &**stream,
             Stream::Writing(ref stream) => &**stream.get_ref().get_ref(),
@@ -389,7 +389,7 @@ impl Http11Message {
 
     /// Gets a mutable reference to the underlying `NetworkStream`, regardless of the state of the
     /// `Http11Message`.
-    pub fn get_mut(&mut self) -> &mut (NetworkStream + Send) {
+    pub(crate) fn get_mut(&mut self) -> &mut (NetworkStream + Send) {
         match *self.stream.as_mut() {
             Stream::Idle(ref mut stream) => &mut **stream,
             Stream::Writing(ref mut stream) => &mut **stream.get_mut().get_mut(),
@@ -399,7 +399,7 @@ impl Http11Message {
 
     /// Creates a new `Http11Message` that will use the given `NetworkStream` for communicating to
     /// the peer.
-    pub fn with_stream(stream: Box<NetworkStream + Send>) -> Http11Message {
+    pub(crate) fn with_stream(stream: Box<NetworkStream + Send>) -> Http11Message {
         Http11Message {
             is_proxied: false,
             method: None,
@@ -410,7 +410,7 @@ impl Http11Message {
     /// Flushes the current outgoing content and moves the stream into the `stream` property.
     ///
     /// TODO It might be sensible to lift this up to the `HttpMessage` trait itself...
-    pub fn flush_outgoing(&mut self) -> ::hyper::Result<()> {
+    pub(crate) fn flush_outgoing(&mut self) -> ::hyper::Result<()> {
         let mut res = Ok(());
         self.stream.map_in_place(|stream| {
             let writer = match stream {
@@ -435,7 +435,7 @@ impl Http11Message {
 }
 
 /// The `Protocol` implementation provides HTTP/1.1 messages.
-pub struct Http11Protocol {
+pub(crate) struct Http11Protocol {
     connector: Connector,
 }
 
@@ -450,7 +450,7 @@ impl Protocol for Http11Protocol {
 impl Http11Protocol {
     /// Creates a new `Http11Protocol` instance that will use the given `NetworkConnector` for
     /// establishing HTTP connections.
-    pub fn with_connector<C, S>(c: C) -> Http11Protocol
+    pub(crate) fn with_connector<C, S>(c: C) -> Http11Protocol
             where C: NetworkConnector<Stream=S> + Send + Sync + 'static,
                   S: NetworkStream + Send {
         Http11Protocol {
@@ -487,7 +487,7 @@ impl NetworkConnector for Connector {
 ///
 /// If a message body does not include a Transfer-Encoding, it *should*
 /// include a Content-Length header.
-pub enum HttpReader<R> {
+pub(crate) enum HttpReader<R> {
     /// A Reader used when a Content-Length header is passed with a positive integer.
     SizedReader(R, u64),
     /// A Reader used when Transfer-Encoding is `chunked`.
@@ -516,7 +516,7 @@ pub enum HttpReader<R> {
 impl<R: Read> HttpReader<R> {
 
     /// Unwraps this HttpReader and returns the underlying Reader.
-    pub fn into_inner(self) -> R {
+    pub(crate) fn into_inner(self) -> R {
         match self {
             SizedReader(r, _) => r,
             ChunkedReader(r, _) => r,
@@ -526,7 +526,7 @@ impl<R: Read> HttpReader<R> {
     }
 
     /// Gets a borrowed reference to the underlying Reader.
-    pub fn get_ref(&self) -> &R {
+    pub(crate) fn get_ref(&self) -> &R {
         match *self {
             SizedReader(ref r, _) => r,
             ChunkedReader(ref r, _) => r,
@@ -536,7 +536,7 @@ impl<R: Read> HttpReader<R> {
     }
 
     /// Gets a mutable reference to the underlying Reader.
-    pub fn get_mut(&mut self) -> &mut R {
+    pub(crate) fn get_mut(&mut self) -> &mut R {
         match *self {
             SizedReader(ref mut r, _) => r,
             ChunkedReader(ref mut r, _) => r,
@@ -726,7 +726,7 @@ fn should_have_response_body(method: &Method, status: u16) -> bool {
 }
 
 /// Writers to handle different Transfer-Encodings.
-pub enum HttpWriter<W: Write> {
+pub(crate) enum HttpWriter<W: Write> {
     /// A no-op Writer, used initially before Transfer-Encoding is determined.
     ThroughWriter(W),
     /// A Writer for when Transfer-Encoding includes `chunked`.
@@ -742,7 +742,7 @@ pub enum HttpWriter<W: Write> {
 impl<W: Write> HttpWriter<W> {
     /// Unwraps the HttpWriter and returns the underlying Writer.
     #[inline]
-    pub fn into_inner(self) -> W {
+    pub(crate) fn into_inner(self) -> W {
         match self {
             ThroughWriter(w) => w,
             ChunkedWriter(w) => w,
@@ -753,7 +753,7 @@ impl<W: Write> HttpWriter<W> {
 
     /// Access the inner Writer.
     #[inline]
-    pub fn get_ref(&self) -> &W {
+    pub(crate) fn get_ref(&self) -> &W {
         match *self {
             ThroughWriter(ref w) => w,
             ChunkedWriter(ref w) => w,
@@ -767,7 +767,7 @@ impl<W: Write> HttpWriter<W> {
     /// Warning: You should not write to this directly, as you can corrupt
     /// the state.
     #[inline]
-    pub fn get_mut(&mut self) -> &mut W {
+    pub(crate) fn get_mut(&mut self) -> &mut W {
         match *self {
             ThroughWriter(ref mut w) => w,
             ChunkedWriter(ref mut w) => w,
@@ -781,7 +781,7 @@ impl<W: Write> HttpWriter<W> {
     /// A final `write_all()` is called with an empty message, and then flushed.
     /// The ChunkedWriter variant will use this to write the 0-sized last-chunk.
     #[inline]
-    pub fn end(mut self) -> Result<W, EndError<W>> {
+    pub(crate) fn end(mut self) -> Result<W, EndError<W>> {
         fn inner<W: Write>(w: &mut W) -> io::Result<()> {
             try!(w.write(&[]));
             w.flush()
@@ -795,7 +795,7 @@ impl<W: Write> HttpWriter<W> {
 }
 
 #[derive(Debug)]
-pub struct EndError<W: Write>(io::Error, HttpWriter<W>);
+pub(crate) struct EndError<W: Write>(io::Error, HttpWriter<W>);
 
 impl<W: Write> From<EndError<W>> for io::Error {
     fn from(e: EndError<W>) -> io::Error {
@@ -864,13 +864,13 @@ const MAX_HEADERS: usize = 100;
 
 /// Parses a request into an Incoming message head.
 #[inline]
-pub fn parse_request<R: Read>(buf: &mut BufReader<R>) -> ::hyper::Result<Incoming<(Method, RequestUri)>> {
+pub(crate) fn parse_request<R: Read>(buf: &mut BufReader<R>) -> ::hyper::Result<Incoming<(Method, RequestUri)>> {
     parse::<R, httparse::Request, (Method, RequestUri)>(buf)
 }
 
 /// Parses a response into an Incoming message head.
 #[inline]
-pub fn parse_response<R: Read>(buf: &mut BufReader<R>) -> ::hyper::Result<Incoming<RawStatus>> {
+pub(crate) fn parse_response<R: Read>(buf: &mut BufReader<R>) -> ::hyper::Result<Incoming<RawStatus>> {
     parse::<R, httparse::Response, RawStatus>(buf)
 }
 
@@ -979,10 +979,10 @@ pub struct Incoming<S> {
 }
 
 /// The `\r` byte.
-pub const CR: u8 = b'\r';
+pub(crate) const CR: u8 = b'\r';
 /// The `\n` byte.
-pub const LF: u8 = b'\n';
+pub(crate) const LF: u8 = b'\n';
 /// The bytes `\r\n`.
-pub const LINE_ENDING: &'static str = "\r\n";
+pub(crate) const LINE_ENDING: &'static str = "\r\n";
 
 // tests removed

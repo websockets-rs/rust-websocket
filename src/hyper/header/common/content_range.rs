@@ -87,7 +87,7 @@ header! {
 /// other-range-resp    = *CHAR
 /// ```
 #[derive(PartialEq, Clone, Debug)]
-pub enum ContentRangeSpec {
+pub(crate) enum ContentRangeSpec {
     /// Byte range
     Bytes {
         /// First and last bytes of the range, omitted if request could not be

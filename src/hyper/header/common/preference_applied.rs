@@ -1,6 +1,6 @@
 use std::fmt;
-use header::{Header, HeaderFormat, Preference};
-use header::parsing::{from_comma_delimited, fmt_comma_delimited};
+use ::hyper::header::{Header, HeaderFormat, Preference};
+use ::hyper::header::parsing::{from_comma_delimited, fmt_comma_delimited};
 
 /// `Preference-Applied` header, defined in [RFC7240](http://tools.ietf.org/html/rfc7240)
 ///
@@ -44,7 +44,7 @@ use header::parsing::{from_comma_delimited, fmt_comma_delimited};
 /// );
 /// ```
 #[derive(PartialEq, Clone, Debug)]
-pub struct PreferenceApplied(pub Vec<Preference>);
+pub(crate) struct PreferenceApplied(pub(crate) Vec<Preference>);
 
 __hyper__deref!(PreferenceApplied => Vec<Preference>);
 
@@ -87,7 +87,7 @@ impl fmt::Display for PreferenceApplied {
 
 #[cfg(test)]
 mod tests {
-    use header::{HeaderFormat, Preference};
+    use ::hyper::header::{HeaderFormat, Preference};
     use super::*;
 
     #[test]

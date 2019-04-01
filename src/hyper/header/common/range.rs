@@ -1,8 +1,8 @@
 use std::fmt::{self, Display};
 use std::str::FromStr;
 
-use header::{Header, HeaderFormat};
-use header::parsing::{from_one_raw_str, from_comma_delimited};
+use ::hyper::header::{Header, HeaderFormat};
+use ::hyper::header::parsing::{from_one_raw_str, from_comma_delimited};
 
 /// `Range` header, defined in [RFC7233](https://tools.ietf.org/html/rfc7233#section-3.1)
 ///
@@ -56,7 +56,7 @@ use header::parsing::{from_one_raw_str, from_comma_delimited};
 /// headers.set(Range::bytes_multi(vec![(1, 100), (200, 300)]));
 /// ```
 #[derive(PartialEq, Clone, Debug)]
-pub enum Range {
+pub(crate) enum Range {
     /// Byte range
     Bytes(Vec<ByteRangeSpec>),
     /// Custom range, with unit not registered at IANA
@@ -67,7 +67,7 @@ pub enum Range {
 /// Each `Range::Bytes` header can contain one or more `ByteRangeSpecs`.
 /// Each `ByteRangeSpec` defines a range of bytes to fetch
 #[derive(PartialEq, Clone, Debug)]
-pub enum ByteRangeSpec {
+pub(crate) enum ByteRangeSpec {
     /// Get all bytes between x and y ("x-y")
     FromTo(u64, u64),
     /// Get all bytes starting from x ("x-")
@@ -78,13 +78,13 @@ pub enum ByteRangeSpec {
 
 impl Range {
     /// Get the most common byte range header ("bytes=from-to")
-    pub fn bytes(from: u64, to: u64) -> Range {
+    pub(crate) fn bytes(from: u64, to: u64) -> Range {
         Range::Bytes(vec![ByteRangeSpec::FromTo(from, to)])
     }
 
     /// Get byte range header with multiple subranges
     /// ("bytes=from1-to1,from2-to2,fromX-toX")
-    pub fn bytes_multi(ranges: Vec<(u64, u64)>) -> Range {
+    pub(crate) fn bytes_multi(ranges: Vec<(u64, u64)>) -> Range {
         Range::Bytes(ranges.iter().map(|r| ByteRangeSpec::FromTo(r.0, r.1)).collect())
     }
 }
@@ -263,7 +263,7 @@ fn test_parse_invalid() {
 
 #[test]
 fn test_fmt() {
-    use header::Headers;
+    use ::hyper::header::Headers;
 
     let mut headers = Headers::new();
 

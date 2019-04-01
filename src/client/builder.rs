@@ -11,14 +11,14 @@ pub use url::{ParseError, Url};
 #[cfg(any(feature = "sync", feature = "async"))]
 mod common_imports {
 	pub use header::WebSocketAccept;
-	pub use hyper::buffer::BufReader;
-	pub use hyper::header::{Connection, ConnectionOption, Host, Protocol, ProtocolName, Upgrade};
-	pub use hyper::http::h1::parse_response;
-	pub use hyper::http::h1::Incoming;
-	pub use hyper::http::RawStatus;
-	pub use hyper::method::Method;
-	pub use hyper::status::StatusCode;
-	pub use hyper::uri::RequestUri;
+	pub(crate) use hyper::buffer::BufReader;
+	pub(crate) use hyper::header::{Connection, ConnectionOption, Host, Protocol, ProtocolName, Upgrade};
+	pub(crate) use hyper::http::h1::parse_response;
+	pub(crate) use hyper::http::h1::Incoming;
+	pub(crate) use hyper::http::RawStatus;
+	pub(crate) use hyper::method::Method;
+	pub(crate) use hyper::status::StatusCode;
+	pub(crate) use hyper::uri::RequestUri;
 	pub use result::{WSUrlErrorKind, WebSocketError, WebSocketResult};
 	pub use std::net::TcpStream;
 	pub use std::net::ToSocketAddrs;
@@ -355,7 +355,7 @@ impl<'u> ClientBuilder<'u> {
 
 	/// Remove a type of header from the handshake, this is to be used
 	/// with the catch all `custom_headers`.
-	pub fn clear_header<H>(mut self) -> Self
+	pub(crate) fn clear_header<H>(mut self) -> Self
 	where
 		H: Header + HeaderFormat,
 	{
@@ -364,7 +364,7 @@ impl<'u> ClientBuilder<'u> {
 	}
 
 	/// Get a header to inspect it.
-	pub fn get_header<H>(&self) -> Option<&H>
+	pub(crate) fn get_header<H>(&self) -> Option<&H>
 	where
 		H: Header + HeaderFormat,
 	{

@@ -1,7 +1,7 @@
-use header::{Header, Host, HeaderFormat};
+use ::hyper::header::{Header, Host, HeaderFormat};
 use std::fmt;
 use std::str::FromStr;
-use header::parsing::from_one_raw_str;
+use ::hyper::header::parsing::from_one_raw_str;
 
 /// The `Origin` header.
 ///
@@ -31,16 +31,16 @@ use header::parsing::from_one_raw_str;
 /// ```
 
 #[derive(Clone, Debug)]
-pub struct Origin {
+pub(crate) struct Origin {
     /// The scheme, such as http or https
-    pub scheme: String,
+    pub(crate) scheme: String,
     /// The host, such as Host{hostname: "hyper.rs".to_owned(), port: None}
-    pub host: Host,
+    pub(crate) host: Host,
 }
 
 impl Origin {
     /// Creates a new `Origin` header.
-    pub fn new<S: Into<String>, H: Into<String>>(scheme: S, hostname: H, port: Option<u16>) -> Origin{
+    pub(crate) fn new<S: Into<String>, H: Into<String>>(scheme: S, hostname: H, port: Option<u16>) -> Origin{
         Origin {
             scheme: scheme.into(),
             host: Host {
@@ -104,7 +104,7 @@ impl PartialEq for Origin {
 #[cfg(test)]
 mod tests {
     use super::Origin;
-    use header::Header;
+    use ::hyper::header::Header;
 
     #[test]
     fn test_origin() {

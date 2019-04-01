@@ -230,7 +230,7 @@ pub enum StatusCode {
 impl StatusCode {
 
     #[doc(hidden)]
-    pub fn from_u16(n: u16) -> StatusCode {
+    pub(crate) fn from_u16(n: u16) -> StatusCode {
         match n {
             100 => StatusCode::Continue,
             101 => StatusCode::SwitchingProtocols,
@@ -297,7 +297,7 @@ impl StatusCode {
     }
 
     #[doc(hidden)]
-    pub fn to_u16(&self) -> u16 {
+    pub(crate) fn to_u16(&self) -> u16 {
         match *self {
             StatusCode::Continue => 100,
             StatusCode::SwitchingProtocols => 101,
@@ -373,7 +373,7 @@ impl StatusCode {
     ///
     /// Bear in mind also that in HTTP/2.0 the reason phrase is abolished from transmission, and so
     /// this canonical reason phrase really is the only reason phrase you’ll find.
-    pub fn canonical_reason(&self) -> Option<&'static str> {
+    pub(crate) fn canonical_reason(&self) -> Option<&'static str> {
         match *self {
             StatusCode::Continue => Some("Continue"),
             StatusCode::SwitchingProtocols => Some("Switching Protocols"),
@@ -452,7 +452,7 @@ impl StatusCode {
     }
 
     /// Determine the class of a status code, based on its first digit.
-    pub fn class(&self) -> StatusClass {
+    pub(crate) fn class(&self) -> StatusClass {
         match self.to_u16() {
             100...199 => StatusClass::Informational,
             200...299 => StatusClass::Success,
@@ -464,32 +464,32 @@ impl StatusCode {
     }
 
     /// Check if class is Informational.
-    pub fn is_informational(&self) -> bool {
+    pub(crate) fn is_informational(&self) -> bool {
         self.class() == StatusClass::Informational
     }
 
     /// Check if class is Success.
-    pub fn is_success(&self) -> bool {
+    pub(crate) fn is_success(&self) -> bool {
         self.class() == StatusClass::Success
     }
 
     /// Check if class is Redirection.
-    pub fn is_redirection(&self) -> bool {
+    pub(crate) fn is_redirection(&self) -> bool {
         self.class() == StatusClass::Redirection
     }
 
     /// Check if class is ClientError.
-    pub fn is_client_error(&self) -> bool {
+    pub(crate) fn is_client_error(&self) -> bool {
         self.class() == StatusClass::ClientError
     }
 
     /// Check if class is ServerError.
-    pub fn is_server_error(&self) -> bool {
+    pub(crate) fn is_server_error(&self) -> bool {
         self.class() == StatusClass::ServerError
     }
 
     /// Check if class is NoClass
-    pub fn is_strange_status(&self) -> bool {
+    pub(crate) fn is_strange_status(&self) -> bool {
         self.class() == StatusClass::NoClass
     }
 }
@@ -573,7 +573,7 @@ impl Ord for StatusCode {
 /// This can be used in cases where a status code’s meaning is unknown, also,
 /// to get the appropriate *category* of status.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Copy)]
-pub enum StatusClass {
+pub(crate) enum StatusClass {
     /// 1xx (Informational): The request was received, continuing process
     Informational,
 
@@ -641,7 +641,7 @@ impl StatusClass {
     /// All status codes that do not map to an existing status class are matched
     /// by a `NoClass`, variant that resolves to 200 (Ok) as default code.
     /// This is a common handling for unknown status codes in major browsers.
-    pub fn default_code(&self) -> StatusCode {
+    pub(crate) fn default_code(&self) -> StatusCode {
         match *self {
             StatusClass::Informational => StatusCode::Continue,
             StatusClass::Success => StatusCode::Ok,

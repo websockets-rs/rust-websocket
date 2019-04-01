@@ -18,7 +18,7 @@ use std::str;
 /// [RFC7231 Section 5.3.1](https://tools.ietf.org/html/rfc7231#section-5.3.1)
 /// gives more information on quality values in HTTP header fields.
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct Quality(pub u16);
+pub(crate) struct Quality(pub(crate) u16);
 
 impl fmt::Display for Quality {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -39,18 +39,18 @@ impl Default for Quality {
 /// Represents an item with a quality value as defined in
 /// [RFC7231](https://tools.ietf.org/html/rfc7231#section-5.3.1).
 #[derive(Clone, PartialEq, Debug)]
-pub struct QualityItem<T> {
+pub(crate) struct QualityItem<T> {
     /// The actual contents of the field.
-    pub item: T,
+    pub(crate) item: T,
     /// The quality (client or server preference) for the value.
-    pub quality: Quality,
+    pub(crate) quality: Quality,
 }
 
 impl<T> QualityItem<T> {
     /// Creates a new `QualityItem` from an item and a quality.
     /// The item can be of any type.
     /// The quality should be a value in the range [0, 1].
-    pub fn new(item: T, quality: Quality) -> QualityItem<T> {
+    pub(crate) fn new(item: T, quality: Quality) -> QualityItem<T> {
         QualityItem {
             item: item,
             quality: quality
@@ -116,12 +116,12 @@ fn from_f32(f: f32) -> Quality {
 
 /// Convinience function to wrap a value in a `QualityItem`
 /// Sets `q` to the default 1.0
-pub fn qitem<T>(item: T) -> QualityItem<T> {
+pub(crate) fn qitem<T>(item: T) -> QualityItem<T> {
     QualityItem::new(item, Default::default())
 }
 
 /// Convenience function to create a `Quality` from a float.
-pub fn q(f: f32) -> Quality {
+pub(crate) fn q(f: f32) -> Quality {
     assert!(f >= 0f32 && f <= 1f32, "q value must be between 0.0 and 1.0");
     from_f32(f)
 }

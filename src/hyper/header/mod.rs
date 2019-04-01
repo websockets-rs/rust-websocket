@@ -93,13 +93,13 @@ use unicase::UniCase;
 use self::internals::{Item, VecMap, Entry};
 use self::sealed::Sealed;
 
-pub use self::shared::*;
-pub use self::common::*;
+pub(crate) use self::shared::*;
+pub(crate) use self::common::*;
 
 mod common;
 mod internals;
 mod shared;
-pub mod parsing;
+pub(crate) mod parsing;
 
 type HeaderName = UniCase<CowStr>;
 
@@ -107,7 +107,7 @@ type HeaderName = UniCase<CowStr>;
 ///
 /// This trait represents the construction and identification of headers,
 /// and contains trait-object unsafe methods.
-pub trait Header: Clone + Any + Send + Sync {
+pub(crate) trait Header: Clone + Any + Send + Sync {
     /// Returns the name of the header field this belongs to.
     ///
     /// This will become an associated constant once available.
@@ -126,7 +126,7 @@ pub trait Header: Clone + Any + Send + Sync {
 /// A trait for any object that will represent a header field and value.
 ///
 /// This trait represents the formatting of a `Header` for output to a TcpStream.
-pub trait HeaderFormat: fmt::Debug + HeaderClone + Any + Typeable + Send + Sync {
+pub(crate) trait HeaderFormat: fmt::Debug + HeaderClone + Any + Typeable + Send + Sync {
     /// Format a header to be output into a TcpStream.
     ///
     /// This method is not allowed to introduce an Err not produced
@@ -150,7 +150,7 @@ pub trait HeaderFormat: fmt::Debug + HeaderClone + Any + Typeable + Send + Sync 
 
 #[doc(hidden)]
 #[allow(missing_debug_implementations)]
-pub struct MultilineFormatter<'a, 'b: 'a>(Multi<'a, 'b>);
+pub(crate) struct MultilineFormatter<'a, 'b: 'a>(Multi<'a, 'b>);
 
 enum Multi<'a, 'b: 'a> {
     Line(&'a str, &'a mut fmt::Formatter<'b>),
@@ -221,14 +221,14 @@ impl<'a, 'b> fmt::Write for NewlineReplacer<'a, 'b> {
 /// This trait is automatically implemented for all types that implement
 /// `HeaderFormat + Clone`. No methods are exposed, and so is not useful
 /// outside this crate.
-pub trait HeaderClone: Sealed {}
+pub(crate) trait HeaderClone: Sealed {}
 impl<T: Sealed> HeaderClone for T {}
 
 mod sealed {
     use super::HeaderFormat;
 
     #[doc(hidden)]
-    pub trait Sealed {
+    pub(crate) trait Sealed {
         #[doc(hidden)]
         fn clone_box(&self) -> Box<HeaderFormat + Send + Sync>;
     }
@@ -276,14 +276,14 @@ pub struct Headers {
 impl Headers {
 
     /// Creates a new, empty headers map.
-    pub fn new() -> Headers {
+    pub(crate) fn new() -> Headers {
         Headers {
             data: VecMap::new()
         }
     }
 
     #[doc(hidden)]
-    pub fn from_raw(raw: &[httparse::Header]) -> ::hyper::Result<Headers> {
+    pub(crate) fn from_raw(raw: &[httparse::Header]) -> ::hyper::Result<Headers> {
         let mut headers = Headers::new();
         for header in raw {
             trace!("raw header: {:?}={:?}", header.name, &header.value[..]);
@@ -302,7 +302,7 @@ impl Headers {
     /// Set a header field to the corresponding value.
     ///
     /// The field is determined by the type of the value being set.
-    pub fn set<H: Header + HeaderFormat>(&mut self, value: H) {
+    pub(crate) fn set<H: Header + HeaderFormat>(&mut self, value: H) {
         trace!("Headers.set( {:?}, {:?} )", header_name::<H>(), value);
         self.data.insert(UniCase(CowStr(Cow::Borrowed(header_name::<H>()))),
                          Item::new_typed(Box::new(value)));
@@ -319,7 +319,7 @@ impl Headers {
     /// # let mut headers = Headers::new();
     /// let raw_content_type = headers.get_raw("content-type");
     /// ```
-    pub fn get_raw(&self, name: &str) -> Option<&[Vec<u8>]> {
+    pub(crate) fn get_raw(&self, name: &str) -> Option<&[Vec<u8>]> {
         self.data
             .get(&UniCase(CowStr(Cow::Borrowed(unsafe { mem::transmute::<&str, &str>(name) }))))
             .map(Item::raw)
@@ -337,7 +337,7 @@ impl Headers {
     /// # let mut headers = Headers::new();
     /// headers.set_raw("content-length", vec![b"5".to_vec()]);
     /// ```
-    pub fn set_raw<K: Into<Cow<'static, str>>>(&mut self, name: K,
+    pub(crate) fn set_raw<K: Into<Cow<'static, str>>>(&mut self, name: K,
             value: Vec<Vec<u8>>) {
         let name = name.into();
         trace!("Headers.set_raw( {:?}, {:?} )", name, value);
@@ -359,7 +359,7 @@ impl Headers {
     /// headers.append_raw("x-foo", b"bar".to_vec());
     /// headers.append_raw("x-foo", b"quux".to_vec());
     /// ```
-    pub fn append_raw<K: Into<Cow<'static, str>>>(&mut self, name: K, value: Vec<u8>) {
+    pub(crate) fn append_raw<K: Into<Cow<'static, str>>>(&mut self, name: K, value: Vec<u8>) {
         let name = name.into();
         trace!("Headers.append_raw( {:?}, {:?} )", name, value);
         let name = UniCase(CowStr(name));
@@ -371,7 +371,7 @@ impl Headers {
     }
 
     /// Remove a header set by set_raw
-    pub fn remove_raw(&mut self, name: &str) {
+    pub(crate) fn remove_raw(&mut self, name: &str) {
         trace!("Headers.remove_raw( {:?} )", name);
         self.data.remove(
             &UniCase(CowStr(Cow::Borrowed(unsafe { mem::transmute::<&str, &str>(name) })))
@@ -379,13 +379,13 @@ impl Headers {
     }
 
     /// Get a reference to the header field's value, if it exists.
-    pub fn get<H: Header + HeaderFormat>(&self) -> Option<&H> {
+    pub(crate) fn get<H: Header + HeaderFormat>(&self) -> Option<&H> {
         self.data.get(&UniCase(CowStr(Cow::Borrowed(header_name::<H>()))))
         .and_then(Item::typed::<H>)
     }
 
     /// Get a mutable reference to the header field's value, if it exists.
-    pub fn get_mut<H: Header + HeaderFormat>(&mut self) -> Option<&mut H> {
+    pub(crate) fn get_mut<H: Header + HeaderFormat>(&mut self) -> Option<&mut H> {
         self.data.get_mut(&UniCase(CowStr(Cow::Borrowed(header_name::<H>()))))
         .and_then(Item::typed_mut::<H>)
     }
@@ -400,31 +400,31 @@ impl Headers {
     /// # let mut headers = Headers::new();
     /// let has_type = headers.has::<ContentType>();
     /// ```
-    pub fn has<H: Header + HeaderFormat>(&self) -> bool {
+    pub(crate) fn has<H: Header + HeaderFormat>(&self) -> bool {
         self.data.contains_key(&UniCase(CowStr(Cow::Borrowed(header_name::<H>()))))
     }
 
     /// Removes a header from the map, if one existed.
     /// Returns true if a header has been removed.
-    pub fn remove<H: Header + HeaderFormat>(&mut self) -> bool {
+    pub(crate) fn remove<H: Header + HeaderFormat>(&mut self) -> bool {
         trace!("Headers.remove( {:?} )", header_name::<H>());
         self.data.remove(&UniCase(CowStr(Cow::Borrowed(header_name::<H>())))).is_some()
     }
 
     /// Returns an iterator over the header fields.
-    pub fn iter(&self) -> HeadersItems {
+    pub(crate) fn iter(&self) -> HeadersItems {
         HeadersItems {
             inner: self.data.iter()
         }
     }
 
     /// Returns the number of headers in the map.
-    pub fn len(&self) -> usize {
+    pub(crate) fn len(&self) -> usize {
         self.data.len()
     }
 
     /// Remove all headers from the map.
-    pub fn clear(&mut self) {
+    pub(crate) fn clear(&mut self) {
         self.data.clear()
     }
 }
@@ -466,7 +466,7 @@ impl fmt::Debug for Headers {
 }
 
 /// An `Iterator` over the fields in a `Headers` map.
-pub struct HeadersItems<'a> {
+pub(crate) struct HeadersItems<'a> {
     inner: ::std::slice::Iter<'a, (HeaderName, Item)>
 }
 
@@ -479,24 +479,24 @@ impl<'a> Iterator for HeadersItems<'a> {
 }
 
 /// Returned with the `HeadersItems` iterator.
-pub struct HeaderView<'a>(&'a HeaderName, &'a Item);
+pub(crate) struct HeaderView<'a>(&'a HeaderName, &'a Item);
 
 impl<'a> HeaderView<'a> {
     /// Check if a HeaderView is a certain Header.
     #[inline]
-    pub fn is<H: Header>(&self) -> bool {
+    pub(crate) fn is<H: Header>(&self) -> bool {
         UniCase(CowStr(Cow::Borrowed(header_name::<H>()))) == *self.0
     }
 
     /// Get the Header name as a slice.
     #[inline]
-    pub fn name(&self) -> &'a str {
+    pub(crate) fn name(&self) -> &'a str {
         self.0.as_ref()
     }
 
     /// Cast the value to a certain Header type.
     #[inline]
-    pub fn value<H: Header + HeaderFormat>(&self) -> Option<&'a H> {
+    pub(crate) fn value<H: Header + HeaderFormat>(&self) -> Option<&'a H> {
         self.1.typed::<H>()
     }
 
@@ -507,7 +507,7 @@ impl<'a> HeaderView<'a> {
     /// **Warning:** This may not be the format that should be used to send
     /// a Request or Response.
     #[inline]
-    pub fn value_string(&self) -> String {
+    pub(crate) fn value_string(&self) -> String {
         ValueString(self.1).to_string()
     }
 }
@@ -557,7 +557,7 @@ impl<'a> fmt::Display for &'a (HeaderFormat + Send + Sync) {
 /// Note: This may not necessarily be the value written to stream, such
 /// as with the SetCookie header.
 #[deprecated(note="The semantics of formatting a HeaderFormat directly are not clear")]
-pub struct HeaderFormatter<'a, H: HeaderFormat>(pub &'a H);
+pub(crate) struct HeaderFormatter<'a, H: HeaderFormat>(pub(crate) &'a H);
 
 #[allow(deprecated)]
 impl<'a, H: HeaderFormat> fmt::Display for HeaderFormatter<'a, H> {

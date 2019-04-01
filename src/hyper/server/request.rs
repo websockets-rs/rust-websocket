@@ -34,7 +34,7 @@ pub struct Request<'a, 'b: 'a> {
 impl<'a, 'b: 'a> Request<'a, 'b> {
     /// Create a new Request, reading the StartLine and Headers so they are
     /// immediately useful.
-    pub fn new(stream: &'a mut BufReader<&'b mut NetworkStream>, addr: SocketAddr)
+    pub(crate) fn new(stream: &'a mut BufReader<&'b mut NetworkStream>, addr: SocketAddr)
         -> ::hyper::Result<Request<'a, 'b>> {
 
         let Incoming { version, subject: (method, uri), headers } = try!(h1::parse_request(stream));
@@ -65,13 +65,13 @@ impl<'a, 'b: 'a> Request<'a, 'b> {
 
     /// Set the read timeout of the underlying NetworkStream.
     #[inline]
-    pub fn set_read_timeout(&self, timeout: Option<Duration>) -> io::Result<()> {
+    pub(crate) fn set_read_timeout(&self, timeout: Option<Duration>) -> io::Result<()> {
         self.body.get_ref().get_ref().set_read_timeout(timeout)
     }
 
     /// Get a reference to the underlying `NetworkStream`.
     #[inline]
-    pub fn downcast_ref<T: NetworkStream>(&self) -> Option<&T> {
+    pub(crate) fn downcast_ref<T: NetworkStream>(&self) -> Option<&T> {
         self.body.get_ref().get_ref().downcast_ref()
     }
 
@@ -80,13 +80,13 @@ impl<'a, 'b: 'a> Request<'a, 'b> {
     ///
     /// This is actually just an alias for `downcast_ref`.
     #[inline]
-    pub fn ssl<T: NetworkStream>(&self) -> Option<&T> {
+    pub(crate) fn ssl<T: NetworkStream>(&self) -> Option<&T> {
         self.downcast_ref()
     }
 
     /// Deconstruct a Request into its constituent parts.
     #[inline]
-    pub fn deconstruct(self) -> (SocketAddr, Method, Headers,
+    pub(crate) fn deconstruct(self) -> (SocketAddr, Method, Headers,
                                  RequestUri, HttpVersion,
                                  HttpReader<&'a mut BufReader<&'b mut NetworkStream>>) {
         (self.remote_addr, self.method, self.headers,

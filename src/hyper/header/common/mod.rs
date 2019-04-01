@@ -4,60 +4,60 @@
 //!
 //! Several header fields use MIME values for their contents. Keeping with the
 //! strongly-typed theme, the [mime](http://seanmonstar.github.io/mime.rs) crate
-//! is used, such as `ContentType(pub Mime)`.
+//! is used, such as `ContentType(pub(crate) Mime)`.
 
-pub use self::accept::Accept;
-pub use self::access_control_allow_credentials::AccessControlAllowCredentials;
-pub use self::access_control_allow_headers::AccessControlAllowHeaders;
-pub use self::access_control_allow_methods::AccessControlAllowMethods;
-pub use self::access_control_allow_origin::AccessControlAllowOrigin;
-pub use self::access_control_expose_headers::AccessControlExposeHeaders;
-pub use self::access_control_max_age::AccessControlMaxAge;
-pub use self::access_control_request_headers::AccessControlRequestHeaders;
-pub use self::access_control_request_method::AccessControlRequestMethod;
-pub use self::accept_charset::AcceptCharset;
-pub use self::accept_encoding::AcceptEncoding;
-pub use self::accept_language::AcceptLanguage;
-pub use self::accept_ranges::{AcceptRanges, RangeUnit};
-pub use self::allow::Allow;
-pub use self::authorization::{Authorization, Scheme, Basic, Bearer};
-pub use self::cache_control::{CacheControl, CacheDirective};
-pub use self::connection::{Connection, ConnectionOption};
-pub use self::content_disposition::{ContentDisposition, DispositionType, DispositionParam};
-pub use self::content_length::ContentLength;
-pub use self::content_encoding::ContentEncoding;
-pub use self::content_language::ContentLanguage;
-pub use self::content_range::{ContentRange, ContentRangeSpec};
-pub use self::content_type::ContentType;
-pub use self::cookie::Cookie;
-pub use self::date::Date;
-pub use self::etag::ETag;
-pub use self::expect::Expect;
-pub use self::expires::Expires;
-pub use self::from::From;
-pub use self::host::Host;
-pub use self::if_match::IfMatch;
-pub use self::if_modified_since::IfModifiedSince;
-pub use self::if_none_match::IfNoneMatch;
-pub use self::if_unmodified_since::IfUnmodifiedSince;
-pub use self::if_range::IfRange;
-pub use self::last_modified::LastModified;
-pub use self::location::Location;
-pub use self::origin::Origin;
-pub use self::pragma::Pragma;
-pub use self::prefer::{Prefer, Preference};
-pub use self::preference_applied::PreferenceApplied;
-pub use self::range::{Range, ByteRangeSpec};
-pub use self::referer::Referer;
-pub use self::referrer_policy::ReferrerPolicy;
-pub use self::server::Server;
-pub use self::set_cookie::SetCookie;
-pub use self::strict_transport_security::StrictTransportSecurity;
-pub use self::transfer_encoding::TransferEncoding;
-pub use self::upgrade::{Upgrade, Protocol, ProtocolName};
-pub use self::user_agent::UserAgent;
-pub use self::vary::Vary;
-pub use self::link::{Link, LinkValue, RelationType, MediaDesc};
+pub(crate) use self::accept::Accept;
+pub(crate) use self::access_control_allow_credentials::AccessControlAllowCredentials;
+pub(crate) use self::access_control_allow_headers::AccessControlAllowHeaders;
+pub(crate) use self::access_control_allow_methods::AccessControlAllowMethods;
+pub(crate) use self::access_control_allow_origin::AccessControlAllowOrigin;
+pub(crate) use self::access_control_expose_headers::AccessControlExposeHeaders;
+pub(crate) use self::access_control_max_age::AccessControlMaxAge;
+pub(crate) use self::access_control_request_headers::AccessControlRequestHeaders;
+pub(crate) use self::access_control_request_method::AccessControlRequestMethod;
+pub(crate) use self::accept_charset::AcceptCharset;
+pub(crate) use self::accept_encoding::AcceptEncoding;
+pub(crate) use self::accept_language::AcceptLanguage;
+pub(crate) use self::accept_ranges::{AcceptRanges, RangeUnit};
+pub(crate) use self::allow::Allow;
+pub(crate) use self::authorization::{Authorization, Scheme, Basic, Bearer};
+pub(crate) use self::cache_control::{CacheControl, CacheDirective};
+pub(crate) use self::connection::{Connection, ConnectionOption};
+pub(crate) use self::content_disposition::{ContentDisposition, DispositionType, DispositionParam};
+pub(crate) use self::content_length::ContentLength;
+pub(crate) use self::content_encoding::ContentEncoding;
+pub(crate) use self::content_language::ContentLanguage;
+pub(crate) use self::content_range::{ContentRange, ContentRangeSpec};
+pub(crate) use self::content_type::ContentType;
+pub(crate) use self::cookie::Cookie;
+pub(crate) use self::date::Date;
+pub(crate) use self::etag::ETag;
+pub(crate) use self::expect::Expect;
+pub(crate) use self::expires::Expires;
+pub(crate) use self::from::From;
+pub(crate) use self::host::Host;
+pub(crate) use self::if_match::IfMatch;
+pub(crate) use self::if_modified_since::IfModifiedSince;
+pub(crate) use self::if_none_match::IfNoneMatch;
+pub(crate) use self::if_unmodified_since::IfUnmodifiedSince;
+pub(crate) use self::if_range::IfRange;
+pub(crate) use self::last_modified::LastModified;
+pub(crate) use self::location::Location;
+pub(crate) use self::origin::Origin;
+pub(crate) use self::pragma::Pragma;
+pub(crate) use self::prefer::{Prefer, Preference};
+pub(crate) use self::preference_applied::PreferenceApplied;
+pub(crate) use self::range::{Range, ByteRangeSpec};
+pub(crate) use self::referer::Referer;
+pub(crate) use self::referrer_policy::ReferrerPolicy;
+pub(crate) use self::server::Server;
+pub(crate) use self::set_cookie::SetCookie;
+pub(crate) use self::strict_transport_security::StrictTransportSecurity;
+pub(crate) use self::transfer_encoding::TransferEncoding;
+pub(crate) use self::upgrade::{Upgrade, Protocol, ProtocolName};
+pub(crate) use self::user_agent::UserAgent;
+pub(crate) use self::vary::Vary;
+pub(crate) use self::link::{Link, LinkValue, RelationType, MediaDesc};
 
 #[doc(hidden)]
 #[macro_export]
@@ -70,7 +70,7 @@ macro_rules! bench_header(
             use test::Bencher;
             use super::*;
 
-            use header::{Header, HeaderFormatter};
+            use ::hyper::header::{Header, HeaderFormatter};
 
             #[bench]
             fn bench_parse(b: &mut Bencher) {
@@ -192,24 +192,24 @@ macro_rules! header {
     ($(#[$a:meta])*($id:ident, $n:expr) => ($item:ty)*) => {
         $(#[$a])*
         #[derive(Clone, Debug, PartialEq)]
-        pub struct $id(pub Vec<$item>);
+        pub(crate) struct $id(pub(crate) Vec<$item>);
         __hyper__deref!($id => Vec<$item>);
-        impl $crate::header::Header for $id {
+        impl $crate::hyper::header::Header for $id {
             fn header_name() -> &'static str {
                 $n
             }
             fn parse_header(raw: &[Vec<u8>]) -> $crate::hyper::Result<Self> {
-                $crate::header::parsing::from_comma_delimited(raw).map($id)
+                $crate::hyper::header::parsing::from_comma_delimited(raw).map($id)
             }
         }
-        impl $crate::header::HeaderFormat for $id {
+        impl $crate::hyper::header::HeaderFormat for $id {
             fn fmt_header(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                $crate::header::parsing::fmt_comma_delimited(f, &self.0[..])
+                $crate::hyper::header::parsing::fmt_comma_delimited(f, &self.0[..])
             }
         }
         impl ::std::fmt::Display for $id {
             fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                use $crate::header::HeaderFormat;
+                use $crate::hyper::header::HeaderFormat;
                 self.fmt_header(f)
             }
         }
@@ -218,24 +218,24 @@ macro_rules! header {
     ($(#[$a:meta])*($id:ident, $n:expr) => ($item:ty)+) => {
         $(#[$a])*
         #[derive(Clone, Debug, PartialEq)]
-        pub struct $id(pub Vec<$item>);
+        pub(crate) struct $id(pub(crate) Vec<$item>);
         __hyper__deref!($id => Vec<$item>);
-        impl $crate::header::Header for $id {
+        impl $crate::hyper::header::Header for $id {
             fn header_name() -> &'static str {
                 $n
             }
             fn parse_header(raw: &[Vec<u8>]) -> $crate::hyper::Result<Self> {
-                $crate::header::parsing::from_comma_delimited(raw).map($id)
+                $crate::hyper::header::parsing::from_comma_delimited(raw).map($id)
             }
         }
-        impl $crate::header::HeaderFormat for $id {
+        impl $crate::hyper::header::HeaderFormat for $id {
             fn fmt_header(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                $crate::header::parsing::fmt_comma_delimited(f, &self.0[..])
+                $crate::hyper::header::parsing::fmt_comma_delimited(f, &self.0[..])
             }
         }
         impl ::std::fmt::Display for $id {
             fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                use $crate::header::HeaderFormat;
+                use $crate::hyper::header::HeaderFormat;
                 self.fmt_header(f)
             }
         }
@@ -244,17 +244,17 @@ macro_rules! header {
     ($(#[$a:meta])*($id:ident, $n:expr) => [$value:ty]) => {
         $(#[$a])*
         #[derive(Clone, Debug, PartialEq)]
-        pub struct $id(pub $value);
+        pub(crate) struct $id(pub(crate) $value);
         __hyper__deref!($id => $value);
-        impl $crate::header::Header for $id {
+        impl $crate::hyper::header::Header for $id {
             fn header_name() -> &'static str {
                 $n
             }
             fn parse_header(raw: &[Vec<u8>]) -> $crate::hyper::Result<Self> {
-                $crate::header::parsing::from_one_raw_str(raw).map($id)
+                $crate::hyper::header::parsing::from_one_raw_str(raw).map($id)
             }
         }
-        impl $crate::header::HeaderFormat for $id {
+        impl $crate::hyper::header::HeaderFormat for $id {
             fn fmt_header(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 ::std::fmt::Display::fmt(&**self, f)
             }
@@ -269,13 +269,13 @@ macro_rules! header {
     ($(#[$a:meta])*($id:ident, $n:expr) => {Any / ($item:ty)+}) => {
         $(#[$a])*
         #[derive(Clone, Debug, PartialEq)]
-        pub enum $id {
+        pub(crate) enum $id {
             /// Any value is a match
             Any,
             /// Only the listed items are a match
             Items(Vec<$item>),
         }
-        impl $crate::header::Header for $id {
+        impl $crate::hyper::header::Header for $id {
             fn header_name() -> &'static str {
                 $n
             }
@@ -286,21 +286,21 @@ macro_rules! header {
                         return Ok($id::Any)
                     }
                 }
-                $crate::header::parsing::from_comma_delimited(raw).map($id::Items)
+                $crate::hyper::header::parsing::from_comma_delimited(raw).map($id::Items)
             }
         }
-        impl $crate::header::HeaderFormat for $id {
+        impl $crate::hyper::header::HeaderFormat for $id {
             fn fmt_header(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
                 match *self {
                     $id::Any => f.write_str("*"),
-                    $id::Items(ref fields) => $crate::header::parsing::fmt_comma_delimited(
+                    $id::Items(ref fields) => $crate::hyper::header::parsing::fmt_comma_delimited(
                         f, &fields[..])
                 }
             }
         }
         impl ::std::fmt::Display for $id {
             fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
-                use $crate::header::HeaderFormat;
+                use $crate::hyper::header::HeaderFormat;
                 self.fmt_header(f)
             }
         }

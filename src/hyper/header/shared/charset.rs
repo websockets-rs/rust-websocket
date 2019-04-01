@@ -13,7 +13,7 @@ use self::Charset::*;
 /// See http://www.iana.org/assignments/character-sets/character-sets.xhtml
 #[derive(Clone,Debug,PartialEq)]
 #[allow(non_camel_case_types)]
-pub enum Charset{
+pub(crate) enum Charset{
     /// US ASCII
     Us_Ascii,
     /// ISO-8859-1

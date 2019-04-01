@@ -1,6 +1,6 @@
 use std::fmt::{self, Display};
 
-use header::{Header, HeaderFormat};
+use ::hyper::header::{Header, HeaderFormat};
 
 /// The `Access-Control-Allow-Origin` response header,
 /// part of [CORS](http://www.w3.org/TR/cors/#access-control-allow-origin-response-header)
@@ -45,7 +45,7 @@ use header::{Header, HeaderFormat};
 /// );
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub enum AccessControlAllowOrigin {
+pub(crate) enum AccessControlAllowOrigin {
     /// Allow all origins
     Any,
     /// A hidden origin
@@ -90,7 +90,7 @@ impl Display for AccessControlAllowOrigin {
 
 #[cfg(test)]
 mod test_access_control_allow_orgin {
-    use header::*;
+    use ::hyper::header::*;
     use super::AccessControlAllowOrigin as HeaderField;
     test_header!(test1, vec![b"null"]);
     test_header!(test2, vec![b"*"]);

@@ -36,7 +36,7 @@ use ::hyper::header::{Header, HeaderFormat};
 /// # }
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub struct AccessControlAllowCredentials;
+pub(crate) struct AccessControlAllowCredentials;
 
 const ACCESS_CONTROL_ALLOW_CREDENTIALS_TRUE: UniCase<&'static str> = UniCase("true");
 
@@ -79,7 +79,7 @@ impl Display for AccessControlAllowCredentials {
 #[cfg(test)]
 mod test_access_control_allow_credentials {
     use std::str;
-    use header::*;
+    use ::hyper::header::*;
     use super::AccessControlAllowCredentials as HeaderField;
     test_header!(works,        vec![b"true"], Some(HeaderField));
     test_header!(ignores_case, vec![b"True"]);

@@ -2,14 +2,14 @@ use std::fmt::{self, Display};
 use std::str::FromStr;
 use unicase::UniCase;
 
-pub use self::ConnectionOption::{KeepAlive, Close, ConnectionHeader};
+pub(crate) use self::ConnectionOption::{KeepAlive, Close, ConnectionHeader};
 
 const KEEP_ALIVE: UniCase<&'static str> = UniCase("keep-alive");
 const CLOSE: UniCase<&'static str> = UniCase("close");
 
 /// Values that can be in the `Connection` header.
 #[derive(Clone, PartialEq, Debug)]
-pub enum ConnectionOption {
+pub(crate) enum ConnectionOption {
     /// The `keep-alive` connection value.
     KeepAlive,
     /// The `close` connection value.
@@ -105,13 +105,13 @@ header! {
 impl Connection {
     /// A constructor to easily create a `Connection: close` header.
     #[inline]
-    pub fn close() -> Connection {
+    pub(crate) fn close() -> Connection {
         Connection(vec![ConnectionOption::Close])
     }
 
     /// A constructor to easily create a `Connection: keep-alive` header.
     #[inline]
-    pub fn keep_alive() -> Connection {
+    pub(crate) fn keep_alive() -> Connection {
         Connection(vec![ConnectionOption::KeepAlive])
     }
 }
@@ -123,7 +123,7 @@ bench_header!(header, Connection, { vec![b"authorization".to_vec()] });
 #[cfg(test)]
 mod tests {
     use super::{Connection,ConnectionHeader};
-    use header::Header;
+    use ::hyper::header::Header;
     use unicase::UniCase;
 
     fn parse_option(header: Vec<u8>) -> Connection {

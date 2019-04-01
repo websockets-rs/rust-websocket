@@ -77,7 +77,7 @@ header! {
 /// A protocol name used to identify a spefic protocol. Names are case-sensitive
 /// except for the `WebSocket` value.
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ProtocolName {
+pub(crate) enum ProtocolName {
     /// `HTTP` value, Hypertext Transfer Protocol
     Http,
     /// `TLS` value, Transport Layer Security [RFC2817](http://tools.ietf.org/html/rfc2817)
@@ -123,16 +123,16 @@ impl Display for ProtocolName {
 
 /// Protocols that appear in the `Upgrade` header field
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Protocol {
+pub(crate) struct Protocol {
     /// The protocol identifier
-    pub name: ProtocolName,
+    pub(crate) name: ProtocolName,
     /// The optional version of the protocol, often in the format "DIGIT.DIGIT" (e.g.. "1.2")
-    pub version: Option<String>,
+    pub(crate) version: Option<String>,
 }
 
 impl Protocol {
     /// Creates a new Protocol with the given name and version
-    pub fn new(name: ProtocolName, version: Option<String>) -> Protocol {
+    pub(crate) fn new(name: ProtocolName, version: Option<String>) -> Protocol {
         Protocol { name: name, version: version }
     }
 }

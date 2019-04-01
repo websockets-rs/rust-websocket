@@ -27,9 +27,9 @@ use ::hyper::version;
 /// write the head and flush the body, if the handler has not already done so,
 /// so that the server doesn't accidentally leave dangling requests.
 #[derive(Debug)]
-pub struct Response<'a, W: Any = Fresh> {
+pub(crate) struct Response<'a, W: Any = Fresh> {
     /// The HTTP version of this response.
-    pub version: version::HttpVersion,
+    pub(crate) version: version::HttpVersion,
     // Stream the Response is writing to, not accessible through UnwrittenResponse
     body: HttpWriter<&'a mut (Write + 'a)>,
     // The status code for the request.
@@ -43,15 +43,15 @@ pub struct Response<'a, W: Any = Fresh> {
 impl<'a, W: Any> Response<'a, W> {
     /// The status of this response.
     #[inline]
-    pub fn status(&self) -> status::StatusCode { self.status }
+    pub(crate) fn status(&self) -> status::StatusCode { self.status }
 
     /// The headers of this response.
     #[inline]
-    pub fn headers(&self) -> &header::Headers { &*self.headers }
+    pub(crate) fn headers(&self) -> &header::Headers { &*self.headers }
 
     /// Construct a Response from its constituent parts.
     #[inline]
-    pub fn construct(version: version::HttpVersion,
+    pub(crate) fn construct(version: version::HttpVersion,
                      body: HttpWriter<&'a mut (Write + 'a)>,
                      status: status::StatusCode,
                      headers: &'a mut header::Headers) -> Response<'a, Fresh> {
@@ -66,7 +66,7 @@ impl<'a, W: Any> Response<'a, W> {
 
     /// Deconstruct this Response into its constituent parts.
     #[inline]
-    pub fn deconstruct(self) -> (version::HttpVersion, HttpWriter<&'a mut (Write + 'a)>,
+    pub(crate) fn deconstruct(self) -> (version::HttpVersion, HttpWriter<&'a mut (Write + 'a)>,
                                  status::StatusCode, &'a mut header::Headers) {
         unsafe {
             let parts = (
@@ -127,7 +127,7 @@ impl<'a, W: Any> Response<'a, W> {
 impl<'a> Response<'a, Fresh> {
     /// Creates a new Response that can be used to write to a network stream.
     #[inline]
-    pub fn new(stream: &'a mut (Write + 'a), headers: &'a mut header::Headers) ->
+    pub(crate) fn new(stream: &'a mut (Write + 'a), headers: &'a mut header::Headers) ->
             Response<'a, Fresh> {
         Response {
             status: status::StatusCode::Ok,
@@ -166,7 +166,7 @@ impl<'a> Response<'a, Fresh> {
     /// }
     /// ```
     #[inline]
-    pub fn send(self, body: &[u8]) -> io::Result<()> {
+    pub(crate) fn send(self, body: &[u8]) -> io::Result<()> {
         self.headers.set(header::ContentLength(body.len() as u64));
         let mut stream = try!(self.start());
         try!(stream.write_all(body));
@@ -175,7 +175,7 @@ impl<'a> Response<'a, Fresh> {
 
     /// Consume this Response<Fresh>, writing the Headers and Status and
     /// creating a Response<Streaming>
-    pub fn start(mut self) -> io::Result<Response<'a, Streaming>> {
+    pub(crate) fn start(mut self) -> io::Result<Response<'a, Streaming>> {
         let body_type = try!(self.write_head());
         let (version, body, status, headers) = self.deconstruct();
         let stream = match body_type {
@@ -195,18 +195,18 @@ impl<'a> Response<'a, Fresh> {
     }
     /// Get a mutable reference to the status.
     #[inline]
-    pub fn status_mut(&mut self) -> &mut status::StatusCode { &mut self.status }
+    pub(crate) fn status_mut(&mut self) -> &mut status::StatusCode { &mut self.status }
 
     /// Get a mutable reference to the Headers.
     #[inline]
-    pub fn headers_mut(&mut self) -> &mut header::Headers { self.headers }
+    pub(crate) fn headers_mut(&mut self) -> &mut header::Headers { self.headers }
 }
 
 
 impl<'a> Response<'a, Streaming> {
     /// Flushes all writing of a response to the client.
     #[inline]
-    pub fn end(self) -> io::Result<()> {
+    pub(crate) fn end(self) -> io::Result<()> {
         trace!("ending");
         let (_, body, _, _) = self.deconstruct();
         try!(body.end());

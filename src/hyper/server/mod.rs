@@ -113,10 +113,10 @@ use std::net::{SocketAddr, ToSocketAddrs, Shutdown};
 use std::thread::{self, JoinHandle};
 use std::time::Duration;
 
-pub use self::request::Request;
-pub use self::response::Response;
+pub(crate) use self::request::Request;
+pub(crate) use self::response::Response;
 
-pub use ::hyper::net::{Fresh, Streaming};
+pub(crate) use ::hyper::net::{Fresh, Streaming};
 
 use ::hyper::Error;
 use ::hyper::buffer::BufReader;
@@ -130,8 +130,8 @@ use ::hyper::version::HttpVersion::Http11;
 
 use self::listener::ListenerPool;
 
-pub mod request;
-pub mod response;
+pub(crate) mod request;
+pub(crate) mod response;
 
 mod listener;
 
@@ -140,7 +140,7 @@ mod listener;
 /// Once listening, it will create a `Request`/`Response` pair for each
 /// incoming connection, and hand them to the provided handler.
 #[derive(Debug)]
-pub struct Server<L = HttpListener> {
+pub(crate) struct Server<L = HttpListener> {
     listener: L,
     timeouts: Timeouts,
 }
@@ -163,7 +163,7 @@ impl Default for Timeouts {
 impl<L: NetworkListener> Server<L> {
     /// Creates a new server with the provided handler.
     #[inline]
-    pub fn new(listener: L) -> Server<L> {
+    pub(crate) fn new(listener: L) -> Server<L> {
         Server {
             listener: listener,
             timeouts: Timeouts::default()
@@ -179,30 +179,30 @@ impl<L: NetworkListener> Server<L> {
     ///
     /// Default is enabled with a 5 second timeout.
     #[inline]
-    pub fn keep_alive(&mut self, timeout: Option<Duration>) {
+    pub(crate) fn keep_alive(&mut self, timeout: Option<Duration>) {
         self.timeouts.keep_alive = timeout;
     }
 
     /// Sets the read timeout for all Request reads.
-    pub fn set_read_timeout(&mut self, dur: Option<Duration>) {
+    pub(crate) fn set_read_timeout(&mut self, dur: Option<Duration>) {
         self.listener.set_read_timeout(dur);
         self.timeouts.read = dur;
     }
 
     /// Sets the write timeout for all Response writes.
-    pub fn set_write_timeout(&mut self, dur: Option<Duration>) {
+    pub(crate) fn set_write_timeout(&mut self, dur: Option<Duration>) {
         self.listener.set_write_timeout(dur);
     }
 
     /// Get the address that the server is listening on.
-    pub fn local_addr(&mut self) -> io::Result<SocketAddr> {
+    pub(crate) fn local_addr(&mut self) -> io::Result<SocketAddr> {
         self.listener.local_addr()
     }
 }
 
 impl Server<HttpListener> {
     /// Creates a new server that will handle `HttpStream`s.
-    pub fn http<To: ToSocketAddrs>(addr: To) -> ::hyper::Result<Server<HttpListener>> {
+    pub(crate) fn http<To: ToSocketAddrs>(addr: To) -> ::hyper::Result<Server<HttpListener>> {
         HttpListener::new(addr).map(Server::new)
     }
 }
@@ -211,20 +211,20 @@ impl<S: SslServer + Clone + Send> Server<HttpsListener<S>> {
     /// Creates a new server that will handle `HttpStream`s over SSL.
     ///
     /// You can use any SSL implementation, as long as implements `hyper::net::Ssl`.
-    pub fn https<A: ToSocketAddrs>(addr: A, ssl: S) -> ::hyper::Result<Server<HttpsListener<S>>> {
+    pub(crate) fn https<A: ToSocketAddrs>(addr: A, ssl: S) -> ::hyper::Result<Server<HttpsListener<S>>> {
         HttpsListener::new(addr, ssl).map(Server::new)
     }
 }
 
 impl<L: NetworkListener + Send + 'static> Server<L> {
     /// Binds to a socket and starts handling connections.
-    pub fn handle<H: Handler + 'static>(self, handler: H) -> ::hyper::Result<Listening> {
+    pub(crate) fn handle<H: Handler + 'static>(self, handler: H) -> ::hyper::Result<Listening> {
         self.handle_threads(handler, num_cpus::get() * 5 / 4)
     }
 
     /// Binds to a socket and starts handling connections with the provided
     /// number of threads.
-    pub fn handle_threads<H: Handler + 'static>(self, handler: H,
+    pub(crate) fn handle_threads<H: Handler + 'static>(self, handler: H,
             threads: usize) -> ::hyper::Result<Listening> {
         handle(self, handler, threads)
     }
@@ -370,10 +370,10 @@ impl<H: Handler + 'static> Worker<H> {
 }
 
 /// A listening server, which can later be closed.
-pub struct Listening {
+pub(crate) struct Listening {
     _guard: Option<JoinHandle<()>>,
     /// The socket addresses that the server is bound to.
-    pub socket: SocketAddr,
+    pub(crate) socket: SocketAddr,
 }
 
 impl fmt::Debug for Listening {
@@ -393,7 +393,7 @@ impl Listening {
     /// it. See https://github.com/hyperium/hyper/issues/338 for more details.
     ///
     /// Stop the server from listening to its socket address.
-    pub fn close(&mut self) -> ::hyper::Result<()> {
+    pub(crate) fn close(&mut self) -> ::hyper::Result<()> {
         let _ = self._guard.take();
         debug!("closing server");
         Ok(())
@@ -401,7 +401,7 @@ impl Listening {
 }
 
 /// A handler that can handle incoming requests for a server.
-pub trait Handler: Sync + Send {
+pub(crate) trait Handler: Sync + Send {
     /// Receives a `Request`/`Response` pair, and should perform some action on them.
     ///
     /// This could reading from the request, and writing to the response.

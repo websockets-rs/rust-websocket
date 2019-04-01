@@ -48,36 +48,36 @@ header! {
 impl ContentType {
     /// A constructor  to easily create a `Content-Type: application/json` header.
     #[inline]
-    pub fn json() -> ContentType {
+    pub(crate) fn json() -> ContentType {
         ContentType(mime!(Application/Json))
     }
 
     /// A constructor  to easily create a `Content-Type: text/plain; charset=utf-8` header.
     #[inline]
-    pub fn plaintext() -> ContentType {
+    pub(crate) fn plaintext() -> ContentType {
         ContentType(mime!(Text/Plain; Charset=Utf8))
     }
 
     /// A constructor  to easily create a `Content-Type: text/html; charset=utf-8` header.
     #[inline]
-    pub fn html() -> ContentType {
+    pub(crate) fn html() -> ContentType {
         ContentType(mime!(Text/Html; Charset=Utf8))
     }
 
     /// A constructor  to easily create a `Content-Type: application/www-form-url-encoded` header.
     #[inline]
-    pub fn form_url_encoded() -> ContentType {
+    pub(crate) fn form_url_encoded() -> ContentType {
         ContentType(mime!(Application/WwwFormUrlEncoded))
     }
     /// A constructor  to easily create a `Content-Type: image/jpeg` header.
     #[inline]
-    pub fn jpeg() -> ContentType {
+    pub(crate) fn jpeg() -> ContentType {
         ContentType(mime!(Image/Jpeg))
     }
 
     /// A constructor  to easily create a `Content-Type: image/png` header.
     #[inline]
-    pub fn png() -> ContentType {
+    pub(crate) fn png() -> ContentType {
         ContentType(mime!(Image/Png))
     }
 }

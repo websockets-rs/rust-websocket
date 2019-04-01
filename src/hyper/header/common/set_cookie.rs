@@ -1,4 +1,4 @@
-use header::{Header, HeaderFormat};
+use ::hyper::header::{Header, HeaderFormat};
 use std::fmt::{self};
 use std::str::from_utf8;
 
@@ -66,7 +66,7 @@ use std::str::from_utf8;
 /// );
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub struct SetCookie(pub Vec<String>);
+pub(crate) struct SetCookie(pub(crate) Vec<String>);
 
 __hyper__deref!(SetCookie => Vec<String>);
 
@@ -101,7 +101,7 @@ impl HeaderFormat for SetCookie {
         }
     }
 
-    fn fmt_multi_header(&self, f: &mut ::header::MultilineFormatter) -> fmt::Result {
+    fn fmt_multi_header(&self, f: &mut ::hyper::header::MultilineFormatter) -> fmt::Result {
         for cookie in &self.0 {
             try!(f.fmt_line(cookie));
         }
@@ -111,7 +111,7 @@ impl HeaderFormat for SetCookie {
 
 #[test]
 fn test_set_cookie_fmt() {
-    use ::header::Headers;
+    use ::hyper::header::Headers;
     let mut headers = Headers::new();
     headers.set(SetCookie(vec![
         "foo=bar".into(),

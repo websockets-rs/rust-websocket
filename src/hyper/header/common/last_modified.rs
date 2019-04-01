@@ -1,4 +1,4 @@
-use header::HttpDate;
+use ::hyper::header::HttpDate;
 
 header! {
     /// `Last-Modified` header, defined in

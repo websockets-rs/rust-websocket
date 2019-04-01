@@ -5,16 +5,16 @@ use std::fmt;
 use std::mem;
 use std::ops::Deref;
 
-pub struct OptCell<T>(UnsafeCell<Option<T>>);
+pub(crate) struct OptCell<T>(UnsafeCell<Option<T>>);
 
 impl<T> OptCell<T> {
     #[inline]
-    pub fn new(val: Option<T>) -> OptCell<T> {
+    pub(crate) fn new(val: Option<T>) -> OptCell<T> {
         OptCell(UnsafeCell::new(val))
     }
 
     #[inline]
-    pub fn set(&self, val: T) {
+    pub(crate) fn set(&self, val: T) {
         unsafe {
             let opt = self.0.get();
             debug_assert!((*opt).is_none());
@@ -23,7 +23,7 @@ impl<T> OptCell<T> {
     }
 
     #[inline]
-    pub unsafe fn get_mut(&mut self) -> &mut T {
+    pub(crate) unsafe fn get_mut(&mut self) -> &mut T {
         let opt = &mut *self.0.get();
         opt.as_mut().unwrap()
     }
@@ -44,7 +44,7 @@ impl<T: Clone> Clone for OptCell<T> {
     }
 }
 
-pub struct PtrMapCell<V: ?Sized>(UnsafeCell<PtrMap<Box<V>>>);
+pub(crate) struct PtrMapCell<V: ?Sized>(UnsafeCell<PtrMap<Box<V>>>);
 
 #[derive(Clone, Debug)]
 enum PtrMap<T> {
@@ -55,12 +55,12 @@ enum PtrMap<T> {
 
 impl<V: ?Sized + fmt::Debug + Any + 'static> PtrMapCell<V> {
     #[inline]
-    pub fn new() -> PtrMapCell<V> {
+    pub(crate) fn new() -> PtrMapCell<V> {
         PtrMapCell(UnsafeCell::new(PtrMap::Empty))
     }
 
     #[inline]
-    pub fn get(&self, key: TypeId) -> Option<&V> {
+    pub(crate) fn get(&self, key: TypeId) -> Option<&V> {
         let map = unsafe { &*self.0.get() };
         match *map {
             PtrMap::Empty => None,
@@ -74,7 +74,7 @@ impl<V: ?Sized + fmt::Debug + Any + 'static> PtrMapCell<V> {
     }
 
     #[inline]
-    pub fn get_mut(&mut self, key: TypeId) -> Option<&mut V> {
+    pub(crate) fn get_mut(&mut self, key: TypeId) -> Option<&mut V> {
         let map = unsafe { &mut *self.0.get() };
         match *map {
             PtrMap::Empty => None,
@@ -88,7 +88,7 @@ impl<V: ?Sized + fmt::Debug + Any + 'static> PtrMapCell<V> {
     }
 
     #[inline]
-    pub unsafe fn insert(&self, key: TypeId, val: Box<V>) {
+    pub(crate) unsafe fn insert(&self, key: TypeId, val: Box<V>) {
         let map = &mut *self.0.get();
         match *map {
             PtrMap::Empty => *map = PtrMap::One(key, val),
@@ -110,7 +110,7 @@ impl<V: ?Sized + fmt::Debug + Any + 'static> PtrMapCell<V> {
     }
 
     #[inline]
-    pub unsafe fn one(&self) -> &V {
+    pub(crate) unsafe fn one(&self) -> &V {
         let map = &*self.0.get();
         match *map {
             PtrMap::One(_, ref one) => one,

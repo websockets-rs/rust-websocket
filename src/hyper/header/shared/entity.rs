@@ -40,9 +40,9 @@ fn check_slice_validity(slice: &str) -> bool {
 /// | `W/"1"` | `"1"`   | no match          | match           |
 /// | `"1"`   | `"1"`   | match             | match           |
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub struct EntityTag {
+pub(crate) struct EntityTag {
     /// Weakness indicator for the tag
-    pub weak: bool,
+    pub(crate) weak: bool,
     /// The opaque string in between the DQUOTEs
     tag: String
 }
@@ -51,7 +51,7 @@ impl EntityTag {
     /// Constructs a new EntityTag.
     /// # Panics
     /// If the tag contains invalid characters.
-    pub fn new(weak: bool, tag: String) -> EntityTag {
+    pub(crate) fn new(weak: bool, tag: String) -> EntityTag {
         assert!(check_slice_validity(&tag), "Invalid tag: {:?}", tag);
         EntityTag { weak: weak, tag: tag }
     }
@@ -59,50 +59,50 @@ impl EntityTag {
     /// Constructs a new weak EntityTag.
     /// # Panics
     /// If the tag contains invalid characters.
-    pub fn weak(tag: String) -> EntityTag {
+    pub(crate) fn weak(tag: String) -> EntityTag {
         EntityTag::new(true, tag)
     }
 
     /// Constructs a new strong EntityTag.
     /// # Panics
     /// If the tag contains invalid characters.
-    pub fn strong(tag: String) -> EntityTag {
+    pub(crate) fn strong(tag: String) -> EntityTag {
         EntityTag::new(false, tag)
     }
 
     /// Get the tag.
-    pub fn tag(&self) -> &str {
+    pub(crate) fn tag(&self) -> &str {
         self.tag.as_ref()
     }
 
     /// Set the tag.
     /// # Panics
     /// If the tag contains invalid characters.
-    pub fn set_tag(&mut self, tag: String) {
+    pub(crate) fn set_tag(&mut self, tag: String) {
         assert!(check_slice_validity(&tag), "Invalid tag: {:?}", tag);
         self.tag = tag
     }
 
     /// For strong comparison two entity-tags are equivalent if both are not weak and their
     /// opaque-tags match character-by-character.
-    pub fn strong_eq(&self, other: &EntityTag) -> bool {
+    pub(crate) fn strong_eq(&self, other: &EntityTag) -> bool {
         !self.weak && !other.weak && self.tag == other.tag
     }
 
     /// For weak comparison two entity-tags are equivalent if their
     /// opaque-tags match character-by-character, regardless of either or
     /// both being tagged as "weak".
-    pub fn weak_eq(&self, other: &EntityTag) -> bool {
+    pub(crate) fn weak_eq(&self, other: &EntityTag) -> bool {
         self.tag == other.tag
     }
 
     /// The inverse of `EntityTag.strong_eq()`.
-    pub fn strong_ne(&self, other: &EntityTag) -> bool {
+    pub(crate) fn strong_ne(&self, other: &EntityTag) -> bool {
         !self.strong_eq(other)
     }
 
     /// The inverse of `EntityTag.weak_eq()`.
-    pub fn weak_ne(&self, other: &EntityTag) -> bool {
+    pub(crate) fn weak_ne(&self, other: &EntityTag) -> bool {
         !self.weak_eq(other)
     }
 }

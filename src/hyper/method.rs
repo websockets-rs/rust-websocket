@@ -63,7 +63,7 @@ impl Method {
     ///
     /// See [the spec](https://tools.ietf.org/html/rfc7231#section-4.2.1)
     /// for more words.
-    pub fn safe(&self) -> bool {
+    pub(crate) fn safe(&self) -> bool {
         match *self {
             Get | Head | Options | Trace => true,
             _ => false
@@ -75,7 +75,7 @@ impl Method {
     ///
     /// See [the spec](https://tools.ietf.org/html/rfc7231#section-4.2.2) for
     /// more words.
-    pub fn idempotent(&self) -> bool {
+    pub(crate) fn idempotent(&self) -> bool {
         if self.safe() {
             true
         } else {

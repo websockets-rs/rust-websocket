@@ -9,21 +9,21 @@ use url::percent_encoding;
 use ::hyper::header::shared::Charset;
 
 /// Reads a single raw string when parsing a header.
-pub fn from_one_raw_str<T: str::FromStr>(raw: &[Vec<u8>]) -> ::hyper::Result<T> {
+pub(crate) fn from_one_raw_str<T: str::FromStr>(raw: &[Vec<u8>]) -> ::hyper::Result<T> {
     if raw.len() != 1 || unsafe { raw.get_unchecked(0) } == b"" { return Err(::hyper::Error::Header) }
     // we JUST checked that raw.len() == 1, so raw[0] WILL exist.
     from_raw_str(& unsafe { raw.get_unchecked(0) })
 }
 
 /// Reads a raw string into a value.
-pub fn from_raw_str<T: str::FromStr>(raw: &[u8]) -> ::hyper::Result<T> {
+pub(crate) fn from_raw_str<T: str::FromStr>(raw: &[u8]) -> ::hyper::Result<T> {
     let s = try!(str::from_utf8(raw));
     T::from_str(s).or(Err(::hyper::Error::Header))
 }
 
 /// Reads a comma-delimited raw header into a Vec.
 #[inline]
-pub fn from_comma_delimited<T: str::FromStr, S: AsRef<[u8]>>(raw: &[S]) -> ::hyper::Result<Vec<T>> {
+pub(crate) fn from_comma_delimited<T: str::FromStr, S: AsRef<[u8]>>(raw: &[S]) -> ::hyper::Result<Vec<T>> {
     let mut result = Vec::new();
     for s in raw {
         let s = try!(str::from_utf8(s.as_ref()));
@@ -38,7 +38,7 @@ pub fn from_comma_delimited<T: str::FromStr, S: AsRef<[u8]>>(raw: &[S]) -> ::hyp
 }
 
 /// Format an array into a comma-delimited string.
-pub fn fmt_comma_delimited<T: Display>(f: &mut fmt::Formatter, parts: &[T]) -> fmt::Result {
+pub(crate) fn fmt_comma_delimited<T: Display>(f: &mut fmt::Formatter, parts: &[T]) -> fmt::Result {
     for (i, part) in parts.iter().enumerate() {
         if i != 0 {
             try!(f.write_str(", "));
@@ -51,13 +51,13 @@ pub fn fmt_comma_delimited<T: Display>(f: &mut fmt::Formatter, parts: &[T]) -> f
 /// An extended header parameter value (i.e., tagged with a character set and optionally,
 /// a language), as defined in [RFC 5987](https://tools.ietf.org/html/rfc5987#section-3.2).
 #[derive(Clone, Debug, PartialEq)]
-pub struct ExtendedValue {
+pub(crate) struct ExtendedValue {
     /// The character set that is used to encode the `value` to a string.
-    pub charset: Charset,
+    pub(crate) charset: Charset,
     /// The human language details of the `value`, if available.
-    pub language_tag: Option<LanguageTag>,
+    pub(crate) language_tag: Option<LanguageTag>,
     /// The parameter value, as expressed in octets.
-    pub value: Vec<u8>,
+    pub(crate) value: Vec<u8>,
 }
 
 /// Parses extended header parameter values (`ext-value`), as defined in
@@ -94,7 +94,7 @@ pub struct ExtendedValue {
 ///               / "^" / "_" / "`" / "|" / "~"
 ///               ; token except ( "*" / "'" / "%" )
 /// ```
-pub fn parse_extended_value(val: &str) -> ::hyper::Result<ExtendedValue> {
+pub(crate) fn parse_extended_value(val: &str) -> ::hyper::Result<ExtendedValue> {
 
     // Break into three pieces separated by the single-quote character
     let mut parts = val.splitn(3,'\'');

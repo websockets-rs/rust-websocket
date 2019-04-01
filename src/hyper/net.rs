@@ -12,13 +12,13 @@ use ::hyper::typeable::Typeable;
 use ::hyper::traitobject;
 
 /// The write-status indicating headers have not been written.
-pub enum Fresh {}
+pub(crate) enum Fresh {}
 
 /// The write-status indicating headers have been written.
-pub enum Streaming {}
+pub(crate) enum Streaming {}
 
 /// An abstraction to listen for connections on a certain port.
-pub trait NetworkListener: Clone {
+pub(crate) trait NetworkListener: Clone {
     /// The stream produced for each connection.
     type Stream: NetworkStream + Send + Clone;
 
@@ -51,7 +51,7 @@ pub trait NetworkListener: Clone {
 }
 
 /// An iterator wrapper over a `NetworkAcceptor`.
-pub struct NetworkConnections<'a, N: NetworkListener + 'a>(&'a mut N);
+pub(crate) struct NetworkConnections<'a, N: NetworkListener + 'a>(&'a mut N);
 
 impl<'a, N: NetworkListener + 'a> Iterator for NetworkConnections<'a, N> {
     type Item = ::hyper::Result<N::Stream>;
@@ -61,7 +61,7 @@ impl<'a, N: NetworkListener + 'a> Iterator for NetworkConnections<'a, N> {
 }
 
 /// An abstraction over streams that a `Server` can utilize.
-pub trait NetworkStream: Read + Write + Any + Send + Typeable {
+pub(crate) trait NetworkStream: Read + Write + Any + Send + Typeable {
     /// Get the remote address of the underlying connection.
     fn peer_addr(&mut self) -> io::Result<SocketAddr>;
 
@@ -89,7 +89,7 @@ pub trait NetworkStream: Read + Write + Any + Send + Typeable {
 }
 
 /// A connector creates a NetworkStream.
-pub trait NetworkConnector {
+pub(crate) trait NetworkConnector {
     /// Type of `Stream` to create
     type Stream: Into<Box<NetworkStream + Send>>;
 
@@ -127,13 +127,13 @@ impl NetworkStream {
 impl NetworkStream {
     /// Is the underlying type in this trait object a `T`?
     #[inline]
-    pub fn is<T: Any>(&self) -> bool {
+    pub(crate) fn is<T: Any>(&self) -> bool {
         (*self).get_type() == TypeId::of::<T>()
     }
 
     /// If the underlying type is `T`, get a reference to the contained data.
     #[inline]
-    pub fn downcast_ref<T: Any>(&self) -> Option<&T> {
+    pub(crate) fn downcast_ref<T: Any>(&self) -> Option<&T> {
         if self.is::<T>() {
             Some(unsafe { self.downcast_ref_unchecked() })
         } else {
@@ -144,7 +144,7 @@ impl NetworkStream {
     /// If the underlying type is `T`, get a mutable reference to the contained
     /// data.
     #[inline]
-    pub fn downcast_mut<T: Any>(&mut self) -> Option<&mut T> {
+    pub(crate) fn downcast_mut<T: Any>(&mut self) -> Option<&mut T> {
         if self.is::<T>() {
             Some(unsafe { self.downcast_mut_unchecked() })
         } else {
@@ -154,7 +154,7 @@ impl NetworkStream {
 
     /// If the underlying type is `T`, extract it.
     #[inline]
-    pub fn downcast<T: Any>(self: Box<NetworkStream>)
+    pub(crate) fn downcast<T: Any>(self: Box<NetworkStream>)
             -> Result<Box<T>, Box<NetworkStream>> {
         if self.is::<T>() {
             Ok(unsafe { self.downcast_unchecked() })
@@ -182,13 +182,13 @@ impl NetworkStream + Send {
 impl NetworkStream + Send {
     /// Is the underlying type in this trait object a `T`?
     #[inline]
-    pub fn is<T: Any>(&self) -> bool {
+    pub(crate) fn is<T: Any>(&self) -> bool {
         (*self).get_type() == TypeId::of::<T>()
     }
 
     /// If the underlying type is `T`, get a reference to the contained data.
     #[inline]
-    pub fn downcast_ref<T: Any>(&self) -> Option<&T> {
+    pub(crate) fn downcast_ref<T: Any>(&self) -> Option<&T> {
         if self.is::<T>() {
             Some(unsafe { self.downcast_ref_unchecked() })
         } else {
@@ -199,7 +199,7 @@ impl NetworkStream + Send {
     /// If the underlying type is `T`, get a mutable reference to the contained
     /// data.
     #[inline]
-    pub fn downcast_mut<T: Any>(&mut self) -> Option<&mut T> {
+    pub(crate) fn downcast_mut<T: Any>(&mut self) -> Option<&mut T> {
         if self.is::<T>() {
             Some(unsafe { self.downcast_mut_unchecked() })
         } else {
@@ -209,7 +209,7 @@ impl NetworkStream + Send {
 
     /// If the underlying type is `T`, extract it.
     #[inline]
-    pub fn downcast<T: Any>(self: Box<NetworkStream + Send>)
+    pub(crate) fn downcast<T: Any>(self: Box<NetworkStream + Send>)
             -> Result<Box<T>, Box<NetworkStream + Send>> {
         if self.is::<T>() {
             Ok(unsafe { self.downcast_unchecked() })
@@ -221,7 +221,7 @@ impl NetworkStream + Send {
 
 /// A `NetworkListener` for `HttpStream`s.
 #[derive(Clone)]
-pub struct HttpListener {
+pub(crate) struct HttpListener {
     listener: Arc<TcpListener>,
 
     read_timeout : Option<Duration>,
@@ -241,7 +241,7 @@ impl From<TcpListener> for HttpListener {
 
 impl HttpListener {
     /// Start listening to an address over HTTP.
-    pub fn new<To: ToSocketAddrs>(addr: To) -> ::hyper::Result<HttpListener> {
+    pub(crate) fn new<To: ToSocketAddrs>(addr: To) -> ::hyper::Result<HttpListener> {
         Ok(HttpListener::from(try!(TcpListener::bind(addr))))
     }
 }
@@ -300,7 +300,7 @@ impl ::std::os::unix::io::FromRawFd for HttpListener {
 }
 
 /// A wrapper around a `TcpStream`.
-pub struct HttpStream(pub TcpStream);
+pub(crate) struct HttpStream(pub(crate) TcpStream);
 
 impl Clone for HttpStream {
     #[inline]
@@ -390,7 +390,7 @@ impl NetworkStream for HttpStream {
 
 /// A connector that will produce HttpStreams.
 #[derive(Debug, Clone, Default)]
-pub struct HttpConnector;
+pub(crate) struct HttpConnector;
 
 impl NetworkConnector for HttpConnector {
     type Stream = HttpStream;
@@ -440,7 +440,7 @@ impl<F> NetworkConnector for F where F: Fn(&str, u16, &str) -> io::Result<TcpStr
 }
 
 /// An abstraction to allow any SSL implementation to be used with client-side HttpsStreams.
-pub trait SslClient<T: NetworkStream + Send + Clone = HttpStream> {
+pub(crate) trait SslClient<T: NetworkStream + Send + Clone = HttpStream> {
     /// The protected stream.
     type Stream: NetworkStream + Send + Clone;
     /// Wrap a client stream with SSL.
@@ -448,7 +448,7 @@ pub trait SslClient<T: NetworkStream + Send + Clone = HttpStream> {
 }
 
 /// An abstraction to allow any SSL implementation to be used with server-side HttpsStreams.
-pub trait SslServer<T: NetworkStream + Send + Clone = HttpStream> {
+pub(crate) trait SslServer<T: NetworkStream + Send + Clone = HttpStream> {
     /// The protected stream.
     type Stream: NetworkStream + Send + Clone;
     /// Wrap a server stream with SSL.
@@ -457,7 +457,7 @@ pub trait SslServer<T: NetworkStream + Send + Clone = HttpStream> {
 
 /// A stream over the HTTP protocol, possibly protected by SSL.
 #[derive(Debug, Clone)]
-pub enum HttpsStream<S: NetworkStream> {
+pub(crate) enum HttpsStream<S: NetworkStream> {
     /// A plain text stream.
     Http(HttpStream),
     /// A stream protected by SSL.
@@ -528,14 +528,14 @@ impl<S: NetworkStream> NetworkStream for HttpsStream<S> {
 
 /// A Http Listener over SSL.
 #[derive(Clone)]
-pub struct HttpsListener<S: SslServer> {
+pub(crate) struct HttpsListener<S: SslServer> {
     listener: HttpListener,
     ssl: S,
 }
 
 impl<S: SslServer> HttpsListener<S> {
     /// Start listening to an address over HTTPS.
-    pub fn new<To: ToSocketAddrs>(addr: To, ssl: S) -> ::hyper::Result<HttpsListener<S>> {
+    pub(crate) fn new<To: ToSocketAddrs>(addr: To, ssl: S) -> ::hyper::Result<HttpsListener<S>> {
         HttpListener::new(addr).map(|l| HttpsListener {
             listener: l,
             ssl: ssl
@@ -543,7 +543,7 @@ impl<S: SslServer> HttpsListener<S> {
     }
 
     /// Construct an HttpsListener from a bound `TcpListener`.
-    pub fn with_listener(listener: HttpListener, ssl: S) -> HttpsListener<S> {
+    pub(crate) fn with_listener(listener: HttpListener, ssl: S) -> HttpsListener<S> {
         HttpsListener {
             listener: listener,
             ssl: ssl
@@ -575,21 +575,21 @@ impl<S: SslServer + Clone> NetworkListener for HttpsListener<S> {
 
 /// A connector that can protect HTTP streams using SSL.
 #[derive(Debug, Default)]
-pub struct HttpsConnector<S: SslClient, C: NetworkConnector = HttpConnector> {
+pub(crate) struct HttpsConnector<S: SslClient, C: NetworkConnector = HttpConnector> {
     ssl: S,
     connector: C,
 }
 
 impl<S: SslClient> HttpsConnector<S, HttpConnector> {
     /// Create a new connector using the provided SSL implementation.
-    pub fn new(s: S) -> HttpsConnector<S, HttpConnector> {
+    pub(crate) fn new(s: S) -> HttpsConnector<S, HttpConnector> {
         HttpsConnector::with_connector(s, HttpConnector)
     }
 }
 
 impl<S: SslClient, C: NetworkConnector> HttpsConnector<S, C> {
     /// Create a new connector using the provided SSL implementation.
-    pub fn with_connector(s: S, connector: C) -> HttpsConnector<S, C> {
+    pub(crate) fn with_connector(s: S, connector: C) -> HttpsConnector<S, C> {
         HttpsConnector { ssl: s, connector: connector }
     }
 }
@@ -610,6 +610,6 @@ impl<S: SslClient, C: NetworkConnector<Stream=HttpStream>> NetworkConnector for 
 
 
 #[doc(hidden)]
-pub type DefaultConnector = HttpConnector;
+pub(crate) type DefaultConnector = HttpConnector;
 
 // tests removed

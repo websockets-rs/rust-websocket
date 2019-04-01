@@ -119,7 +119,7 @@ where
 	/// a stream that has a websocket connection already set up.
 	/// If in doubt, don't use this!
 	#[doc(hidden)]
-	pub fn unchecked(
+	pub(crate) fn unchecked(
 		stream: BufReader<S>,
 		headers: Headers,
 		out_mask: bool,
@@ -155,7 +155,7 @@ where
 	}
 
 	/// Returns an iterator over incoming data frames.
-	pub fn incoming_dataframes(&mut self) -> DataFrameIterator<Receiver, BufReader<S>> {
+	pub(crate) fn incoming_dataframes(&mut self) -> DataFrameIterator<Receiver, BufReader<S>> {
 		self.receiver.incoming_dataframes(&mut self.stream)
 	}
 
@@ -332,7 +332,7 @@ where
 	///}
 	///# }
 	///```
-	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, BufReader<S>> {
+	pub(crate) fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, BufReader<S>> {
 		self.receiver.incoming_messages(&mut self.stream)
 	}
 }

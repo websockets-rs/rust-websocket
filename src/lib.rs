@@ -42,7 +42,7 @@ extern crate byteorder;
 extern crate bytes;
 #[cfg(feature = "async")]
 pub extern crate futures;
-pub mod hyper;
+mod hyper;
 #[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 extern crate native_tls;
 extern crate rand;

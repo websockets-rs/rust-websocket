@@ -1,5 +1,5 @@
 use std::fmt::{self, Display};
-use header::{self, Header, HeaderFormat, EntityTag, HttpDate};
+use ::hyper::header::{self, Header, HeaderFormat, EntityTag, HttpDate};
 
 /// `If-Range` header, defined in [RFC7233](http://tools.ietf.org/html/rfc7233#section-3.2)
 ///
@@ -46,7 +46,7 @@ use header::{self, Header, HeaderFormat, EntityTag, HttpDate};
 /// # }
 /// ```
 #[derive(Clone, Debug, PartialEq)]
-pub enum IfRange {
+pub(crate) enum IfRange {
     /// The entity-tag the client has of the resource
     EntityTag(EntityTag),
     /// The date when the client retrieved the resource
@@ -88,7 +88,7 @@ impl Display for IfRange {
 #[cfg(test)]
 mod test_if_range {
     use std::str;
-    use header::*;
+    use ::hyper::header::*;
     use super::IfRange as HeaderField;
     test_header!(test1, vec![b"Sat, 29 Oct 1994 19:43:31 GMT"]);
     test_header!(test2, vec![b"\"xyzzy\""]);

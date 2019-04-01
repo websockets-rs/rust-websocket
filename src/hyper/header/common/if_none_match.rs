@@ -1,4 +1,4 @@
-use header::EntityTag;
+use ::hyper::header::EntityTag;
 
 header! {
     /// `If-None-Match` header, defined in
@@ -60,8 +60,8 @@ header! {
 #[cfg(test)]
 mod tests {
     use super::IfNoneMatch;
-    use header::Header;
-    use header::EntityTag;
+    use ::hyper::header::Header;
+    use ::hyper::header::EntityTag;
 
     #[test]
     fn test_if_none_match() {

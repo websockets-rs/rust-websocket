@@ -246,7 +246,7 @@ where
 /// .unwrap();
 /// # }
 /// ```
-pub struct HyperRequest<'a, 'b: 'a>(pub ::hyper::server::Request<'a, 'b>);
+pub(crate) struct HyperRequest<'a, 'b: 'a>(pub ::hyper::server::Request<'a, 'b>);
 
 impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
 	type Stream = &'a mut &'b mut NetworkStream;

@@ -28,7 +28,7 @@ use ::hyper::time;
 //   HTTP-date, the sender MUST generate those timestamps in the
 //   IMF-fixdate format.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct HttpDate(pub time::Tm);
+pub(crate) struct HttpDate(pub(crate) time::Tm);
 
 impl FromStr for HttpDate {
     type Err = ::hyper::Error;

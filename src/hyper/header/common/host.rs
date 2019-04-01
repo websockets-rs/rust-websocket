@@ -1,7 +1,7 @@
-use header::{Header, HeaderFormat};
+use ::hyper::header::{Header, HeaderFormat};
 use std::fmt;
 use std::str::FromStr;
-use header::parsing::from_one_raw_str;
+use ::hyper::header::parsing::from_one_raw_str;
 use url::idna::domain_to_unicode;
 
 /// The `Host` header.
@@ -36,11 +36,11 @@ use url::idna::domain_to_unicode;
 /// );
 /// ```
 #[derive(Clone, PartialEq, Debug)]
-pub struct Host {
+pub(crate) struct Host {
     /// The hostname, such a example.domain.
-    pub hostname: String,
+    pub(crate) hostname: String,
     /// An optional port number.
-    pub port: Option<u16>
+    pub(crate) port: Option<u16>
 }
 
 impl Header for Host {
@@ -104,7 +104,7 @@ impl FromStr for Host {
 #[cfg(test)]
 mod tests {
     use super::Host;
-    use header::Header;
+    use ::hyper::header::Header;
 
 
     #[test]

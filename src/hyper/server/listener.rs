@@ -3,13 +3,13 @@ use std::thread;
 
 use ::hyper::net::NetworkListener;
 
-pub struct ListenerPool<A: NetworkListener> {
+pub(crate) struct ListenerPool<A: NetworkListener> {
     acceptor: A
 }
 
 impl<A: NetworkListener + Send + 'static> ListenerPool<A> {
     /// Create a thread pool to manage the acceptor.
-    pub fn new(acceptor: A) -> ListenerPool<A> {
+    pub(crate) fn new(acceptor: A) -> ListenerPool<A> {
         ListenerPool { acceptor: acceptor }
     }
 
@@ -18,7 +18,7 @@ impl<A: NetworkListener + Send + 'static> ListenerPool<A> {
     /// ## Panics
     ///
     /// Panics if threads == 0.
-    pub fn accept<F>(self, work: F, threads: usize)
+    pub(crate) fn accept<F>(self, work: F, threads: usize)
         where F: Fn(A::Stream) + Send + Sync + 'static {
         assert!(threads != 0, "Can't accept on 0 threads.");
 

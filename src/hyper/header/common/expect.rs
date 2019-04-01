@@ -3,7 +3,7 @@ use std::str;
 
 use unicase::UniCase;
 
-use header::{Header, HeaderFormat};
+use ::hyper::header::{Header, HeaderFormat};
 
 /// The `Expect` header.
 ///
@@ -21,7 +21,7 @@ use header::{Header, HeaderFormat};
 /// headers.set(Expect::Continue);
 /// ```
 #[derive(Copy, Clone, PartialEq, Debug)]
-pub enum Expect {
+pub(crate) enum Expect {
     /// The value `100-continue`.
     Continue
 }

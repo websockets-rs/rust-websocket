@@ -1,7 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
-use header::{Header, HeaderFormat};
-use header::parsing::{from_comma_delimited, fmt_comma_delimited};
+use ::hyper::header::{Header, HeaderFormat};
+use ::hyper::header::parsing::{from_comma_delimited, fmt_comma_delimited};
 
 /// `Prefer` header, defined in [RFC7240](http://tools.ietf.org/html/rfc7240)
 ///
@@ -47,7 +47,7 @@ use header::parsing::{from_comma_delimited, fmt_comma_delimited};
 /// );
 /// ```
 #[derive(PartialEq, Clone, Debug)]
-pub struct Prefer(pub Vec<Preference>);
+pub(crate) struct Prefer(pub(crate) Vec<Preference>);
 
 __hyper__deref!(Prefer => Vec<Preference>);
 
@@ -80,7 +80,7 @@ impl fmt::Display for Prefer {
 
 /// Prefer contains a list of these preferences.
 #[derive(PartialEq, Clone, Debug)]
-pub enum Preference {
+pub(crate) enum Preference {
     /// "respond-async"
     RespondAsync,
     /// "return=representation"
@@ -162,7 +162,7 @@ impl FromStr for Preference {
 
 #[cfg(test)]
 mod tests {
-    use header::Header;
+    use ::hyper::header::Header;
     use super::*;
 
     #[test]

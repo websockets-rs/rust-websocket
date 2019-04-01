@@ -21,35 +21,35 @@ use ::hyper::traitobject;
 
 /// The trait provides an API for creating new `HttpMessage`s depending on the underlying HTTP
 /// protocol.
-pub trait Protocol {
+pub(crate) trait Protocol {
     /// Creates a fresh `HttpMessage` bound to the given host, based on the given protocol scheme.
     fn new_message(&self, host: &str, port: u16, scheme: &str) -> ::hyper::Result<Box<HttpMessage>>;
 }
 
 /// Describes a request.
 #[derive(Clone, Debug)]
-pub struct RequestHead {
+pub(crate) struct RequestHead {
     /// The headers of the request
-    pub headers: Headers,
+    pub(crate) headers: Headers,
     /// The method of the request
-    pub method: method::Method,
+    pub(crate) method: method::Method,
     /// The URL of the request
-    pub url: Url,
+    pub(crate) url: Url,
 }
 
 /// Describes a response.
 #[derive(Clone, Debug)]
-pub struct ResponseHead {
+pub(crate) struct ResponseHead {
     /// The headers of the reponse
-    pub headers: Headers,
+    pub(crate) headers: Headers,
     /// The raw status line of the response
-    pub raw_status: RawStatus,
+    pub(crate) raw_status: RawStatus,
     /// The HTTP/2 version which generated the response
-    pub version: version::HttpVersion,
+    pub(crate) version: version::HttpVersion,
 }
 
 /// The trait provides an API for sending an receiving HTTP messages.
-pub trait HttpMessage: Write + Read + Send + Any + Typeable + Debug {
+pub(crate) trait HttpMessage: Write + Read + Send + Any + Typeable + Debug {
     /// Initiates a new outgoing request.
     ///
     /// Only the request's head is provided (in terms of the `RequestHead` struct).
@@ -95,13 +95,13 @@ impl HttpMessage {
 impl HttpMessage {
     /// Is the underlying type in this trait object a T?
     #[inline]
-    pub fn is<T: Any>(&self) -> bool {
+    pub(crate) fn is<T: Any>(&self) -> bool {
         (*self).get_type() == TypeId::of::<T>()
     }
 
     /// If the underlying type is T, get a reference to the contained data.
     #[inline]
-    pub fn downcast_ref<T: Any>(&self) -> Option<&T> {
+    pub(crate) fn downcast_ref<T: Any>(&self) -> Option<&T> {
         if self.is::<T>() {
             Some(unsafe { self.downcast_ref_unchecked() })
         } else {
@@ -112,7 +112,7 @@ impl HttpMessage {
     /// If the underlying type is T, get a mutable reference to the contained
     /// data.
     #[inline]
-    pub fn downcast_mut<T: Any>(&mut self) -> Option<&mut T> {
+    pub(crate) fn downcast_mut<T: Any>(&mut self) -> Option<&mut T> {
         if self.is::<T>() {
             Some(unsafe { self.downcast_mut_unchecked() })
         } else {
@@ -122,7 +122,7 @@ impl HttpMessage {
 
     /// If the underlying type is T, extract it.
     #[inline]
-    pub fn downcast<T: Any>(self: Box<HttpMessage>)
+    pub(crate) fn downcast<T: Any>(self: Box<HttpMessage>)
             -> Result<Box<T>, Box<HttpMessage>> {
         if self.is::<T>() {
             Ok(unsafe { self.downcast_unchecked() })
