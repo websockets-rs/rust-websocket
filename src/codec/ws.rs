@@ -31,7 +31,7 @@ use ws::util::header::read_header;
 /// This type is passed to the codecs to inform them of what role they are in
 /// (i.e. that of a Client or Server).
 ///
-/// For those familiar with the protocol, this decides wether the data should be
+/// For those familiar with the protocol, this decides whether the data should be
 /// masked or not.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Context {
