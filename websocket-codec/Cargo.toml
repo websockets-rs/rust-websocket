@@ -1,0 +1,32 @@
+[package]
+name = "websocket-codec"
+version = "0.22.4"
+authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.com>"]
+
+description = "A WebSocket (RFC6455) library for Rust: low-level component. It contains HTTP-independent aspect of WebSockets"
+
+documentation = "https://docs.rs/websocket-codec/"
+repository = "https://github.com/websockets-rs/rust-websocket"
+
+keywords = ["websocket", "websockets", "rfc6455", "async", "tokio"]
+categories = ["asynchronous", "network-programming", "web-programming", "web-programming::websocket"]
+
+license = "MIT"
+
+
+[dependencies]
+byteorder = "1.0"
+rand = "0.6.1"
+bitflags = "1.0.4"
+tokio = { version = "0.1", optional = true }
+bytes = { version = "0.4", optional = true }
+futures = { version = "0.1", optional = true }
+native-tls = { version = "0.2.1", optional = true }
+tokio-tls = { version = "0.2.0", optional = true }
+
+[features]
+default = ["sync", "async", "sync-ssl", "async-ssl"]
+sync = []
+sync-ssl = ["native-tls", "sync"]
+async = ["tokio", "bytes", "futures"]
+async-ssl = ["native-tls", "tokio-tls", "async"]

@@ -19,7 +19,7 @@ mod common_imports {
 	pub use hyper::method::Method;
 	pub use hyper::status::StatusCode;
 	pub use hyper::uri::RequestUri;
-	pub use result::{WSUrlErrorKind, WebSocketError, WebSocketResult};
+	pub use result::{WSUrlErrorKind, WebSocketError, WebSocketOtherError, WebSocketResult};
 	pub use std::net::TcpStream;
 	pub use std::net::ToSocketAddrs;
 	pub use stream::{self, Stream};
@@ -57,6 +57,8 @@ mod async_imports {
 }
 #[cfg(feature = "async")]
 use self::async_imports::*;
+
+use ::result::towse;
 
 /// Build clients with a builder-style API
 /// This makes it easy to create and configure a websocket
@@ -484,7 +486,7 @@ impl<'u> ClientBuilder<'u> {
 
 		// wait for a response
 		let mut reader = BufReader::new(stream);
-		let response = parse_response(&mut reader)?;
+		let response = parse_response(&mut reader).map_err(towse)?;
 
 		// validate
 		self.validate(&response)?;
@@ -563,7 +565,7 @@ impl<'u> ClientBuilder<'u> {
 			};
 			// secure connection, wrap with ssl
 			let future = tcp_stream
-				.and_then(move |s| connector.connect(&host, s).map_err(Into::into))
+				.and_then(move |s| connector.connect(&host, s).map_err(towse))
 				.and_then(move |stream| {
 					let stream: Box<stream::async::Stream + Send> = Box::new(stream);
 					builder.async_connect_on(stream)
@@ -639,7 +641,7 @@ impl<'u> ClientBuilder<'u> {
 
 		// put it all together
 		let future = tcp_stream
-			.and_then(move |s| connector.connect(&host, s).map_err(Into::into))
+			.and_then(move |s| connector.connect(&host, s).map_err(towse))
 			.and_then(move |stream| builder.async_connect_on(stream));
 		Box::new(future)
 	}
@@ -760,7 +762,7 @@ impl<'u> ClientBuilder<'u> {
 			.send(request)
 			.map_err(::std::convert::Into::into)
 			// wait for a response
-			.and_then(|stream| stream.into_future().map_err(|e| e.0.into()))
+			.and_then(|stream| stream.into_future().map_err(|e| towse(e.0)))
 			// validate
 			.and_then(move |(message, stream)| {
 				message
@@ -793,9 +795,10 @@ impl<'u> ClientBuilder<'u> {
 				Some(a) => a,
 				None => {
 					return Box::new(
-						Err(WebSocketError::WebSocketUrlError(
+						Err(WebSocketOtherError::WebSocketUrlError(
 							WSUrlErrorKind::NoHostName,
 						))
+						.map_err(towse)
 						.into_future(),
 					);
 				}
@@ -844,22 +847,24 @@ impl<'u> ClientBuilder<'u> {
 		let status = StatusCode::from_u16(response.subject.0);
 
 		if status != StatusCode::SwitchingProtocols {
-			return Err(WebSocketError::ResponseError(
+			return Err(WebSocketOtherError::ResponseError(
 				"Status code must be Switching Protocols",
-			));
+			))
+			.map_err(towse);
 		}
 
 		let key = self
 			.headers
 			.get::<WebSocketKey>()
-			.ok_or(WebSocketError::RequestError(
+			.ok_or(WebSocketOtherError::RequestError(
 				"Request Sec-WebSocket-Key was invalid",
 			))?;
 
 		if response.headers.get() != Some(&(WebSocketAccept::new(key))) {
-			return Err(WebSocketError::ResponseError(
+			return Err(WebSocketOtherError::ResponseError(
 				"Sec-WebSocket-Accept is invalid",
-			));
+			))
+			.map_err(towse);
 		}
 
 		if response.headers.get()
@@ -869,9 +874,10 @@ impl<'u> ClientBuilder<'u> {
 					version: None,
 				}])),
 			) {
-			return Err(WebSocketError::ResponseError(
+			return Err(WebSocketOtherError::ResponseError(
 				"Upgrade field must be WebSocket",
-			));
+			))
+			.map_err(towse);
 		}
 
 		if self.headers.get()
@@ -880,9 +886,10 @@ impl<'u> ClientBuilder<'u> {
 					"Upgrade".to_string(),
 				))])),
 			) {
-			return Err(WebSocketError::ResponseError(
+			return Err(WebSocketOtherError::ResponseError(
 				"Connection field must be 'Upgrade'",
-			));
+			))
+			.map_err(towse);
 		}
 
 		Ok(())
@@ -900,9 +907,10 @@ impl<'u> ClientBuilder<'u> {
 	#[cfg(any(feature = "sync", feature = "async"))]
 	fn extract_host_port(&self, secure: Option<bool>) -> WebSocketResult<::url::HostAndPort<&str>> {
 		if self.url.host().is_none() {
-			return Err(WebSocketError::WebSocketUrlError(
+			return Err(WebSocketOtherError::WebSocketUrlError(
 				WSUrlErrorKind::NoHostName,
-			));
+			))
+			.map_err(towse);
 		}
 
 		Ok(self.url.with_default_port(|url| {
@@ -932,14 +940,15 @@ impl<'u> ClientBuilder<'u> {
 		let host = match self.url.host_str() {
 			Some(h) => h,
 			None => {
-				return Err(WebSocketError::WebSocketUrlError(
+				return Err(WebSocketOtherError::WebSocketUrlError(
 					WSUrlErrorKind::NoHostName,
-				));
+				))
+				.map_err(towse);
 			}
 		};
 		let connector = match connector {
 			Some(c) => c,
-			None => TlsConnector::builder().build()?,
+			None => TlsConnector::builder().build().map_err(towse)?,
 		};
 		Ok((host, connector))
 	}
@@ -951,7 +960,7 @@ impl<'u> ClientBuilder<'u> {
 		connector: Option<TlsConnector>,
 	) -> WebSocketResult<TlsStream<TcpStream>> {
 		let (host, connector) = self.extract_host_ssl_conn(connector)?;
-		let ssl_stream = connector.connect(host, tcp_stream)?;
+		let ssl_stream = connector.connect(host, tcp_stream).map_err(towse)?;
 		Ok(ssl_stream)
 	}
 }

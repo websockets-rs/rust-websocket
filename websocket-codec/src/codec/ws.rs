@@ -8,16 +8,17 @@
 //! dataframes see the documentation for `DataFrameCodec`
 
 extern crate tokio;
+extern crate bytes;
 
 use std::borrow::Borrow;
 use std::io::Cursor;
 use std::marker::PhantomData;
 use std::mem;
 
-use bytes::BufMut;
-use bytes::BytesMut;
-use tokio::codec::Decoder;
-use tokio::codec::Encoder;
+use self::bytes::BufMut;
+use self::bytes::BytesMut;
+use self::tokio::codec::Decoder;
+use self::tokio::codec::Encoder;
 
 use dataframe::DataFrame;
 use message::OwnedMessage;
