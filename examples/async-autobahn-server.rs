@@ -10,10 +10,9 @@ use futures::{Future, Sink, Stream};
 
 fn main() {
 	let mut runtime = tokio::runtime::Builder::new().build().unwrap();
-	let reactor = runtime.reactor().clone();
 	let executor = runtime.executor();
 	// bind to the server
-	let server = Server::bind("127.0.0.1:9002", &reactor).unwrap();
+	let server = Server::bind("127.0.0.1:9002", &tokio::reactor::Handle::default()).unwrap();
 
 	// time to build the server's future
 	// this will be a struct containing everything the server is going to do
