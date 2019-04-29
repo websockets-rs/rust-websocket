@@ -11,9 +11,9 @@ use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 #[cfg(feature = "async")]
 use server::async;
 #[cfg(feature = "async")]
-use tokio::net::TcpListener as AsyncTcpListener;
+use tokio_reactor::Handle;
 #[cfg(feature = "async")]
-use tokio::reactor::Handle;
+use tokio_tcp::TcpListener as AsyncTcpListener;
 
 /// Either the stream was established and it sent a websocket handshake
 /// which represents the `Ok` variant, or there was an error (this is the

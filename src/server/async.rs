@@ -7,8 +7,8 @@ use server::{NoTlsAcceptor, WsServer};
 use std::io;
 use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
-use tokio::net::{TcpListener, TcpStream};
-pub use tokio::reactor::Handle;
+pub use tokio_reactor::Handle;
+use tokio_tcp::{TcpListener, TcpStream};
 
 #[cfg(any(feature = "async-ssl"))]
 use native_tls::TlsAcceptor;

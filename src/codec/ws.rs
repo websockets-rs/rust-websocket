@@ -7,8 +7,6 @@
 //! For websocket messages, see the documentation for `MessageCodec`, for
 //! dataframes see the documentation for `DataFrameCodec`
 
-extern crate tokio;
-
 use std::borrow::Borrow;
 use std::io::Cursor;
 use std::marker::PhantomData;
@@ -16,8 +14,8 @@ use std::mem;
 
 use bytes::BufMut;
 use bytes::BytesMut;
-use tokio::codec::Decoder;
-use tokio::codec::Encoder;
+use tokio_codec::Decoder;
+use tokio_codec::Encoder;
 
 use dataframe::DataFrame;
 use message::OwnedMessage;
