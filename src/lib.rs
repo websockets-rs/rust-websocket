@@ -60,7 +60,6 @@ pub extern crate url;
 
 pub extern crate websocket_lowlevel;
 
-
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
 

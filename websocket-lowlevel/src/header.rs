@@ -2,20 +2,20 @@
 
 /// WebSocket header names
 pub mod names {
-    pub const PROTOCOL: &str = "Sec-WebSocket-Protocol";
-    pub const ACCEPT: &str = "Sec-WebSocket-Accept";
-    pub const EXTENSIONS: &str = "Sec-WebSocket-Extensions";
-    pub const KEY: &str = "Sec-WebSocket-Key";
+	pub const PROTOCOL: &str = "Sec-WebSocket-Protocol";
+	pub const ACCEPT: &str = "Sec-WebSocket-Accept";
+	pub const EXTENSIONS: &str = "Sec-WebSocket-Extensions";
+	pub const KEY: &str = "Sec-WebSocket-Key";
 }
 
 extern crate base64;
 extern crate sha1;
 use self::sha1::Sha1;
 
+use result::{WebSocketError, WebSocketResult};
 use std::fmt::{self, Debug};
 use std::mem;
 use std::str::FromStr;
-use result::{WebSocketResult, WebSocketError};
 
 /// Represents a Sec-WebSocket-Key header.
 #[derive(PartialEq, Clone, Copy, Default)]
@@ -68,8 +68,6 @@ impl WebSocketKey {
 		base64::encode(&key)
 	}
 }
-
-
 
 static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 

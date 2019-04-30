@@ -6,7 +6,7 @@ use result::{WebSocketError, WebSocketResult};
 use std::fmt::{self, Debug};
 use std::str::FromStr;
 
-use websocket_lowlevel::header::{WebSocketAccept as WebSocketAcceptLL};
+use websocket_lowlevel::header::WebSocketAccept as WebSocketAcceptLL;
 
 /// Represents a Sec-WebSocket-Accept header
 #[derive(PartialEq, Clone, Copy)]

@@ -58,7 +58,7 @@ mod async_imports {
 #[cfg(feature = "async")]
 use self::async_imports::*;
 
-use ::result::towse;
+use result::towse;
 
 /// Build clients with a builder-style API
 /// This makes it easy to create and configure a websocket

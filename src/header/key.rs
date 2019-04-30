@@ -5,7 +5,7 @@ use result::{WebSocketError, WebSocketResult};
 use std::fmt::{self, Debug};
 use std::str::FromStr;
 
-use websocket_lowlevel::header::{WebSocketKey as WebSocketKeyLL};
+use websocket_lowlevel::header::WebSocketKey as WebSocketKeyLL;
 
 /// Represents a Sec-WebSocket-Key header.
 #[derive(PartialEq, Clone, Copy, Default)]
@@ -36,7 +36,7 @@ impl WebSocketKey {
 	}
 
 	/// Create WebSocketKey by explicitly specifying the key
-	pub fn from_array(a : [u8; 16]) -> WebSocketKey {
+	pub fn from_array(a: [u8; 16]) -> WebSocketKey {
 		WebSocketKey(WebSocketKeyLL(a))
 	}
 }

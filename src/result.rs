@@ -193,14 +193,15 @@ impl Error for WSUrlErrorKind {
 }
 
 impl From<WebSocketOtherError> for WebSocketError {
-	fn from(e : WebSocketOtherError) -> WebSocketError {
+	fn from(e: WebSocketOtherError) -> WebSocketError {
 		WebSocketError::Other(Box::new(e))
 	}
 }
 
-pub(crate) fn towse<E> ( e : E)  -> WebSocketError
-where E : Into<WebSocketOtherError>
+pub(crate) fn towse<E>(e: E) -> WebSocketError
+where
+	E: Into<WebSocketOtherError>,
 {
-	let e : WebSocketOtherError = e.into();
+	let e: WebSocketOtherError = e.into();
 	e.into()
 }

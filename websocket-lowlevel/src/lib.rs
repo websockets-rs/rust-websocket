@@ -5,9 +5,9 @@
 //!
 //! Note that there is no normal example of usage so far.
 
+extern crate byteorder;
 extern crate bytes;
 extern crate futures;
-extern crate byteorder;
 extern crate rand;
 #[macro_use]
 extern crate bitflags;
@@ -26,11 +26,11 @@ extern crate tokio_tls;
 
 pub mod codec;
 pub mod dataframe;
+pub mod header;
 pub mod message;
 pub mod result;
-pub mod ws;
 pub mod stream;
-pub mod header;
+pub mod ws;
 
-pub use message::OwnedMessage;
 pub use message::Message;
+pub use message::OwnedMessage;
