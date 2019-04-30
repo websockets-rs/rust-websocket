@@ -7,7 +7,7 @@ use std::str::from_utf8;
 use std::str::Utf8Error;
 
 #[cfg(feature = "async")]
-use tokio::codec::{Framed, FramedParts};
+use tokio_codec::{Framed, FramedParts};
 
 /// Transforms a u8 slice into an owned String
 pub fn bytes_to_string(data: &[u8]) -> Result<String, Utf8Error> {

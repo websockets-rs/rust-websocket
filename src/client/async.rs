@@ -46,9 +46,9 @@
 
 pub use futures::Future;
 use hyper::header::Headers;
-pub use tokio::codec::Framed;
-pub use tokio::net::TcpStream;
-pub use tokio::reactor::Handle;
+pub use tokio_codec::Framed;
+pub use tokio_reactor::Handle;
+pub use tokio_tcp::TcpStream;
 
 use codec::ws::MessageCodec;
 use message::OwnedMessage;

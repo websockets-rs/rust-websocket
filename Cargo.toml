@@ -25,8 +25,11 @@ byteorder = "1.0"
 sha1 = "0.6"
 base64 = "0.10.0"
 futures = { version = "0.1", optional = true }
-tokio = { version = "0.1", optional = true }
+tokio-io = { version = "0.1", optional = true }
 tokio-tls = { version = "0.2.0", optional = true }
+tokio-tcp = { version = "0.1", optional = true }
+tokio-codec = { version = "0.1", optional = true }
+tokio-reactor = { version = "0.1", optional = true }
 bytes = { version = "0.4", optional = true }
 native-tls = { version = "0.2.1", optional = true }
 websocket-codec = { path = "websocket-codec", default-features=false }
@@ -34,11 +37,16 @@ websocket-codec = { path = "websocket-codec", default-features=false }
 [dev-dependencies]
 futures-cpupool = "0.1"
 
+[dev-dependencies.tokio]
+version = "0.1"
+default-features = false
+features = ["codec", "tcp", "rt-full"]
+
 [features]
 default = ["sync", "sync-ssl", "async", "async-ssl"]
 sync = ["websocket-codec/sync"]
 sync-ssl = ["native-tls", "sync", "websocket-codec/sync-ssl"]
-async = ["tokio", "bytes", "futures", "websocket-codec/async"]
+async = ["bytes", "futures", "tokio-io", "tokio-tcp", "tokio-reactor", "tokio-codec", "websocket-codec/async"]
 async-ssl = ["native-tls", "tokio-tls", "async", "websocket-codec/async-ssl"]
 nightly = ["hyper/nightly"]
 

@@ -47,8 +47,16 @@ extern crate hyper;
 extern crate native_tls;
 extern crate rand;
 extern crate sha1;
-#[cfg(feature = "async")]
+#[cfg(test)]
 extern crate tokio;
+#[cfg(feature = "async")]
+extern crate tokio_codec;
+#[cfg(feature = "async")]
+extern crate tokio_io;
+#[cfg(feature = "async")]
+extern crate tokio_reactor;
+#[cfg(feature = "async")]
+extern crate tokio_tcp;
 #[cfg(feature = "async-ssl")]
 extern crate tokio_tls;
 extern crate unicase;
@@ -152,9 +160,9 @@ pub mod async {
 	pub use result::async::WebSocketFuture;
 
 	pub use futures;
-	pub use tokio::net::TcpListener;
-	pub use tokio::net::TcpStream;
-	pub use tokio::reactor::Handle;
+	pub use tokio_reactor::Handle;
+	pub use tokio_tcp::TcpListener;
+	pub use tokio_tcp::TcpStream;
 }
 
 pub use self::client::builder::ClientBuilder;

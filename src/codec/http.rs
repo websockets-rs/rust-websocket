@@ -16,7 +16,7 @@ use hyper::uri::RequestUri;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::io::{self, Write};
-use tokio::codec::{Decoder, Encoder};
+use tokio_codec::{Decoder, Encoder};
 
 #[derive(Copy, Clone, Debug)]
 ///A codec to be used with `tokio` codecs that can serialize HTTP requests and

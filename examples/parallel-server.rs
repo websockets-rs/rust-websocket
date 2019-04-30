@@ -23,8 +23,8 @@ type Id = u32;
 fn main() {
 	let runtime = runtime::Builder::new().build().unwrap();
 	let executor = runtime.executor();
-	let server =
-		Server::bind("127.0.0.1:8081", &runtime.reactor()).expect("Failed to create server");
+	let server = Server::bind("127.0.0.1:8081", &tokio::reactor::Handle::default())
+		.expect("Failed to create server");
 	let connections = Arc::new(RwLock::new(HashMap::new()));
 	let (receive_channel_out, receive_channel_in) = mpsc::unbounded();
 	let conn_id = Arc::new(RwLock::new(Counter::new()));

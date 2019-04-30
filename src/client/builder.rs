@@ -47,10 +47,10 @@ mod async_imports {
 	pub use futures::future;
 	pub use futures::Stream as FutureStream;
 	pub use futures::{Future, IntoFuture, Sink};
-	pub use tokio::codec::FramedParts;
-	pub use tokio::codec::{Decoder, Framed};
-	pub use tokio::net::TcpStream as TcpStreamNew;
-	pub use tokio::reactor::Handle;
+	pub use tokio_codec::FramedParts;
+	pub use tokio_codec::{Decoder, Framed};
+	pub use tokio_reactor::Handle;
+	pub use tokio_tcp::TcpStream as TcpStreamNew;
 	#[cfg(feature = "async-ssl")]
 	pub use tokio_tls::TlsConnector as TlsConnectorExt;
 	pub use ws::util::update_framed_codec;

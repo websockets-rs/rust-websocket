@@ -7,8 +7,8 @@
 //! For websocket messages, see the documentation for `MessageCodec`, for
 //! dataframes see the documentation for `DataFrameCodec`
 
-extern crate tokio;
 extern crate bytes;
+extern crate tokio_codec;
 
 use std::borrow::Borrow;
 use std::io::Cursor;
@@ -17,8 +17,8 @@ use std::mem;
 
 use self::bytes::BufMut;
 use self::bytes::BytesMut;
-use self::tokio::codec::Decoder;
-use self::tokio::codec::Encoder;
+use self::tokio_codec::Decoder;
+use self::tokio_codec::Encoder;
 
 use dataframe::DataFrame;
 use message::OwnedMessage;
@@ -32,7 +32,7 @@ use ws::util::header::read_header;
 /// This type is passed to the codecs to inform them of what role they are in
 /// (i.e. that of a Client or Server).
 ///
-/// For those familiar with the protocol, this decides wether the data should be
+/// For those familiar with the protocol, this decides whether the data should be
 /// masked or not.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Context {
@@ -368,6 +368,8 @@ mod tests {
 
 	#[test]
 	fn message_codec_client_send_receive() {
+		extern crate tokio;
+
 		let mut input = Vec::new();
 		Message::text("50 schmeckels")
 			.serialize(&mut input, false)
