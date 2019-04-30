@@ -62,7 +62,7 @@ extern crate tokio_tls;
 extern crate unicase;
 pub extern crate url;
 
-pub extern crate websocket_codec;
+pub extern crate websocket_lowlevel;
 
 #[macro_use]
 extern crate bitflags;
@@ -82,11 +82,11 @@ macro_rules! upsert_header {
 		}};
 }
 
-pub use websocket_codec::dataframe;
+pub use websocket_lowlevel::dataframe;
 pub mod header;
-pub use websocket_codec::message;
+pub use websocket_lowlevel::message;
 pub mod result;
-pub use websocket_codec::ws;
+pub use websocket_lowlevel::ws;
 
 #[cfg(feature = "async")]
 pub mod codec;
@@ -98,7 +98,7 @@ pub mod sender;
 
 pub mod client;
 pub mod server;
-pub use websocket_codec::stream;
+pub use websocket_lowlevel::stream;
 
 /// A collection of handy synchronous-only parts of the crate.
 #[cfg(feature = "sync")]
