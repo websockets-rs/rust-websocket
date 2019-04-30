@@ -22,7 +22,7 @@ fn http_handler(_: Request, response: Response<Fresh>) {
 
 fn main() {
 	// Start listening for http connections
-	thread::spawn(move || {
+	thread::spawn(|| {
 		let http_server = HttpServer::http("127.0.0.1:8080").unwrap();
 		http_server.handle(http_handler).unwrap();
 	});
@@ -32,7 +32,7 @@ fn main() {
 
 	for connection in ws_server.filter_map(Result::ok) {
 		// Spawn a new thread for each connection.
-		thread::spawn(move || {
+		thread::spawn(|| {
 			if !connection
 				.protocols()
 				.contains(&"rust-websocket".to_string())

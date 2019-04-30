@@ -9,7 +9,7 @@ fn main() {
 
 	for request in server.filter_map(Result::ok) {
 		// Spawn a new thread for each connection.
-		thread::spawn(move || {
+		thread::spawn(|| {
 			if !request.protocols().contains(&"rust-websocket".to_string()) {
 				request.reject().unwrap();
 				return;
