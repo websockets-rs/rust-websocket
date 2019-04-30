@@ -23,3 +23,6 @@ pub mod message;
 pub mod result;
 pub mod ws;
 pub mod stream;
+
+pub use message::OwnedMessage;
+pub use message::Message;

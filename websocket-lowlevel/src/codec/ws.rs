@@ -161,9 +161,9 @@ where
 /// after a websocket handshake has already been completed on the stream you are
 /// using.
 ///
-///# Example
+///# Example (for the high-level `websocket` crate)
 ///
-///```rust
+///```rust,ignore
 ///# extern crate tokio;
 ///# extern crate websocket;
 ///# extern crate hyper;
