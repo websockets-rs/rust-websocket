@@ -1,22 +1,20 @@
-use base64;
 use header::WebSocketKey;
 use hyper;
 use hyper::header::parsing::from_one_raw_str;
 use hyper::header::{Header, HeaderFormat};
 use result::{WebSocketError, WebSocketResult};
-use sha1::Sha1;
 use std::fmt::{self, Debug};
 use std::str::FromStr;
 
-static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+use websocket_lowlevel::header::{WebSocketAccept as WebSocketAcceptLL};
 
 /// Represents a Sec-WebSocket-Accept header
 #[derive(PartialEq, Clone, Copy)]
-pub struct WebSocketAccept([u8; 20]);
+pub struct WebSocketAccept(WebSocketAcceptLL);
 
 impl Debug for WebSocketAccept {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "WebSocketAccept({})", self.serialize())
+		self.0.fmt(f)
 	}
 }
 
@@ -24,43 +22,18 @@ impl FromStr for WebSocketAccept {
 	type Err = WebSocketError;
 
 	fn from_str(accept: &str) -> WebSocketResult<WebSocketAccept> {
-		match base64::decode(accept) {
-			Ok(vec) => {
-				if vec.len() != 20 {
-					return Err(WebSocketError::ProtocolError(
-						"Sec-WebSocket-Accept must be 20 bytes",
-					));
-				}
-				let mut array = [0u8; 20];
-				let mut iter = vec.into_iter();
-				for i in &mut array {
-					*i = iter.next().unwrap();
-				}
-				Ok(WebSocketAccept(array))
-			}
-			Err(_) => Err(WebSocketError::ProtocolError(
-				"Invalid Sec-WebSocket-Accept ",
-			)),
-		}
+		Ok(WebSocketAccept(WebSocketAcceptLL::from_str(accept)?))
 	}
 }
 
 impl WebSocketAccept {
 	/// Create a new WebSocketAccept from the given WebSocketKey
 	pub fn new(key: &WebSocketKey) -> WebSocketAccept {
-		let serialized = key.serialize();
-		let mut concat_key = String::with_capacity(serialized.len() + 36);
-		concat_key.push_str(&serialized[..]);
-		concat_key.push_str(MAGIC_GUID);
-		let mut sha1 = Sha1::new();
-		sha1.update(concat_key.as_bytes());
-		let bytes = sha1.digest().bytes();
-		WebSocketAccept(bytes)
+		WebSocketAccept(WebSocketAcceptLL::new(&key.0))
 	}
 	/// Return the Base64 encoding of this WebSocketAccept
 	pub fn serialize(&self) -> String {
-		let WebSocketAccept(accept) = *self;
-		base64::encode(&accept)
+		self.0.serialize()
 	}
 }
 

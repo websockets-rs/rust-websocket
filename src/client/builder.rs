@@ -291,7 +291,7 @@ impl<'u> ClientBuilder<'u> {
 	/// Use this only if you know what you're doing, and this almost
 	/// never has to be used.
 	pub fn key(mut self, key: [u8; 16]) -> Self {
-		self.headers.set(WebSocketKey(key));
+		self.headers.set(WebSocketKey::from_array(key));
 		self.key_set = true;
 		self
 	}

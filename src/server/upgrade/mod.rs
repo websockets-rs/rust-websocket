@@ -115,7 +115,7 @@ where
 
 	/// The client's websocket accept key.
 	pub fn key(&self) -> Option<&[u8; 16]> {
-		self.request.headers.get::<WebSocketKey>().map(|k| &k.0)
+		self.request.headers.get::<WebSocketKey>().map(|k| &(k.0).0)
 	}
 
 	/// The client's websocket version.

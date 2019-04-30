@@ -1,20 +1,19 @@
-use base64;
 use hyper;
 use hyper::header::parsing::from_one_raw_str;
 use hyper::header::{Header, HeaderFormat};
-use rand;
 use result::{WebSocketError, WebSocketResult};
 use std::fmt::{self, Debug};
-use std::mem;
 use std::str::FromStr;
+
+use websocket_lowlevel::header::{WebSocketKey as WebSocketKeyLL};
 
 /// Represents a Sec-WebSocket-Key header.
 #[derive(PartialEq, Clone, Copy, Default)]
-pub struct WebSocketKey(pub [u8; 16]);
+pub struct WebSocketKey(pub WebSocketKeyLL);
 
 impl Debug for WebSocketKey {
 	fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-		write!(f, "WebSocketKey({})", self.serialize())
+		self.0.fmt(f)
 	}
 }
 
@@ -22,41 +21,23 @@ impl FromStr for WebSocketKey {
 	type Err = WebSocketError;
 
 	fn from_str(key: &str) -> WebSocketResult<WebSocketKey> {
-		match base64::decode(key) {
-			Ok(vec) => {
-				if vec.len() != 16 {
-					return Err(WebSocketError::ProtocolError(
-						"Sec-WebSocket-Key must be 16 bytes",
-					));
-				}
-				let mut array = [0u8; 16];
-				let mut iter = vec.into_iter();
-				for i in &mut array {
-					*i = iter.next().unwrap();
-				}
-
-				Ok(WebSocketKey(array))
-			}
-			Err(_) => Err(WebSocketError::ProtocolError(
-				"Invalid Sec-WebSocket-Accept",
-			)),
-		}
+		Ok(WebSocketKey(WebSocketKeyLL::from_str(key)?))
 	}
 }
 
 impl WebSocketKey {
 	/// Generate a new, random WebSocketKey
 	pub fn new() -> WebSocketKey {
-		let key: [u8; 16] = unsafe {
-			// Much faster than calling random() several times
-			mem::transmute(rand::random::<(u64, u64)>())
-		};
-		WebSocketKey(key)
+		WebSocketKey(WebSocketKeyLL::new())
 	}
 	/// Return the Base64 encoding of this WebSocketKey
 	pub fn serialize(&self) -> String {
-		let WebSocketKey(key) = *self;
-		base64::encode(&key)
+		self.0.serialize()
+	}
+
+	/// Create WebSocketKey by explicitly specifying the key
+	pub fn from_array(a : [u8; 16]) -> WebSocketKey {
+		WebSocketKey(WebSocketKeyLL(a))
 	}
 }
 
@@ -86,7 +67,7 @@ mod tests {
 	fn test_header_key() {
 		use header::Headers;
 
-		let extensions = WebSocketKey([65; 16]);
+		let extensions = WebSocketKey::from_array([65; 16]);
 		let mut headers = Headers::new();
 		headers.set(extensions);
 
