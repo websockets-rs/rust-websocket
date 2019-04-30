@@ -58,7 +58,7 @@ fn main() {
 		.map_err(|_| ());
 
 	// Handle receiving messages from a client
-	let receive_handler = receive_channel_in.for_each(move |(id, stream)| {
+	let receive_handler = receive_channel_in.for_each(|(id, stream)| {
 		stream
 			.for_each(move |msg| {
 				process_message(id, &msg);

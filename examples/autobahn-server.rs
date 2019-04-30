@@ -8,7 +8,7 @@ fn main() {
 	let server = Server::bind("127.0.0.1:9002").unwrap();
 
 	for connection in server.filter_map(Result::ok) {
-		thread::spawn(move || {
+		thread::spawn(|| {
 			let client = connection.accept().unwrap();
 
 			let (mut receiver, mut sender) = client.split().unwrap();
