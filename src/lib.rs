@@ -36,8 +36,6 @@
 //! # Extending Rust-WebSocket
 //! The `ws` module contains the traits and functions used by Rust-WebSocket at a lower
 //! level. Their usage is explained in the module documentation.
-extern crate base64;
-extern crate byteorder;
 #[cfg(feature = "async")]
 extern crate bytes;
 #[cfg(feature = "async")]
@@ -45,8 +43,6 @@ pub extern crate futures;
 extern crate hyper;
 #[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 extern crate native_tls;
-extern crate rand;
-extern crate sha1;
 #[cfg(test)]
 extern crate tokio;
 #[cfg(feature = "async")]
@@ -64,8 +60,6 @@ pub extern crate url;
 
 pub extern crate websocket_lowlevel;
 
-#[macro_use]
-extern crate bitflags;
 
 #[cfg(all(feature = "nightly", test))]
 extern crate test;
