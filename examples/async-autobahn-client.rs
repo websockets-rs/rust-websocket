@@ -30,7 +30,7 @@ fn main() {
 		let test_case = ClientBuilder::new(&url)
 			.unwrap()
 			.async_connect_insecure()
-			.and_then(move |(duplex, _)| {
+			.and_then(|(duplex, _)| {
 				println!("Executing test case: {}/{}", case_id, case_count);
 				future::loop_fn(duplex, |stream| {
 					stream
@@ -69,10 +69,10 @@ fn main() {
 						})
 				})
 			})
-			.map(move |_| {
+			.map(|_| {
 				println!("Test case {} is finished!", case_id);
 			})
-			.or_else(move |err| {
+			.or_else(|err| {
 				println!("Test case {} ended with an error: {:?}", case_id, err);
 				Ok(()) as Result<(), ()>
 			});

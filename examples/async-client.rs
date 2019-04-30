@@ -22,7 +22,7 @@ fn main() {
 	// standard in isn't supported in mio yet, so we use a thread
 	// see https://github.com/carllerche/mio/issues/321
 	let (usr_msg, stdin_ch) = mpsc::channel(0);
-	thread::spawn(move || {
+	thread::spawn(|| {
 		let mut input = String::new();
 		let mut stdin_sink = usr_msg.wait();
 		loop {
