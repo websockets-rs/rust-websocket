@@ -1,3 +1,10 @@
+//! This is part of `websocket` crate that is independent from `hyper`.
+//! It contains code for processing WebSocket streams,
+//! (after HTTP upgrade already happened)
+//! WebSocket message definition, some error type.
+//!
+//! Note that there is no normal example of usage so far.
+
 extern crate bytes;
 extern crate futures;
 extern crate byteorder;
