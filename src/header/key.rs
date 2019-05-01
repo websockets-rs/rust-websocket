@@ -5,7 +5,6 @@ use hyper::header::{Header, HeaderFormat};
 use rand;
 use result::{WebSocketError, WebSocketResult};
 use std::fmt::{self, Debug};
-use std::mem;
 use std::str::FromStr;
 
 /// Represents a Sec-WebSocket-Key header.
@@ -47,10 +46,7 @@ impl FromStr for WebSocketKey {
 impl WebSocketKey {
 	/// Generate a new, random WebSocketKey
 	pub fn new() -> WebSocketKey {
-		let key: [u8; 16] = unsafe {
-			// Much faster than calling random() several times
-			mem::transmute(rand::random::<(u64, u64)>())
-		};
+		let key = rand::random();
 		WebSocketKey(key)
 	}
 	/// Return the Base64 encoding of this WebSocketKey
