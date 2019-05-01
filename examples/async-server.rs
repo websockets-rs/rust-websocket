@@ -8,7 +8,7 @@ use websocket::async::Server;
 use websocket::message::{Message, OwnedMessage};
 use websocket::server::InvalidConnection;
 
-use futures::{Future, Sink, Stream};
+use futures::{future, Future, Sink, Stream};
 use tokio::runtime::TaskExecutor;
 
 fn main() {
@@ -23,8 +23,18 @@ fn main() {
 	// a stream of incoming connections
 	let f = server
 		.incoming()
-		// we don't wanna save the stream if it drops
-		.map_err(|InvalidConnection { error, .. }| error)
+		.then(future::ok) // wrap good and bad events into future::ok
+		.filter(|event| {
+			match event {
+				Ok(_) => true, // a good connection
+				Err(InvalidConnection { ref error, .. }) => {
+					println!("Bad client: {}", error);
+					false // we want to save the stream if a client cannot make a valid handshake
+				}
+			}
+		})
+		.and_then(|event| event) // unwrap good connections
+		.map_err(|_| ()) // and silently ignore errors (in `.filter`)
 		.for_each(move |(upgrade, addr)| {
 			println!("Got a connection from: {}", addr);
 			// check if it has the protocol we want
