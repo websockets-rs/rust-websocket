@@ -3,6 +3,7 @@
 use native_tls::TlsAcceptor;
 
 use self::upgrade::{HyperIntoWsError, Request};
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 use stream::Stream;
 
 pub mod upgrade;
@@ -46,6 +47,20 @@ where
 	pub buffer: Option<B>,
 	/// the cause of the failed websocket connection setup
 	pub error: HyperIntoWsError,
+}
+
+impl<S, B> Debug for InvalidConnection<S, B>
+where
+	S: Stream,
+{
+	fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
+		fmt.debug_struct("InvalidConnection")
+			.field("stream", &String::from("..."))
+			.field("parsed", &String::from("..."))
+			.field("buffer", &String::from("..."))
+			.field("error", &self.error)
+			.finish()
+	}
 }
 
 /// Represents a WebSocket server which can work with either normal
