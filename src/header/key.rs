@@ -29,11 +29,7 @@ impl FromStr for WebSocketKey {
 					));
 				}
 				let mut array = [0u8; 16];
-				let mut iter = vec.into_iter();
-				for i in &mut array {
-					*i = iter.next().unwrap();
-				}
-
+				array[..16].clone_from_slice(&vec[..16]);
 				Ok(WebSocketKey(array))
 			}
 			Err(_) => Err(WebSocketError::ProtocolError(
@@ -90,6 +86,18 @@ mod tests {
 			&headers.to_string()[..],
 			"Sec-WebSocket-Key: QUFBQUFBQUFBQUFBQUFBQQ==\r\n"
 		);
+	}
+
+	#[test]
+	fn test_header_from_str() {
+		let key = WebSocketKey::from_str("YSByZWFsbCBnb29kIGtleQ==");
+		assert!(key.is_ok()); // 16 bytes
+
+		let key = WebSocketKey::from_str("YSBzaG9ydCBrZXk=");
+		assert!(key.is_err()); // < 16 bytes
+
+		let key = WebSocketKey::from_str("YSB2ZXJ5IHZlcnkgbG9uZyBrZXk=");
+		assert!(key.is_err()); // > 16 bytes
 	}
 
 	#[bench]
