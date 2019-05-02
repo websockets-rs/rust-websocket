@@ -32,14 +32,11 @@ impl FromStr for WebSocketAccept {
 					));
 				}
 				let mut array = [0u8; 20];
-				let mut iter = vec.into_iter();
-				for i in &mut array {
-					*i = iter.next().unwrap();
-				}
+				array[..20].clone_from_slice(&vec[..20]);
 				Ok(WebSocketAccept(array))
 			}
 			Err(_) => Err(WebSocketError::ProtocolError(
-				"Invalid Sec-WebSocket-Accept ",
+				"Invalid Sec-WebSocket-Accept",
 			)),
 		}
 	}
@@ -99,6 +96,18 @@ mod tests {
 			&headers.to_string()[..],
 			"Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=\r\n"
 		);
+	}
+
+	#[test]
+	fn test_header_from_str() {
+		let accept = WebSocketAccept::from_str("YSBzaW1wbGUgc2FtcGwgbm9uY2U=");
+		assert!(accept.is_ok()); // 20 bytes
+
+		let accept = WebSocketAccept::from_str("YSBzaG9ydCBub25jZQ==");
+		assert!(accept.is_err()); // < 20 bytes
+
+		let accept = WebSocketAccept::from_str("YSByZWFsbHkgbWFsaWNpb3VzIG5vbmNl");
+		assert!(accept.is_err()); // > 20 bytes
 	}
 
 	#[bench]
