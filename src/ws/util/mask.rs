@@ -2,7 +2,6 @@
 use rand;
 use std::io::Result as IoResult;
 use std::io::Write;
-use std::mem;
 
 /// Struct to pipe data into another writer,
 /// while masking the data being written
@@ -41,8 +40,7 @@ impl<'w> Write for Masker<'w> {
 
 /// Generates a random masking key
 pub fn gen_mask() -> [u8; 4] {
-	// Faster than just calling random() many times
-	unsafe { mem::transmute(rand::random::<u32>()) }
+	rand::random()
 }
 
 /// Masks data to send to a server and writes
