@@ -9,6 +9,8 @@ use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
 pub use tokio_reactor::Handle;
 use tokio_tcp::{TcpListener, TcpStream};
+use std;
+use futures;
 
 #[cfg(any(feature = "async-ssl"))]
 use native_tls::TlsAcceptor;

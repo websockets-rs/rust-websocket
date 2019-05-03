@@ -392,6 +392,7 @@ mod tests {
 					})
 			});
 
+		use tokio;
 		tokio::runtime::Builder::new()
 			.build()
 			.unwrap()
@@ -401,6 +402,7 @@ mod tests {
 
 	#[test]
 	fn message_codec_server_send_receive() {
+		use tokio;
 		let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 		let mut input = Vec::new();
 		Message::text("50 schmeckels")
