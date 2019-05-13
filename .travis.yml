@@ -1,13 +1,12 @@
 language: rust
-rust: nightly
+rust: nightly-2019-04-19
 
 before_script:
   - export PATH="$PATH:$HOME/.cargo/bin"
 
 install:
   - rustup component add rustfmt
-  - rustup component add clippy --toolchain=nightly || cargo install --git https://github.com/rust-lang/rust-clippy/ --force clippy
-
+  - rustup component add clippy
 script:
   - cargo fmt -- --version
   - cargo fmt -- --check
