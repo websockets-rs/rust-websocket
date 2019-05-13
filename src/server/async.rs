@@ -1,16 +1,16 @@
 //! The asynchronous implementation of a websocket server.
 use bytes::BytesMut;
+use futures;
 use futures::{Future, Stream};
 use server::upgrade::async::{IntoWs, Upgrade};
 use server::InvalidConnection;
 use server::{NoTlsAcceptor, WsServer};
+use std;
 use std::io;
 use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
 pub use tokio_reactor::Handle;
 use tokio_tcp::{TcpListener, TcpStream};
-use std;
-use futures;
 
 #[cfg(any(feature = "async-ssl"))]
 use native_tls::TlsAcceptor;
