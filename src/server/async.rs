@@ -4,7 +4,7 @@ use futures;
 use futures::{Future, Stream};
 use server::upgrade::async::{IntoWs, Upgrade};
 use server::InvalidConnection;
-use server::{NoTlsAcceptor, WsServer};
+use server::{NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
 use std;
 use std::io;
 use std::net::SocketAddr;
@@ -28,6 +28,16 @@ pub type Server<S> = WsServer<S, TcpListener>;
 /// connection or reject it.
 pub type Incoming<S> =
 	Box<Stream<Item = (Upgrade<S>, SocketAddr), Error = InvalidConnection<S, BytesMut>> + Send>;
+
+impl<S> WsServer<S, TcpListener>
+where
+	S: OptionalTlsAcceptor,
+{
+	/// Get the socket address of this server
+	pub fn local_addr(&self) -> io::Result<SocketAddr> {
+		self.listener.local_addr()
+	}
+}
 
 /// Asynchronous methods for creating an async server and accepting incoming connections.
 impl WsServer<NoTlsAcceptor, TcpListener> {
