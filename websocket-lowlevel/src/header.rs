@@ -1,5 +1,8 @@
 //! This file contains some framework-agnostic aspects of WebSocket HTTP headers.
 
+extern crate rand;
+use std;
+
 /// WebSocket header names
 pub mod names {
 	pub const PROTOCOL: &str = "Sec-WebSocket-Protocol";

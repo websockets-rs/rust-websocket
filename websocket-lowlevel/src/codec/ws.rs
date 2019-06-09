@@ -302,6 +302,7 @@ where
 
 #[cfg(test)]
 mod tests {
+	extern crate tokio;
 	use super::*;
 	use futures::{Future, Sink, Stream};
 	use message::CloseData;
@@ -368,8 +369,6 @@ mod tests {
 
 	#[test]
 	fn message_codec_client_send_receive() {
-		extern crate tokio;
-
 		let mut input = Vec::new();
 		Message::text("50 schmeckels")
 			.serialize(&mut input, false)
@@ -397,7 +396,6 @@ mod tests {
 					})
 			});
 
-		use tokio;
 		tokio::runtime::Builder::new()
 			.build()
 			.unwrap()
@@ -407,7 +405,6 @@ mod tests {
 
 	#[test]
 	fn message_codec_server_send_receive() {
-		use tokio;
 		let mut runtime = tokio::runtime::Builder::new().build().unwrap();
 		let mut input = Vec::new();
 		Message::text("50 schmeckels")
