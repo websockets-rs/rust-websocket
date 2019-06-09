@@ -1,9 +1,11 @@
 //! The asynchronous implementation of a websocket server.
 use bytes::BytesMut;
+use futures;
 use futures::{Future, Stream};
 use server::upgrade::async::{IntoWs, Upgrade};
 use server::InvalidConnection;
-use server::{NoTlsAcceptor, WsServer};
+use server::{NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
+use std;
 use std::io;
 use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
@@ -26,6 +28,16 @@ pub type Server<S> = WsServer<S, TcpListener>;
 /// connection or reject it.
 pub type Incoming<S> =
 	Box<Stream<Item = (Upgrade<S>, SocketAddr), Error = InvalidConnection<S, BytesMut>> + Send>;
+
+impl<S> WsServer<S, TcpListener>
+where
+	S: OptionalTlsAcceptor,
+{
+	/// Get the socket address of this server
+	pub fn local_addr(&self) -> io::Result<SocketAddr> {
+		self.listener.local_addr()
+	}
+}
 
 /// Asynchronous methods for creating an async server and accepting incoming connections.
 impl WsServer<NoTlsAcceptor, TcpListener> {
@@ -61,7 +73,7 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 				error: e.into(),
 			})
 			.and_then(|(stream, a)| {
-				stream
+				let handshake = stream
 					.into_ws()
 					.map_err(|(stream, req, buf, err)| InvalidConnection {
 						stream: Some(stream),
@@ -69,8 +81,10 @@ impl WsServer<NoTlsAcceptor, TcpListener> {
 						buffer: Some(buf),
 						error: err,
 					})
-					.map(move |u| (u, a))
-			});
+					.map(move |u| (u, a));
+				futures::future::ok(handshake)
+			})
+			.buffer_unordered(std::usize::MAX);
 		Box::new(future)
 	}
 }
@@ -118,7 +132,7 @@ impl WsServer<TlsAcceptor, TcpListener> {
 				error: e.into(),
 			})
 			.and_then(move |(stream, a)| {
-				acceptor
+				let handshake = acceptor
 					.accept(stream)
 					.map_err(|e| {
 						InvalidConnection {
@@ -129,19 +143,20 @@ impl WsServer<TlsAcceptor, TcpListener> {
 							error: io::Error::new(io::ErrorKind::Other, e).into(),
 						}
 					})
-					.map(move |s| (s, a))
+					.and_then(move |stream| {
+						stream
+							.into_ws()
+							.map_err(|(stream, req, buf, err)| InvalidConnection {
+								stream: Some(stream),
+								parsed: req,
+								buffer: Some(buf),
+								error: err,
+							})
+							.map(move |u| (u, a))
+					});
+				futures::future::ok(handshake)
 			})
-			.and_then(|(stream, a)| {
-				stream
-					.into_ws()
-					.map_err(|(stream, req, buf, err)| InvalidConnection {
-						stream: Some(stream),
-						parsed: req,
-						buffer: Some(buf),
-						error: err,
-					})
-					.map(move |u| (u, a))
-			});
+			.buffer_unordered(std::usize::MAX);
 		Box::new(future)
 	}
 }

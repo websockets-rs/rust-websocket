@@ -77,6 +77,18 @@ mod tests {
 		);
 	}
 
+	#[test]
+	fn test_header_from_str() {
+		let key = WebSocketKey::from_str("YSByZWFsbCBnb29kIGtleQ==");
+		assert!(key.is_ok()); // 16 bytes
+
+		let key = WebSocketKey::from_str("YSBzaG9ydCBrZXk=");
+		assert!(key.is_err()); // < 16 bytes
+
+		let key = WebSocketKey::from_str("YSB2ZXJ5IHZlcnkgbG9uZyBrZXk=");
+		assert!(key.is_err()); // > 16 bytes
+	}
+
 	#[bench]
 	fn bench_header_key_new(b: &mut test::Bencher) {
 		b.iter(|| {

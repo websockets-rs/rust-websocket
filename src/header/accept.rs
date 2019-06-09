@@ -74,6 +74,18 @@ mod tests {
 		);
 	}
 
+	#[test]
+	fn test_header_from_str() {
+		let accept = WebSocketAccept::from_str("YSBzaW1wbGUgc2FtcGwgbm9uY2U=");
+		assert!(accept.is_ok()); // 20 bytes
+
+		let accept = WebSocketAccept::from_str("YSBzaG9ydCBub25jZQ==");
+		assert!(accept.is_err()); // < 20 bytes
+
+		let accept = WebSocketAccept::from_str("YSByZWFsbHkgbWFsaWNpb3VzIG5vbmNl");
+		assert!(accept.is_err()); // > 20 bytes
+	}
+
 	#[bench]
 	fn bench_header_accept_new(b: &mut test::Bencher) {
 		let key = WebSocketKey::new();

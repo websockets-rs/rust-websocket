@@ -39,11 +39,7 @@ impl FromStr for WebSocketKey {
 					));
 				}
 				let mut array = [0u8; 16];
-				let mut iter = vec.into_iter();
-				for i in &mut array {
-					*i = iter.next().unwrap();
-				}
-
+				array[..16].clone_from_slice(&vec[..16]);
 				Ok(WebSocketKey(array))
 			}
 			Err(_) => Err(WebSocketError::ProtocolError(
@@ -56,10 +52,7 @@ impl FromStr for WebSocketKey {
 impl WebSocketKey {
 	/// Generate a new, random WebSocketKey
 	pub fn new() -> WebSocketKey {
-		let key: [u8; 16] = unsafe {
-			// Much faster than calling random() several times
-			mem::transmute(rand::random::<(u64, u64)>())
-		};
+		let key = rand::random();
 		WebSocketKey(key)
 	}
 	/// Return the Base64 encoding of this WebSocketKey
@@ -93,10 +86,7 @@ impl FromStr for WebSocketAccept {
 					));
 				}
 				let mut array = [0u8; 20];
-				let mut iter = vec.into_iter();
-				for i in &mut array {
-					*i = iter.next().unwrap();
-				}
+				array[..20].clone_from_slice(&vec[..20]);
 				Ok(WebSocketAccept(array))
 			}
 			Err(_) => Err(WebSocketError::ProtocolError(
