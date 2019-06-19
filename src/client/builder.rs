@@ -844,9 +844,7 @@ impl<'u> ClientBuilder<'u> {
 		let status = StatusCode::from_u16(response.subject.0);
 
 		if status != StatusCode::SwitchingProtocols {
-			return Err(WebSocketError::ResponseError(
-				"Status code must be Switching Protocols",
-			));
+			return Err(WebSocketError::StatusCodeError(status));
 		}
 
 		let key = self
