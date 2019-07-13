@@ -1,5 +1,6 @@
 //! The result type used within Rust-WebSocket
 
+pub use hyper::status::StatusCode;
 use hyper::Error as HttpError;
 use server::upgrade::HyperIntoWsError;
 use std::convert::From;
@@ -40,6 +41,8 @@ pub enum WebSocketError {
 	ResponseError(&'static str),
 	/// Invalid WebSocket data frame error
 	DataFrameError(&'static str),
+	/// Received unexpected status code
+	StatusCodeError(StatusCode),
 	/// No data available
 	NoDataAvailable,
 	/// An input/output error
@@ -90,6 +93,7 @@ impl Error for WebSocketError {
 			WebSocketError::TlsHandshakeInterruption => "TLS Handshake interrupted",
 			WebSocketError::Utf8Error(_) => "UTF-8 failure",
 			WebSocketError::WebSocketUrlError(_) => "WebSocket URL failure",
+			WebSocketError::StatusCodeError(_) => "Received unexpected status code",
 		}
 	}
 
