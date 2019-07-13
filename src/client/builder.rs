@@ -2,7 +2,7 @@
 
 use header::extensions::Extension;
 use header::{Origin, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion};
-use hyper::header::{Header, HeaderFormat, Headers};
+use hyper::header::{Authorization, Basic, Header, HeaderFormat, Headers};
 use hyper::version::HttpVersion;
 use std::borrow::Cow;
 use std::convert::Into;
@@ -817,6 +817,17 @@ impl<'u> ClientBuilder<'u> {
 			});
 		}
 
+		// handle username/password from URL
+		if !self.url.username().is_empty() {
+			self.headers.set(Authorization(Basic {
+				username: self.url.username().to_owned(),
+				password: match self.url.password() {
+					Some(password) => Some(password.to_owned()),
+					None => None,
+				},
+			}));
+		}
+
 		self.headers
 			.set(Connection(vec![ConnectionOption::ConnectionHeader(
 				UniCase("Upgrade".to_string()),
@@ -979,5 +990,15 @@ mod tests {
 		assert!(protos.contains(&"boogaloo".to_string()));
 		assert!(protos.contains(&"electric".to_string()));
 		assert!(!protos.contains(&"rust-websocket".to_string()));
+	}
+
+	#[test]
+	fn build_client_with_username_password() {
+		use super::*;
+		let mut builder = ClientBuilder::new("ws://john:pswd@127.0.0.1:8080/hello").unwrap();
+		let _request = builder.build_request();
+		let auth = builder.headers.get::<Authorization<Basic>>().unwrap();
+		assert!(auth.username == "john");
+		assert_eq!(auth.password, Some("pswd".to_owned()));
 	}
 }
