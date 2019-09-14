@@ -56,7 +56,6 @@ fn main() {
 				.filter_map(|message| {
 					println!("Received Message: {:?}", message);
 					match message {
-						OwnedMessage::Close(e) => Some(OwnedMessage::Close(e)),
 						OwnedMessage::Ping(d) => Some(OwnedMessage::Pong(d)),
 						_ => None,
 					}
