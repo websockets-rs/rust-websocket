@@ -1,12 +1,12 @@
 //! The result type used within Rust-WebSocket
 
 use hyper::Error as HttpError;
-use server::upgrade::HyperIntoWsError;
+use crate::server::upgrade::HyperIntoWsError;
 use std::convert::From;
 use std::error::Error;
 use std::fmt;
 use std::io;
-use std::str::Utf8Error;
+
 use url::ParseError;
 
 #[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
@@ -20,13 +20,13 @@ pub type WebSocketResult<T> = Result<T, WebSocketError>;
 /// This module contains convenience types to make working with Futures and
 /// websocket results easier.
 #[cfg(feature = "async")]
-pub mod async {
+pub mod r#async {
 	use super::WebSocketError;
 	use futures::Future;
 
 	/// The most common Future in this library, it is simply some result `I` or
 	/// a `WebSocketError`. This is analogous to the `WebSocketResult` type.
-	pub type WebSocketFuture<I> = Box<Future<Item = I, Error = WebSocketError> + Send>;
+	pub type WebSocketFuture<I> = Box<dyn Future<Item = I, Error = WebSocketError> + Send>;
 }
 
 pub use websocket_lowlevel::result::WebSocketError;
@@ -86,7 +86,7 @@ impl Error for WebSocketOtherError {
 		}
 	}
 
-	fn cause(&self) -> Option<&Error> {
+	fn cause(&self) -> Option<&dyn Error> {
 		match *self {
 			WebSocketOtherError::HttpError(ref error) => Some(error),
 			WebSocketOtherError::UrlError(ref error) => Some(error),
@@ -129,11 +129,11 @@ impl<T> From<TlsHandshakeError<T>> for WebSocketOtherError {
 }
 
 #[cfg(feature = "async")]
-impl From<::codec::http::HttpCodecError> for WebSocketOtherError {
-	fn from(src: ::codec::http::HttpCodecError) -> Self {
+impl From<crate::codec::http::HttpCodecError> for WebSocketOtherError {
+	fn from(src: crate::codec::http::HttpCodecError) -> Self {
 		match src {
-			::codec::http::HttpCodecError::Io(e) => WebSocketOtherError::IoError(e),
-			::codec::http::HttpCodecError::Http(e) => WebSocketOtherError::HttpError(e),
+			crate::codec::http::HttpCodecError::Io(e) => WebSocketOtherError::IoError(e),
+			crate::codec::http::HttpCodecError::Http(e) => WebSocketOtherError::HttpError(e),
 		}
 	}
 }

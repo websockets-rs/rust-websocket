@@ -96,61 +96,61 @@ pub use websocket_lowlevel::stream;
 /// A collection of handy synchronous-only parts of the crate.
 #[cfg(feature = "sync")]
 pub mod sync {
-	pub use sender;
-	pub use sender::Writer;
+	pub use crate::sender;
+	pub use crate::sender::Writer;
 
-	pub use receiver;
-	pub use receiver::Reader;
+	pub use crate::receiver;
+	pub use crate::receiver::Reader;
 
-	pub use stream::sync as stream;
-	pub use stream::sync::Stream;
+	pub use crate::stream::sync as stream;
+	pub use crate::stream::sync::Stream;
 
 	/// A collection of handy synchronous-only parts of the `server` module.
 	pub mod server {
-		pub use server::sync::*;
-		pub use server::upgrade::sync as upgrade;
-		pub use server::upgrade::sync::IntoWs;
-		pub use server::upgrade::sync::Upgrade;
+		pub use crate::server::sync::*;
+		pub use crate::server::upgrade::sync as upgrade;
+		pub use crate::server::upgrade::sync::IntoWs;
+		pub use crate::server::upgrade::sync::Upgrade;
 	}
-	pub use server::sync::Server;
+	pub use crate::server::sync::Server;
 
 	/// A collection of handy synchronous-only parts of the `client` module.
 	pub mod client {
-		pub use client::builder::ClientBuilder;
-		pub use client::sync::*;
+		pub use crate::client::builder::ClientBuilder;
+		pub use crate::client::sync::*;
 	}
-	pub use client::sync::Client;
+	pub use crate::client::sync::Client;
 }
 
 /// A collection of handy asynchronous-only parts of the crate.
 #[cfg(feature = "async")]
-pub mod async {
-	pub use codec;
-	pub use codec::http::HttpClientCodec;
-	pub use codec::http::HttpServerCodec;
-	pub use codec::ws::Context as MsgCodecCtx;
-	pub use codec::ws::MessageCodec;
+pub mod r#async {
+	pub use crate::codec;
+	pub use crate::codec::http::HttpClientCodec;
+	pub use crate::codec::http::HttpServerCodec;
+	pub use crate::codec::ws::Context as MsgCodecCtx;
+	pub use crate::codec::ws::MessageCodec;
 
-	pub use stream::async as stream;
-	pub use stream::async::Stream;
+	pub use crate::stream::r#async as stream;
+	pub use crate::stream::r#async::Stream;
 
 	/// A collection of handy asynchronous-only parts of the `server` module.
 	pub mod server {
-		pub use server::async::*;
-		pub use server::upgrade::async as upgrade;
-		pub use server::upgrade::async::IntoWs;
-		pub use server::upgrade::async::Upgrade;
+		pub use crate::server::r#async::*;
+		pub use crate::server::upgrade::r#async as upgrade;
+		pub use crate::server::upgrade::r#async::IntoWs;
+		pub use crate::server::upgrade::r#async::Upgrade;
 	}
-	pub use server::async::Server;
+	pub use crate::server::r#async::Server;
 
 	/// A collection of handy asynchronous-only parts of the `client` module.
 	pub mod client {
-		pub use client::async::*;
-		pub use client::builder::ClientBuilder;
+		pub use crate::client::r#async::*;
+		pub use crate::client::builder::ClientBuilder;
 	}
-	pub use client::async::Client;
+	pub use crate::client::r#async::Client;
 
-	pub use result::async::WebSocketFuture;
+	pub use crate::result::r#async::WebSocketFuture;
 
 	pub use futures;
 	pub use tokio_reactor::Handle;

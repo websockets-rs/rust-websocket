@@ -4,12 +4,12 @@ use native_tls::TlsAcceptor;
 
 use self::upgrade::{HyperIntoWsError, Request};
 use std::fmt::{Debug, Formatter, Result as FmtResult};
-use stream::Stream;
+use crate::stream::Stream;
 
 pub mod upgrade;
 
 #[cfg(feature = "async")]
-pub mod async;
+pub mod r#async;
 
 #[cfg(feature = "sync")]
 pub mod sync;

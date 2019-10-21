@@ -7,9 +7,9 @@
 //! (e.g. what protocols it wants to use) and decide whether to accept or reject it.
 use super::{validate, HyperIntoWsError, Request, WsUpgrade};
 use bytes::BytesMut;
-use client::async::ClientNew;
-use codec::http::HttpServerCodec;
-use codec::ws::{Context, MessageCodec};
+use crate::client::r#async::ClientNew;
+use crate::codec::http::HttpServerCodec;
+use crate::codec::ws::{Context, MessageCodec};
 use futures::sink::Send as SinkSend;
 use futures::Stream as StreamTrait;
 use futures::{Future, Sink};
@@ -17,9 +17,9 @@ use hyper::header::Headers;
 use hyper::http::h1::Incoming;
 use hyper::status::StatusCode;
 use std::io::{self, ErrorKind};
-use stream::async::Stream;
+use crate::stream::r#async::Stream;
 use tokio_codec::{Decoder, Framed, FramedParts};
-use ws::util::update_framed_codec;
+use crate::ws::util::update_framed_codec;
 
 /// An asynchronous websocket upgrade.
 ///
@@ -206,7 +206,7 @@ pub trait IntoWs {
 	///
 	/// Note: this is the asynchronous version, meaning it will not block when
 	/// trying to read a request.
-	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error> + Send>;
+	fn into_ws(self) -> Box<dyn Future<Item = Upgrade<Self::Stream>, Error = Self::Error> + Send>;
 }
 
 impl<S> IntoWs for S
@@ -216,7 +216,7 @@ where
 	type Stream = S;
 	type Error = (S, Option<Request>, BytesMut, HyperIntoWsError);
 
-	fn into_ws(self) -> Box<Future<Item = Upgrade<Self::Stream>, Error = Self::Error> + Send> {
+	fn into_ws(self) -> Box<dyn Future<Item = Upgrade<Self::Stream>, Error = Self::Error> + Send> {
 		let future = HttpServerCodec
 			.framed(self)
 			.into_future()

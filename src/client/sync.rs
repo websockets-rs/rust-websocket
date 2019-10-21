@@ -6,22 +6,22 @@ use std::io::{Read, Write};
 use std::net::SocketAddr;
 use std::net::TcpStream;
 
-use dataframe::DataFrame;
-use header::extensions::Extension;
-use header::{WebSocketExtensions, WebSocketProtocol};
-use message::OwnedMessage;
-use result::WebSocketResult;
-use stream::sync::{AsTcpStream, Shutdown, Splittable, Stream};
-use ws;
-use ws::receiver::Receiver as ReceiverTrait;
-use ws::receiver::{DataFrameIterator, MessageIterator};
-use ws::sender::Sender as SenderTrait;
+use crate::dataframe::DataFrame;
+use crate::header::extensions::Extension;
+use crate::header::{WebSocketExtensions, WebSocketProtocol};
+use crate::message::OwnedMessage;
+use crate::result::WebSocketResult;
+use crate::stream::sync::{AsTcpStream, Shutdown, Splittable, Stream};
+use crate::ws;
+use crate::ws::receiver::Receiver as ReceiverTrait;
+use crate::ws::receiver::{DataFrameIterator, MessageIterator};
+use crate::ws::sender::Sender as SenderTrait;
 
-pub use receiver::Reader;
-use receiver::Receiver;
-use sender::Sender;
-pub use sender::Writer;
-use ws::dataframe::DataFrame as DataFrameable;
+pub use crate::receiver::Reader;
+use crate::receiver::Receiver;
+use crate::sender::Sender;
+pub use crate::sender::Writer;
+use crate::ws::dataframe::DataFrame as DataFrameable;
 
 /// Represents a WebSocket client, which can send and receive messages/data frames.
 ///
@@ -252,7 +252,7 @@ where
 	///
 	/// client.writer_mut().write_all(&buf);
 	/// ```
-	pub fn writer_mut(&mut self) -> &mut Write {
+	pub fn writer_mut(&mut self) -> &mut dyn Write {
 		self.stream.get_mut()
 	}
 
@@ -280,7 +280,7 @@ where
 	/// let mut buf_reader = Cursor::new(&mut buf);
 	/// let message = receiver.recv_message(&mut buf_reader).unwrap();
 	/// ```
-	pub fn reader_mut(&mut self) -> &mut Read {
+	pub fn reader_mut(&mut self) -> &mut dyn Read {
 		&mut self.stream
 	}
 

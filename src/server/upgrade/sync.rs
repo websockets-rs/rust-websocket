@@ -1,10 +1,10 @@
 //! Allows you to take an existing request or stream of data and convert it into a
 //! WebSocket client.
-use client::sync::Client;
-use server::upgrade::{validate, HyperIntoWsError, Request, WsUpgrade};
+use crate::client::sync::Client;
+use crate::server::upgrade::{validate, HyperIntoWsError, Request, WsUpgrade};
 use std::io;
 use std::net::TcpStream;
-use stream::sync::{AsTcpStream, Stream};
+use crate::stream::sync::{AsTcpStream, Stream};
 
 use hyper::buffer::BufReader;
 use hyper::header::Headers;
@@ -249,7 +249,7 @@ where
 pub struct HyperRequest<'a, 'b: 'a>(pub ::hyper::server::Request<'a, 'b>);
 
 impl<'a, 'b> IntoWs for HyperRequest<'a, 'b> {
-	type Stream = &'a mut &'b mut NetworkStream;
+	type Stream = &'a mut &'b mut dyn NetworkStream;
 	type Error = (::hyper::server::Request<'a, 'b>, HyperIntoWsError);
 
 	fn into_ws(self) -> Result<Upgrade<Self::Stream>, Self::Error> {

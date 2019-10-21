@@ -17,7 +17,7 @@ pub mod builder;
 pub use self::builder::{ClientBuilder, ParseError, Url};
 
 #[cfg(feature = "async")]
-pub mod async;
+pub mod r#async;
 
 #[cfg(feature = "sync")]
 pub mod sync;

@@ -1,13 +1,13 @@
 //! The default implementation of a WebSocket Sender.
 
-use result::WebSocketResult;
+use crate::result::WebSocketResult;
 use std::io::Result as IoResult;
 use std::io::Write;
-use stream::sync::AsTcpStream;
-pub use stream::sync::Shutdown;
-use ws;
-use ws::dataframe::DataFrame;
-use ws::sender::Sender as SenderTrait;
+use crate::stream::sync::AsTcpStream;
+pub use crate::stream::sync::Shutdown;
+use crate::ws;
+use crate::ws::dataframe::DataFrame;
+use crate::ws::sender::Sender as SenderTrait;
 
 /// A writer that bundles a stream with a serializer to send the messages.
 /// This is used in the client's `.split()` function as the writing component.
