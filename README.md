@@ -1,6 +1,11 @@
 Rust-WebSocket [![Build Status](https://travis-ci.com/websockets-rs/rust-websocket.svg?branch=master)](https://travis-ci.com/websockets-rs/rust-websocket) [![docs.rs](https://docs.rs/websocket/badge.svg)](https://docs.rs/websocket)
 ==============
 
+
+|**Note: Maintainership of this project is slugglish. You may want to use [tungstenite](https://crates.io/crates/tungstenite) or [tokio-tungstenite](https://crates.io/crates/tokio-tungstenite) instead.**|
+|----|
+
+
 Rust-WebSocket is a WebSocket ([RFC6455](https://datatracker.ietf.org/doc/rfc6455/)) library written in Rust.
 
 Rust-WebSocket provides a framework for dealing with WebSocket connections (both clients and servers). The library is currently in an experimental state, but provides functionality for both normal and secure WebSockets, a message level API supporting fragmentation, a data frame level API, and the ability to extend and customize behaviour.
