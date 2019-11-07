@@ -134,7 +134,7 @@ mod tests {
 
 	#[test]
 	fn test_header_extensions() {
-		use header::Headers;
+		use crate::header::Headers;
 		let value = vec![b"foo, bar; baz; qux=quux".to_vec()];
 		let extensions: WebSocketExtensions = Header::parse_header(&value[..]).unwrap();
 

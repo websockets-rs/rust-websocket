@@ -46,7 +46,7 @@ mod tests {
 
 	#[test]
 	fn test_header_origin() {
-		use header::Headers;
+		use crate::header::Headers;
 
 		let origin = Origin("foo bar".to_string());
 		let mut headers = Headers::new();

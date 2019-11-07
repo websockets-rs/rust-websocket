@@ -56,7 +56,7 @@ impl HeaderFormat for WebSocketAccept {
 #[cfg(all(feature = "nightly", test))]
 mod tests {
 	use super::*;
-	use header::{Headers, WebSocketKey};
+	use crate::header::{Headers, WebSocketKey};
 	use hyper::header::Header;
 	use std::str::FromStr;
 	use test;

@@ -48,7 +48,7 @@ mod tests {
 
 	#[test]
 	fn test_header_protocol() {
-		use header::Headers;
+		use crate::header::Headers;
 
 		let protocol = WebSocketProtocol(vec!["foo".to_string(), "bar".to_string()]);
 		let mut headers = Headers::new();

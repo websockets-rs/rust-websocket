@@ -65,7 +65,7 @@ mod tests {
 
 	#[test]
 	fn test_header_key() {
-		use header::Headers;
+		use crate::header::Headers;
 
 		let extensions = WebSocketKey::from_array([65; 16]);
 		let mut headers = Headers::new();

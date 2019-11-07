@@ -54,7 +54,7 @@ mod tests {
 
 	#[test]
 	fn test_websocket_version() {
-		use header::Headers;
+		use crate::header::Headers;
 
 		let version = WebSocketVersion::WebSocket13;
 		let mut headers = Headers::new();
