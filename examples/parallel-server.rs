@@ -2,7 +2,7 @@ extern crate futures;
 extern crate tokio;
 extern crate websocket;
 
-use websocket::async::Server;
+use websocket::r#async::Server;
 use websocket::message::OwnedMessage;
 use websocket::server::InvalidConnection;
 
@@ -138,9 +138,9 @@ fn process_message(id: u32, msg: &OwnedMessage) {
 	}
 }
 
-type SinkContent = websocket::client::async::Framed<
+type SinkContent = websocket::client::r#async::Framed<
 	tokio::net::TcpStream,
-	websocket::async::MessageCodec<OwnedMessage>,
+	websocket::r#async::MessageCodec<OwnedMessage>,
 >;
 type SplitSink = futures::stream::SplitSink<SinkContent>;
 // Represents one tick in the main loop

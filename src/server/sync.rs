@@ -1,15 +1,15 @@
 //! Provides an implementation of a WebSocket server
 #[cfg(feature = "sync-ssl")]
 use native_tls::{TlsAcceptor, TlsStream};
-use server::upgrade::sync::{Buffer, IntoWs, Upgrade};
-pub use server::upgrade::{HyperIntoWsError, Request};
-use server::{InvalidConnection, NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
+use crate::server::upgrade::sync::{Buffer, IntoWs, Upgrade};
+pub use crate::server::upgrade::{HyperIntoWsError, Request};
+use crate::server::{InvalidConnection, NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
 use std::convert::Into;
 use std::io;
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
 
 #[cfg(feature = "async")]
-use server::async;
+use crate::server::r#async;
 #[cfg(feature = "async")]
 use tokio_reactor::Handle;
 #[cfg(feature = "async")]
@@ -85,7 +85,7 @@ where
 	/// `AsyncRead + AsyncWrite`. Useful if you would like some blocking things to happen
 	/// at the start of your server.
 	#[cfg(feature = "async")]
-	pub fn into_async(self, handle: &Handle) -> io::Result<async::Server<S>> {
+	pub fn into_async(self, handle: &Handle) -> io::Result<r#async::Server<S>> {
 		Ok(WsServer {
 			listener: AsyncTcpListener::from_std(self.listener, handle)?,
 			ssl_acceptor: self.ssl_acceptor,

@@ -2,9 +2,9 @@
 use bytes::BytesMut;
 use futures;
 use futures::{Future, Stream};
-use server::upgrade::async::{IntoWs, Upgrade};
-use server::InvalidConnection;
-use server::{NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
+use crate::server::upgrade::r#async::{IntoWs, Upgrade};
+use crate::server::InvalidConnection;
+use crate::server::{NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
 use std;
 use std::io;
 use std::net::SocketAddr;
@@ -27,7 +27,7 @@ pub type Server<S> = WsServer<S, TcpListener>;
 /// struct which lets the user decide whether to turn the connection into a websocket
 /// connection or reject it.
 pub type Incoming<S> =
-	Box<Stream<Item = (Upgrade<S>, SocketAddr), Error = InvalidConnection<S, BytesMut>> + Send>;
+	Box<dyn Stream<Item = (Upgrade<S>, SocketAddr), Error = InvalidConnection<S, BytesMut>> + Send>;
 
 impl<S> WsServer<S, TcpListener>
 where

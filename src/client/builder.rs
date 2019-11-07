@@ -1,7 +1,7 @@
 //! Everything you need to create a client connection to a websocket.
 
-use header::extensions::Extension;
-use header::{Origin, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion};
+use crate::header::extensions::Extension;
+use crate::header::{Origin, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion};
 use hyper::header::{Authorization, Basic, Header, HeaderFormat, Headers};
 use hyper::version::HttpVersion;
 use std::borrow::Cow;
@@ -10,7 +10,7 @@ pub use url::{ParseError, Url};
 
 #[cfg(any(feature = "sync", feature = "async"))]
 mod common_imports {
-	pub use header::WebSocketAccept;
+	pub use crate::header::WebSocketAccept;
 	pub use hyper::buffer::BufReader;
 	pub use hyper::header::{Connection, ConnectionOption, Host, Protocol, ProtocolName, Upgrade};
 	pub use hyper::http::h1::parse_response;
@@ -19,10 +19,10 @@ mod common_imports {
 	pub use hyper::method::Method;
 	pub use hyper::status::StatusCode;
 	pub use hyper::uri::RequestUri;
-	pub use result::{WSUrlErrorKind, WebSocketError, WebSocketOtherError, WebSocketResult};
+	pub use crate::result::{WSUrlErrorKind, WebSocketError, WebSocketOtherError, WebSocketResult};
 	pub use std::net::TcpStream;
 	pub use std::net::ToSocketAddrs;
-	pub use stream::{self, Stream};
+	pub use crate::stream::{self, Stream};
 	pub use unicase::UniCase;
 	pub use url::Position;
 }
@@ -33,7 +33,7 @@ use self::common_imports::*;
 use super::sync::Client;
 
 #[cfg(feature = "sync-ssl")]
-use stream::sync::NetworkStream;
+use crate::stream::sync::NetworkStream;
 
 #[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 use native_tls::TlsConnector;
@@ -42,8 +42,8 @@ use native_tls::TlsStream;
 
 #[cfg(feature = "async")]
 mod async_imports {
-	pub use super::super::async;
-	pub use codec::ws::{Context, MessageCodec};
+	pub use super::super::r#async;
+	pub use crate::codec::ws::{Context, MessageCodec};
 	pub use futures::future;
 	pub use futures::Stream as FutureStream;
 	pub use futures::{Future, IntoFuture, Sink};
@@ -53,12 +53,12 @@ mod async_imports {
 	pub use tokio_tcp::TcpStream as TcpStreamNew;
 	#[cfg(feature = "async-ssl")]
 	pub use tokio_tls::TlsConnector as TlsConnectorExt;
-	pub use ws::util::update_framed_codec;
+	pub use crate::ws::util::update_framed_codec;
 }
 #[cfg(feature = "async")]
 use self::async_imports::*;
 
-use result::towse;
+use crate::result::towse;
 
 /// Build clients with a builder-style API
 /// This makes it easy to create and configure a websocket
@@ -396,10 +396,10 @@ impl<'u> ClientBuilder<'u> {
 	pub fn connect(
 		&mut self,
 		ssl_config: Option<TlsConnector>,
-	) -> WebSocketResult<Client<Box<NetworkStream + Send>>> {
+	) -> WebSocketResult<Client<Box<dyn NetworkStream + Send>>> {
 		let tcp_stream = self.establish_tcp(None)?;
 
-		let boxed_stream: Box<NetworkStream + Send> = if self.is_secure_url() {
+		let boxed_stream: Box<dyn NetworkStream + Send> = if self.is_secure_url() {
 			Box::new(self.wrap_ssl(tcp_stream, ssl_config)?)
 		} else {
 			Box::new(tcp_stream)
@@ -542,7 +542,7 @@ impl<'u> ClientBuilder<'u> {
 	pub fn async_connect(
 		self,
 		ssl_config: Option<TlsConnector>,
-	) -> async::ClientNew<Box<stream::async::Stream + Send>> {
+	) -> r#async::ClientNew<Box<dyn stream::r#async::Stream + Send>> {
 		// connect to the tcp stream
 		let tcp_stream = self.async_tcpstream(None);
 
@@ -567,14 +567,14 @@ impl<'u> ClientBuilder<'u> {
 			let future = tcp_stream
 				.and_then(move |s| connector.connect(&host, s).map_err(towse))
 				.and_then(move |stream| {
-					let stream: Box<stream::async::Stream + Send> = Box::new(stream);
+					let stream: Box<dyn stream::r#async::Stream + Send> = Box::new(stream);
 					builder.async_connect_on(stream)
 				});
 			Box::new(future)
 		} else {
 			// insecure connection, connect normally
 			let future = tcp_stream.and_then(move |stream| {
-				let stream: Box<stream::async::Stream + Send> = Box::new(stream);
+				let stream: Box<dyn stream::r#async::Stream + Send> = Box::new(stream);
 				builder.async_connect_on(stream)
 			});
 			Box::new(future)
@@ -619,7 +619,7 @@ impl<'u> ClientBuilder<'u> {
 	pub fn async_connect_secure(
 		self,
 		ssl_config: Option<TlsConnector>,
-	) -> async::ClientNew<async::TlsStream<async::TcpStream>> {
+	) -> r#async::ClientNew<r#async::TlsStream<r#async::TcpStream>> {
 		// connect to the tcp stream
 		let tcp_stream = self.async_tcpstream(Some(true));
 
@@ -679,7 +679,7 @@ impl<'u> ClientBuilder<'u> {
 	/// # }
 	/// ```
 	#[cfg(feature = "async")]
-	pub fn async_connect_insecure(self) -> async::ClientNew<async::TcpStream> {
+	pub fn async_connect_insecure(self) -> r#async::ClientNew<r#async::TcpStream> {
 		let tcp_stream = self.async_tcpstream(Some(false));
 
 		let builder = ClientBuilder {
@@ -738,9 +738,9 @@ impl<'u> ClientBuilder<'u> {
 	/// runtime.block_on(client).unwrap();
 	/// ```
 	#[cfg(feature = "async")]
-	pub fn async_connect_on<S>(self, stream: S) -> async::ClientNew<S>
+	pub fn async_connect_on<S>(self, stream: S) -> r#async::ClientNew<S>
 	where
-		S: stream::async::Stream + Send + 'static,
+		S: stream::r#async::Stream + Send + 'static,
 	{
 		let mut builder = ClientBuilder {
 			url: Cow::Owned(self.url.into_owned()),
@@ -750,7 +750,7 @@ impl<'u> ClientBuilder<'u> {
 			key_set: self.key_set,
 		};
 		let resource = builder.build_request();
-		let framed = ::codec::http::HttpClientCodec.framed(stream);
+		let framed = crate::codec::http::HttpClientCodec.framed(stream);
 		let request = Incoming {
 			version: builder.version,
 			headers: builder.headers.clone(),
@@ -785,7 +785,7 @@ impl<'u> ClientBuilder<'u> {
 	fn async_tcpstream(
 		&self,
 		secure: Option<bool>,
-	) -> Box<future::Future<Item = TcpStreamNew, Error = WebSocketError> + Send> {
+	) -> Box<dyn future::Future<Item = TcpStreamNew, Error = WebSocketError> + Send> {
 		// get the address to connect to, return an error future if ther's a problem
 		let address = match self
 			.extract_host_port(secure)

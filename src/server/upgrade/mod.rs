@@ -1,13 +1,13 @@
 //! Allows you to take an existing request or stream of data and convert it into a
 //! WebSocket client.
-use header::extensions::Extension;
-use header::{
+use crate::header::extensions::Extension;
+use crate::header::{
 	Origin, WebSocketAccept, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion,
 };
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::io;
-use stream::Stream;
+use crate::stream::Stream;
 
 use hyper::header::{Connection, ConnectionOption, Headers, Protocol, ProtocolName, Upgrade};
 use hyper::http::h1::Incoming;
@@ -20,7 +20,7 @@ use unicase::UniCase;
 use hyper::version::HttpVersion;
 
 #[cfg(feature = "async")]
-pub mod async;
+pub mod r#async;
 
 #[cfg(feature = "sync")]
 pub mod sync;
@@ -212,7 +212,7 @@ impl Error for HyperIntoWsError {
 		}
 	}
 
-	fn cause(&self) -> Option<&Error> {
+	fn cause(&self) -> Option<&dyn Error> {
 		match *self {
 			HyperIntoWsError::Io(ref e) => Some(e),
 			HyperIntoWsError::Parsing(ref e) => Some(e),
@@ -234,11 +234,11 @@ impl From<::hyper::error::Error> for HyperIntoWsError {
 }
 
 #[cfg(feature = "async")]
-impl From<::codec::http::HttpCodecError> for HyperIntoWsError {
-	fn from(src: ::codec::http::HttpCodecError) -> Self {
+impl From<crate::codec::http::HttpCodecError> for HyperIntoWsError {
+	fn from(src: crate::codec::http::HttpCodecError) -> Self {
 		match src {
-			::codec::http::HttpCodecError::Io(e) => HyperIntoWsError::Io(e),
-			::codec::http::HttpCodecError::Http(e) => HyperIntoWsError::Parsing(e),
+			crate::codec::http::HttpCodecError::Io(e) => HyperIntoWsError::Io(e),
+			crate::codec::http::HttpCodecError::Http(e) => HyperIntoWsError::Parsing(e),
 		}
 	}
 }

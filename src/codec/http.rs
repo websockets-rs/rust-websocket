@@ -232,7 +232,7 @@ impl Error for HttpCodecError {
 		}
 	}
 
-	fn cause(&self) -> Option<&Error> {
+	fn cause(&self) -> Option<&dyn Error> {
 		match *self {
 			HttpCodecError::Io(ref error) => Some(error),
 			HttpCodecError::Http(ref error) => Some(error),
@@ -259,7 +259,7 @@ mod tests {
 	use hyper::header::Headers;
 	use hyper::version::HttpVersion;
 	use std::io::Cursor;
-	use stream::ReadWritePair;
+	use crate::stream::ReadWritePair;
 	use tokio::runtime::current_thread::Builder;
 
 	#[test]

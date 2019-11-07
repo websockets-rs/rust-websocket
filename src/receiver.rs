@@ -5,14 +5,14 @@ use std::io::Result as IoResult;
 
 use hyper::buffer::BufReader;
 
-use dataframe::{DataFrame, Opcode};
-use message::OwnedMessage;
-use result::{WebSocketError, WebSocketResult};
-pub use stream::sync::Shutdown;
-use stream::sync::{AsTcpStream, Stream};
-use ws;
-use ws::receiver::Receiver as ReceiverTrait;
-use ws::receiver::{DataFrameIterator, MessageIterator};
+use crate::dataframe::{DataFrame, Opcode};
+use crate::message::OwnedMessage;
+use crate::result::{WebSocketError, WebSocketResult};
+pub use crate::stream::sync::Shutdown;
+use crate::stream::sync::{AsTcpStream, Stream};
+use crate::ws;
+use crate::ws::receiver::Receiver as ReceiverTrait;
+use crate::ws::receiver::{DataFrameIterator, MessageIterator};
 
 /// This reader bundles an existing stream with a parsing algorithm.
 /// It is used by the client in its `.split()` function as the reading component.
@@ -128,7 +128,7 @@ impl ws::Receiver for Receiver {
 				// Continuation opcode
 				0 => self.buffer.push(next),
 				// Control frame
-				8...15 => {
+				8..=15 => {
 					return Ok(vec![next]);
 				}
 				// Others

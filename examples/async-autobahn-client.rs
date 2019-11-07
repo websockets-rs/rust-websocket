@@ -39,7 +39,7 @@ fn main() {
 							println!("Could not receive message: {:?}", err);
 							stream.send(OwnedMessage::Close(None)).map(|s| (None, s))
 						})
-						.and_then(|(msg, stream)| -> Box<Future<Item = _, Error = _>> {
+						.and_then(|(msg, stream)| -> Box<dyn Future<Item = _, Error = _>> {
 							match msg {
 								Some(OwnedMessage::Text(txt)) => Box::new(
 									stream

@@ -2,7 +2,7 @@ extern crate futures;
 extern crate tokio;
 extern crate websocket;
 
-use websocket::async::Server;
+use websocket::r#async::Server;
 use websocket::message::OwnedMessage;
 use websocket::server::InvalidConnection;
 
