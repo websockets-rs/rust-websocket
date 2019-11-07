@@ -4,8 +4,8 @@ extern crate websocket;
 
 use std::fmt::Debug;
 
-use websocket::r#async::Server;
 use websocket::message::{Message, OwnedMessage};
+use websocket::r#async::Server;
 use websocket::server::InvalidConnection;
 
 use futures::{future, Future, Sink, Stream};
