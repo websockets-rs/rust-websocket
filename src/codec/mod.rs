@@ -11,4 +11,4 @@
 //! See it's module level documentation for more info.
 
 pub mod http;
-pub use websocket_lowlevel::codec::ws;
+pub use websocket_base::codec::ws;

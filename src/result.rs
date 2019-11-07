@@ -29,7 +29,7 @@ pub mod async {
 	pub type WebSocketFuture<I> = Box<Future<Item = I, Error = WebSocketError> + Send>;
 }
 
-pub use websocket_lowlevel::result::WebSocketError;
+pub use websocket_base::result::WebSocketError;
 
 /// Represents a WebSocket error while connecting
 #[derive(Debug)]

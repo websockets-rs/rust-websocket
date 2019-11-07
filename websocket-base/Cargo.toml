@@ -1,11 +1,11 @@
 [package]
-name = "websocket-lowlevel"
+name = "websocket-base"
 version = "0.22.4"
 authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.com>"]
 
 description = "A WebSocket (RFC6455) library for Rust: low-level component. It contains HTTP-independent aspect of WebSockets"
 
-documentation = "https://docs.rs/websocket-lowlevel/"
+documentation = "https://docs.rs/websocket-base/"
 repository = "https://github.com/websockets-rs/rust-websocket"
 
 keywords = ["websocket", "websockets", "rfc6455", "async", "tokio"]

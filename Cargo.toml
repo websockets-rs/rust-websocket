@@ -28,7 +28,7 @@ tokio-codec = { version = "0.1", optional = true }
 tokio-reactor = { version = "0.1", optional = true }
 bytes = { version = "0.4", optional = true }
 native-tls = { version = "0.2.1", optional = true }
-websocket-lowlevel = { path = "websocket-lowlevel", default-features=false }
+websocket-base = { path = "websocket-base", default-features=false }
 
 [dev-dependencies]
 futures-cpupool = "0.1"
@@ -40,13 +40,13 @@ features = ["codec", "tcp", "rt-full"]
 
 [features]
 default = ["sync", "sync-ssl", "async", "async-ssl"]
-sync = ["websocket-lowlevel/sync"]
-sync-ssl = ["native-tls", "sync", "websocket-lowlevel/sync-ssl"]
-async = ["bytes", "futures", "tokio-io", "tokio-tcp", "tokio-reactor", "tokio-codec", "websocket-lowlevel/async"]
-async-ssl = ["native-tls", "tokio-tls", "async", "websocket-lowlevel/async-ssl"]
+sync = ["websocket-base/sync"]
+sync-ssl = ["native-tls", "sync", "websocket-base/sync-ssl"]
+async = ["bytes", "futures", "tokio-io", "tokio-tcp", "tokio-reactor", "tokio-codec", "websocket-base/async"]
+async-ssl = ["native-tls", "tokio-tls", "async", "websocket-base/async-ssl"]
 nightly = ["hyper/nightly"]
 
 [workspace]
 members = [
-    "websocket-lowlevel"
+    "websocket-base"
 ]
