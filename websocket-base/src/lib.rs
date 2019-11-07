@@ -2,7 +2,7 @@
 //! It contains code for processing WebSocket streams,
 //! (after HTTP upgrade already happened)
 //! WebSocket message definition, some error type.
-//! 
+//!
 //! For now it still optionally depends on `futures 0.1` and `tokio-io 0.1`, but that's going to
 //! be extracted to a separate crate, if `rust-websocket`'s depelopment continues.
 //!

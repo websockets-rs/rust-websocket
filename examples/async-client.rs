@@ -34,9 +34,9 @@ fn main() {
 			// Read user input from stdin
 			input.clear();
 			stdin().read_line(&mut input).unwrap();
-			
+
 			// Trim whitespace and match input to known chat commands
-			// If input is unknown, send trimmed input as a chat message 
+			// If input is unknown, send trimmed input as a chat message
 			let trimmed = input.trim();
 			let (close, msg) = match trimmed {
 				"/close" => (true, OwnedMessage::Close(None)),
@@ -54,7 +54,7 @@ fn main() {
 		}
 	});
 
-	// Construct a new connection to the websocket server 
+	// Construct a new connection to the websocket server
 	let runner = ClientBuilder::new(CONNECTION)
 		.unwrap()
 		.add_protocol("rust-websocket")

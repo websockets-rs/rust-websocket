@@ -1,11 +1,11 @@
 //! The result type used within Rust-WebSocket
 
+use std;
 use std::convert::From;
 use std::error::Error;
 use std::fmt;
 use std::io;
 use std::str::Utf8Error;
-use std;
 
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
