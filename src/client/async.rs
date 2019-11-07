@@ -18,8 +18,8 @@
 //! # extern crate futures;
 //! # extern crate websocket;
 //! use websocket::ClientBuilder;
-//! use websocket::async::client::{Client, ClientNew};
-//! use websocket::async::TcpStream;
+//! use websocket::r#async::client::{Client, ClientNew};
+//! use websocket::r#async::TcpStream;
 //! use websocket::futures::{Future, Stream, Sink};
 //! use websocket::Message;
 //! use tokio::runtime::Builder;

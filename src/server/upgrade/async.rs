@@ -33,9 +33,9 @@ use crate::ws::util::update_framed_codec;
 /// ```rust,no_run
 /// # extern crate tokio;
 /// # extern crate websocket;
-/// use websocket::async::{TcpListener, TcpStream};
-/// use websocket::async::futures::{Stream, Future};
-/// use websocket::async::server::upgrade::IntoWs;
+/// use websocket::r#async::{TcpListener, TcpStream};
+/// use websocket::r#async::futures::{Stream, Future};
+/// use websocket::r#async::server::upgrade::IntoWs;
 /// use websocket::sync::Client;
 ///
 /// let mut runtime = tokio::runtime::Builder::new().build().unwrap();
@@ -165,9 +165,9 @@ where
 /// ```rust,no_run
 /// # extern crate tokio;
 /// # extern crate websocket;
-/// use websocket::async::{TcpListener, TcpStream};
-/// use websocket::async::futures::{Stream, Future};
-/// use websocket::async::server::upgrade::IntoWs;
+/// use websocket::r#async::{TcpListener, TcpStream};
+/// use websocket::r#async::futures::{Stream, Future};
+/// use websocket::r#async::server::upgrade::IntoWs;
 /// use websocket::sync::Client;
 ///
 /// let mut runtime = tokio::runtime::Builder::new().build().unwrap();
