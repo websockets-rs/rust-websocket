@@ -67,7 +67,6 @@ fn main() {
 					println!("Received Message: {:?}", message);
 					// Respond to close or ping commands from the server
 					match message {
-						OwnedMessage::Close(e) => Some(OwnedMessage::Close(e)),
 						OwnedMessage::Ping(d) => Some(OwnedMessage::Pong(d)),
 						_ => None,
 					}
