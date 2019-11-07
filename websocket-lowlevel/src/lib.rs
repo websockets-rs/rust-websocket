@@ -2,6 +2,9 @@
 //! It contains code for processing WebSocket streams,
 //! (after HTTP upgrade already happened)
 //! WebSocket message definition, some error type.
+//! 
+//! For now it still depends on `futures 0.1` and `tokio 0.1`, but that's going to
+//! be extracted to a separate crate.
 //!
 //! Note that there is no normal example of usage so far.
 
