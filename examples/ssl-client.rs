@@ -63,5 +63,5 @@ fn main() {
 				.select(stdin_ch.map_err(|_| WebSocketError::NoDataAvailable))
 				.forward(sink)
 		});
-	runtime.block_on(runner).unwrap();
+	let _ = runtime.block_on(runner).unwrap();
 }

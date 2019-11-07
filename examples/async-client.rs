@@ -77,5 +77,5 @@ fn main() {
 				.forward(sink)
 		});
 	// Start our websocket client runner in the Tokio environment
-	runtime.block_on(runner).unwrap();
+	let _ = runtime.block_on(runner).unwrap();
 }
