@@ -1,6 +1,6 @@
 [package]
 name = "websocket"
-version = "0.24.0"
+version = "0.26.0"
 authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.com>"]
 
 description = "A WebSocket (RFC6455) library for Rust."
@@ -28,7 +28,7 @@ tokio-codec = { version = "0.1", optional = true }
 tokio-reactor = { version = "0.1", optional = true }
 bytes = { version = "0.4", optional = true }
 native-tls = { version = "0.2.1", optional = true }
-websocket-base = { path = "websocket-base", version="0.24.0", default-features=false }
+websocket-base = { path = "websocket-base", version="0.26.0", default-features=false }
 
 [dev-dependencies]
 futures-cpupool = "0.1"
