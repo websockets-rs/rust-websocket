@@ -3,7 +3,8 @@
 #![allow(
 	clippy::write_with_newline,
 	clippy::type_complexity,
-	clippy::match_ref_pats
+	clippy::match_ref_pats,
+	clippy::needless_doctest_main,
 )]
 #![deny(unused_mut)]
 

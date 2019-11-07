@@ -10,7 +10,7 @@ install:
 script:
   - cargo fmt -- --version
   - cargo fmt -- --check
-  - cargo clippy --all-features -- -D clippy::all
+  - cargo clippy --all-features --
   - ./scripts/build-all.sh
   - cargo test --features nightly
   - cargo bench --features nightly

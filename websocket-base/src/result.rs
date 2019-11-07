@@ -59,6 +59,7 @@ impl Error for WebSocketError {
 		}
 	}
 
+    #[allow(deprecated)]
 	fn cause(&self) -> Option<&dyn Error> {
 		match *self {
 			WebSocketError::IoError(ref error) => Some(error),

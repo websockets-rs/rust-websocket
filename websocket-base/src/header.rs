@@ -65,7 +65,7 @@ impl WebSocketKey {
 	}
 }
 
-static MAGIC_GUID: &'static str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+static MAGIC_GUID: &str = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
 
 /// Represents a Sec-WebSocket-Accept header
 #[derive(PartialEq, Clone, Copy)]
