@@ -1,5 +1,6 @@
 //! The result type used within Rust-WebSocket
 
+pub use hyper::status::StatusCode;
 use hyper::Error as HttpError;
 use server::upgrade::HyperIntoWsError;
 use std::convert::From;
@@ -40,6 +41,8 @@ pub enum WebSocketOtherError {
 	RequestError(&'static str),
 	/// Invalid WebSocket response error
 	ResponseError(&'static str),
+	/// Received unexpected status code
+	StatusCodeError(StatusCode),
 	/// An HTTP parsing error
 	HttpError(HttpError),
 	/// A URL parsing error
@@ -83,6 +86,7 @@ impl Error for WebSocketOtherError {
 			WebSocketOtherError::WebSocketUrlError(_) => "WebSocket URL failure",
 			WebSocketOtherError::IoError(ref e) => e.description(),
 			WebSocketOtherError::ProtocolError(e) => e,
+			WebSocketOtherError::StatusCodeError(_) => "Received unexpected status code",
 		}
 	}
 
