@@ -120,7 +120,7 @@ impl<'a> Message<'a> {
 	}
 
 	// TODO: change this to match conventions
-	#[cfg_attr(feature = "cargo-clippy", allow(wrong_self_convention))]
+	#[allow(clippy::wrong_self_convention)]
 	/// Convert a ping message to a pong, keeping the data.
 	/// This will fail if the original message is not a ping.
 	pub fn into_pong(&mut self) -> Result<(), ()> {
