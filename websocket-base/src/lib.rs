@@ -9,10 +9,7 @@
 //! Note that there is no normal example of usage so far. See usual `websocket` crate or
 //! alternative like `tungstenite`.
 
-#![allow(
-	clippy::match_ref_pats,
-	clippy::needless_doctest_main,
-)]
+#![allow(clippy::match_ref_pats, clippy::needless_doctest_main)]
 extern crate byteorder;
 
 #[cfg(feature = "async")]

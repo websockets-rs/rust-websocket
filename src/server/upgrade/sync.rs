@@ -2,9 +2,9 @@
 //! WebSocket client.
 use crate::client::sync::Client;
 use crate::server::upgrade::{validate, HyperIntoWsError, Request, WsUpgrade};
+use crate::stream::sync::{AsTcpStream, Stream};
 use std::io;
 use std::net::TcpStream;
-use crate::stream::sync::{AsTcpStream, Stream};
 
 use hyper::buffer::BufReader;
 use hyper::header::Headers;

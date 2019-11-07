@@ -4,7 +4,7 @@
 	clippy::write_with_newline,
 	clippy::type_complexity,
 	clippy::match_ref_pats,
-	clippy::needless_doctest_main,
+	clippy::needless_doctest_main
 )]
 #![deny(unused_mut)]
 
@@ -142,8 +142,8 @@ pub mod r#async {
 
 	/// A collection of handy asynchronous-only parts of the `client` module.
 	pub mod client {
-		pub use crate::client::r#async::*;
 		pub use crate::client::builder::ClientBuilder;
+		pub use crate::client::r#async::*;
 	}
 	pub use crate::client::r#async::Client;
 

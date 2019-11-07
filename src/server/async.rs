@@ -1,10 +1,10 @@
 //! The asynchronous implementation of a websocket server.
-use bytes::BytesMut;
-use futures;
-use futures::{Future, Stream};
 use crate::server::upgrade::r#async::{IntoWs, Upgrade};
 use crate::server::InvalidConnection;
 use crate::server::{NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
+use bytes::BytesMut;
+use futures;
+use futures::{Future, Stream};
 use std;
 use std::io;
 use std::net::SocketAddr;

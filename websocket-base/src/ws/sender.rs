@@ -3,9 +3,9 @@
 //! See the `ws` module documentation for more information.
 
 use crate::result::WebSocketResult;
-use std::io::Write;
 use crate::ws::dataframe::DataFrame;
 use crate::ws::Message;
+use std::io::Write;
 
 /// A trait for sending data frames and messages.
 pub trait Sender {

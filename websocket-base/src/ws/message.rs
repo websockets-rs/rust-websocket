@@ -3,8 +3,8 @@
 //! See the `ws` module documentation for more information.
 
 use crate::result::WebSocketResult;
-use std::io::Write;
 use crate::ws::dataframe::DataFrame as DataFrameable;
+use std::io::Write;
 
 /// A trait for WebSocket messages
 pub trait Message: Sized {

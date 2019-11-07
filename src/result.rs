@@ -1,8 +1,8 @@
 //! The result type used within Rust-WebSocket
 
+use crate::server::upgrade::HyperIntoWsError;
 pub use hyper::status::StatusCode;
 use hyper::Error as HttpError;
-use crate::server::upgrade::HyperIntoWsError;
 use std::convert::From;
 use std::error::Error;
 use std::fmt;

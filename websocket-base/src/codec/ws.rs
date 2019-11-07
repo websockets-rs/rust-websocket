@@ -304,11 +304,11 @@ where
 mod tests {
 	extern crate tokio;
 	use super::*;
-	use futures::{Future, Sink, Stream};
 	use crate::message::CloseData;
 	use crate::message::Message;
-	use std::io::Cursor;
 	use crate::stream::ReadWritePair;
+	use futures::{Future, Sink, Stream};
+	use std::io::Cursor;
 
 	#[test]
 	fn owned_message_predicts_size() {

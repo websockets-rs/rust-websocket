@@ -1,7 +1,7 @@
 //! Utility functions for reading and writing data frame headers.
 
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crate::result::{WebSocketError, WebSocketResult};
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::io::{Read, Write};
 
 bitflags! {

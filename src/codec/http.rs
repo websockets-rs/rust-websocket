@@ -255,11 +255,11 @@ impl From<hyper::Error> for HttpCodecError {
 #[cfg(test)]
 mod tests {
 	use super::*;
+	use crate::stream::ReadWritePair;
 	use futures::{Future, Sink, Stream};
 	use hyper::header::Headers;
 	use hyper::version::HttpVersion;
 	use std::io::Cursor;
-	use crate::stream::ReadWritePair;
 	use tokio::runtime::current_thread::Builder;
 
 	#[test]

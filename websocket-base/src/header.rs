@@ -2,7 +2,6 @@
 
 extern crate rand;
 
-
 /// WebSocket header names
 pub mod names {
 	pub const PROTOCOL: &str = "Sec-WebSocket-Protocol";

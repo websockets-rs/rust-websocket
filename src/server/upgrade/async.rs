@@ -6,10 +6,12 @@
 //! The `Upgrade` struct is used to inspect details of the websocket connection
 //! (e.g. what protocols it wants to use) and decide whether to accept or reject it.
 use super::{validate, HyperIntoWsError, Request, WsUpgrade};
-use bytes::BytesMut;
 use crate::client::r#async::ClientNew;
 use crate::codec::http::HttpServerCodec;
 use crate::codec::ws::{Context, MessageCodec};
+use crate::stream::r#async::Stream;
+use crate::ws::util::update_framed_codec;
+use bytes::BytesMut;
 use futures::sink::Send as SinkSend;
 use futures::Stream as StreamTrait;
 use futures::{Future, Sink};
@@ -17,9 +19,7 @@ use hyper::header::Headers;
 use hyper::http::h1::Incoming;
 use hyper::status::StatusCode;
 use std::io::{self, ErrorKind};
-use crate::stream::r#async::Stream;
 use tokio_codec::{Decoder, Framed, FramedParts};
-use crate::ws::util::update_framed_codec;
 
 /// An asynchronous websocket upgrade.
 ///

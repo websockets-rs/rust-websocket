@@ -4,9 +4,9 @@
 //! See the `ws` module documentation for more information.
 
 use crate::result::WebSocketResult;
-use std::io::Read;
 use crate::ws::dataframe::DataFrame;
 use crate::ws::Message;
+use std::io::Read;
 
 /// A trait for receiving data frames and messages.
 pub trait Receiver: Sized {

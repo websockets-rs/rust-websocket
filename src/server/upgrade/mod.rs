@@ -4,10 +4,10 @@ use crate::header::extensions::Extension;
 use crate::header::{
 	Origin, WebSocketAccept, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion,
 };
+use crate::stream::Stream;
 use std::error::Error;
 use std::fmt::{self, Display, Formatter};
 use std::io;
-use crate::stream::Stream;
 
 use hyper::header::{Connection, ConnectionOption, Headers, Protocol, ProtocolName, Upgrade};
 use hyper::http::h1::Incoming;

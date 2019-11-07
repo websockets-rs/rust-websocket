@@ -3,10 +3,10 @@
 //! optimize the memory footprint of a dataframe for their
 //! own needs, and be able to use custom dataframes quickly
 use crate::result::WebSocketResult;
-use std::io::Write;
 use crate::ws::util::header as dfh;
 use crate::ws::util::mask;
 use crate::ws::util::mask::Masker;
+use std::io::Write;
 
 /// A generic DataFrame. Every dataframe should be able to
 /// provide these methods. (If the payload is not known in advance then

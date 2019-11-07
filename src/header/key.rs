@@ -1,7 +1,7 @@
+use crate::result::{WebSocketError, WebSocketResult};
 use hyper;
 use hyper::header::parsing::from_one_raw_str;
 use hyper::header::{Header, HeaderFormat};
-use crate::result::{WebSocketError, WebSocketResult};
 use std::fmt::{self, Debug};
 use std::str::FromStr;
 

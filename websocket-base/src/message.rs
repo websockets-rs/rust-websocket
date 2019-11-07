@@ -1,14 +1,14 @@
 //! Module containing the default implementation for messages.
-use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use crate::dataframe::Opcode;
 use crate::result::{WebSocketError, WebSocketResult};
+use crate::ws;
+use crate::ws::dataframe::DataFrame as DataFrameTrait;
+use crate::ws::util::bytes_to_string;
+use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use std::borrow::Cow;
 use std::io;
 use std::io::Write;
 use std::str::from_utf8;
-use crate::ws;
-use crate::ws::dataframe::DataFrame as DataFrameTrait;
-use crate::ws::util::bytes_to_string;
 
 const FALSE_RESERVED_BITS: &[bool; 3] = &[false; 3];
 

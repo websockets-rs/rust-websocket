@@ -3,8 +3,8 @@
 use native_tls::TlsAcceptor;
 
 use self::upgrade::{HyperIntoWsError, Request};
-use std::fmt::{Debug, Formatter, Result as FmtResult};
 use crate::stream::Stream;
+use std::fmt::{Debug, Formatter, Result as FmtResult};
 
 pub mod upgrade;
 

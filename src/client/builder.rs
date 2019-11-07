@@ -1,7 +1,9 @@
 //! Everything you need to create a client connection to a websocket.
 
 use crate::header::extensions::Extension;
-use crate::header::{Origin, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion};
+use crate::header::{
+	Origin, WebSocketExtensions, WebSocketKey, WebSocketProtocol, WebSocketVersion,
+};
 use hyper::header::{Authorization, Basic, Header, HeaderFormat, Headers};
 use hyper::version::HttpVersion;
 use std::borrow::Cow;
@@ -11,6 +13,8 @@ pub use url::{ParseError, Url};
 #[cfg(any(feature = "sync", feature = "async"))]
 mod common_imports {
 	pub use crate::header::WebSocketAccept;
+	pub use crate::result::{WSUrlErrorKind, WebSocketError, WebSocketOtherError, WebSocketResult};
+	pub use crate::stream::{self, Stream};
 	pub use hyper::buffer::BufReader;
 	pub use hyper::header::{Connection, ConnectionOption, Host, Protocol, ProtocolName, Upgrade};
 	pub use hyper::http::h1::parse_response;
@@ -19,10 +23,8 @@ mod common_imports {
 	pub use hyper::method::Method;
 	pub use hyper::status::StatusCode;
 	pub use hyper::uri::RequestUri;
-	pub use crate::result::{WSUrlErrorKind, WebSocketError, WebSocketOtherError, WebSocketResult};
 	pub use std::net::TcpStream;
 	pub use std::net::ToSocketAddrs;
-	pub use crate::stream::{self, Stream};
 	pub use unicase::UniCase;
 	pub use url::Position;
 }
@@ -44,6 +46,7 @@ use native_tls::TlsStream;
 mod async_imports {
 	pub use super::super::r#async;
 	pub use crate::codec::ws::{Context, MessageCodec};
+	pub use crate::ws::util::update_framed_codec;
 	pub use futures::future;
 	pub use futures::Stream as FutureStream;
 	pub use futures::{Future, IntoFuture, Sink};
@@ -53,7 +56,6 @@ mod async_imports {
 	pub use tokio_tcp::TcpStream as TcpStreamNew;
 	#[cfg(feature = "async-ssl")]
 	pub use tokio_tls::TlsConnector as TlsConnectorExt;
-	pub use crate::ws::util::update_framed_codec;
 }
 #[cfg(feature = "async")]
 use self::async_imports::*;

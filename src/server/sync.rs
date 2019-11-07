@@ -1,9 +1,9 @@
 //! Provides an implementation of a WebSocket server
-#[cfg(feature = "sync-ssl")]
-use native_tls::{TlsAcceptor, TlsStream};
 use crate::server::upgrade::sync::{Buffer, IntoWs, Upgrade};
 pub use crate::server::upgrade::{HyperIntoWsError, Request};
 use crate::server::{InvalidConnection, NoTlsAcceptor, OptionalTlsAcceptor, WsServer};
+#[cfg(feature = "sync-ssl")]
+use native_tls::{TlsAcceptor, TlsStream};
 use std::convert::Into;
 use std::io;
 use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};

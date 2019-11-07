@@ -1,10 +1,10 @@
 //! Module containing the default implementation of data frames.
 use crate::result::{WebSocketError, WebSocketResult};
-use std::io::{self, Read, Write};
 use crate::ws::dataframe::DataFrame as DataFrameable;
 use crate::ws::util::header as dfh;
 use crate::ws::util::header::DataFrameHeader;
 use crate::ws::util::mask;
+use std::io::{self, Read, Write};
 
 /// Represents a WebSocket data frame.
 ///
