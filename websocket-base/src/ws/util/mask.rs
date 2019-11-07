@@ -8,13 +8,13 @@ use std::io::Write;
 pub struct Masker<'w> {
 	key: [u8; 4],
 	pos: usize,
-	end: &'w mut Write,
+	end: &'w mut dyn Write,
 }
 
 impl<'w> Masker<'w> {
 	/// Create a new Masker with the key and the endpoint
 	/// to be writer to.
-	pub fn new(key: [u8; 4], endpoint: &'w mut Write) -> Self {
+	pub fn new(key: [u8; 4], endpoint: &'w mut dyn Write) -> Self {
 		Masker {
 			key,
 			pos: 0,

@@ -2,6 +2,7 @@
 name = "websocket-base"
 version = "0.26.0"
 authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.com>"]
+edition = "2018"
 
 description = "A WebSocket (RFC6455) library for Rust: low-level component. It contains HTTP-independent aspect of WebSockets"
 

@@ -1,10 +1,10 @@
 //! Module containing the default implementation of data frames.
-use result::{WebSocketError, WebSocketResult};
+use crate::result::{WebSocketError, WebSocketResult};
 use std::io::{self, Read, Write};
-use ws::dataframe::DataFrame as DataFrameable;
-use ws::util::header as dfh;
-use ws::util::header::DataFrameHeader;
-use ws::util::mask;
+use crate::ws::dataframe::DataFrame as DataFrameable;
+use crate::ws::util::header as dfh;
+use crate::ws::util::header::DataFrameHeader;
+use crate::ws::util::mask;
 
 /// Represents a WebSocket data frame.
 ///
@@ -120,7 +120,7 @@ impl DataFrameable for DataFrame {
 	}
 
 	#[inline(always)]
-	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
+	fn write_payload(&self, socket: &mut dyn Write) -> WebSocketResult<()> {
 		socket.write_all(self.data.as_slice())?;
 		Ok(())
 	}

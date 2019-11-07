@@ -2,14 +2,14 @@
 //!
 //! See the `ws` module documentation for more information.
 
-use result::WebSocketResult;
+use crate::result::WebSocketResult;
 use std::io::Write;
-use ws::dataframe::DataFrame as DataFrameable;
+use crate::ws::dataframe::DataFrame as DataFrameable;
 
 /// A trait for WebSocket messages
 pub trait Message: Sized {
 	/// Writes this message to the writer
-	fn serialize(&self, &mut Write, masked: bool) -> WebSocketResult<()>;
+	fn serialize(&self, _: &mut dyn Write, masked: bool) -> WebSocketResult<()>;
 
 	/// Returns how many bytes this message will take up
 	fn message_size(&self, masked: bool) -> usize;

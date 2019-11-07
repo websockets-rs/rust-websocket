@@ -13,13 +13,13 @@ pub type WebSocketResult<T> = Result<T, WebSocketError>;
 /// This module contains convenience types to make working with Futures and
 /// websocket results easier.
 #[cfg(feature = "async")]
-pub mod async {
+pub mod r#async {
 	use super::WebSocketError;
 	use futures::Future;
 
 	/// The most common Future in this library, it is simply some result `I` or
 	/// a `WebSocketError`. This is analogous to the `WebSocketResult` type.
-	pub type WebSocketFuture<I> = Box<Future<Item = I, Error = WebSocketError> + Send>;
+	pub type WebSocketFuture<I> = Box<dyn Future<Item = I, Error = WebSocketError> + Send>;
 }
 
 /// Represents a WebSocket error
@@ -59,7 +59,7 @@ impl Error for WebSocketError {
 		}
 	}
 
-	fn cause(&self) -> Option<&Error> {
+	fn cause(&self) -> Option<&dyn Error> {
 		match *self {
 			WebSocketError::IoError(ref error) => Some(error),
 			WebSocketError::Utf8Error(ref error) => Some(error),

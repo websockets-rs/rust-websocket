@@ -3,10 +3,10 @@
 //! Also provides iterators over data frames and messages.
 //! See the `ws` module documentation for more information.
 
-use result::WebSocketResult;
+use crate::result::WebSocketResult;
 use std::io::Read;
-use ws::dataframe::DataFrame;
-use ws::Message;
+use crate::ws::dataframe::DataFrame;
+use crate::ws::Message;
 
 /// A trait for receiving data frames and messages.
 pub trait Receiver: Sized {

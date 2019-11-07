@@ -2,11 +2,11 @@
 //! that all dataframes should share. This is so one can
 //! optimize the memory footprint of a dataframe for their
 //! own needs, and be able to use custom dataframes quickly
-use result::WebSocketResult;
+use crate::result::WebSocketResult;
 use std::io::Write;
-use ws::util::header as dfh;
-use ws::util::mask;
-use ws::util::mask::Masker;
+use crate::ws::util::header as dfh;
+use crate::ws::util::mask;
+use crate::ws::util::mask::Masker;
 
 /// A generic DataFrame. Every dataframe should be able to
 /// provide these methods. (If the payload is not known in advance then
@@ -44,13 +44,13 @@ pub trait DataFrame {
 	}
 
 	/// Write the payload to a writer
-	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()>;
+	fn write_payload(&self, socket: &mut dyn Write) -> WebSocketResult<()>;
 
 	/// Takes the payload out into a vec
 	fn take_payload(self) -> Vec<u8>;
 
 	/// Writes a DataFrame to a Writer.
-	fn write_to(&self, writer: &mut Write, mask: bool) -> WebSocketResult<()> {
+	fn write_to(&self, writer: &mut dyn Write, mask: bool) -> WebSocketResult<()> {
 		let mut flags = dfh::DataFrameFlags::empty();
 		if self.is_last() {
 			flags.insert(dfh::DataFrameFlags::FIN);

@@ -1,7 +1,7 @@
 //! Utility functions for reading and writing data frame headers.
 
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use result::{WebSocketError, WebSocketResult};
+use crate::result::{WebSocketError, WebSocketResult};
 use std::io::{Read, Write};
 
 bitflags! {
@@ -32,7 +32,7 @@ pub struct DataFrameHeader {
 }
 
 /// Writes a data frame header.
-pub fn write_header(writer: &mut Write, header: DataFrameHeader) -> WebSocketResult<()> {
+pub fn write_header(writer: &mut dyn Write, header: DataFrameHeader) -> WebSocketResult<()> {
 	if header.opcode > 0xF {
 		return Err(WebSocketError::DataFrameError("Invalid data frame opcode"));
 	}
@@ -81,7 +81,7 @@ where
 	let opcode = byte0 & 0x0F;
 
 	let len = match byte1 & 0x7F {
-		0...125 => u64::from(byte1 & 0x7F),
+		0..=125 => u64::from(byte1 & 0x7F),
 		126 => {
 			let len = u64::from(reader.read_u16::<BigEndian>()?);
 			if len <= 125 {

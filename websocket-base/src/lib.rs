@@ -40,5 +40,5 @@ pub mod result;
 pub mod stream;
 pub mod ws;
 
-pub use message::Message;
-pub use message::OwnedMessage;
+pub use crate::message::Message;
+pub use crate::message::OwnedMessage;

@@ -20,12 +20,12 @@ use self::bytes::BytesMut;
 use self::tokio_codec::Decoder;
 use self::tokio_codec::Encoder;
 
-use dataframe::DataFrame;
-use message::OwnedMessage;
-use result::WebSocketError;
-use ws::dataframe::DataFrame as DataFrameTrait;
-use ws::message::Message as MessageTrait;
-use ws::util::header::read_header;
+use crate::dataframe::DataFrame;
+use crate::message::OwnedMessage;
+use crate::result::WebSocketError;
+use crate::ws::dataframe::DataFrame as DataFrameTrait;
+use crate::ws::message::Message as MessageTrait;
+use crate::ws::util::header::read_header;
 
 /// Even though a websocket connection may look perfectly symmetrical
 /// in reality there are small differences between clients and servers.
@@ -130,7 +130,7 @@ impl<D> Decoder for DataFrameCodec<D> {
 
 impl<D> Encoder for DataFrameCodec<D>
 where
-	D: Borrow<DataFrameTrait>,
+	D: Borrow<dyn DataFrameTrait>,
 {
 	type Item = D;
 	type Error = WebSocketError;
@@ -258,11 +258,11 @@ where
 					));
 				}
 				// control frame
-				8...15 => {
+				8..=15 => {
 					return Ok(Some(OwnedMessage::from_dataframes(vec![frame])?));
 				}
 				// data frame
-				1...7 if !is_first => {
+				1..=7 if !is_first => {
 					return Err(WebSocketError::ProtocolError(
 						"Unexpected data frame opcode",
 					));
@@ -305,10 +305,10 @@ mod tests {
 	extern crate tokio;
 	use super::*;
 	use futures::{Future, Sink, Stream};
-	use message::CloseData;
-	use message::Message;
+	use crate::message::CloseData;
+	use crate::message::Message;
 	use std::io::Cursor;
-	use stream::ReadWritePair;
+	use crate::stream::ReadWritePair;
 
 	#[test]
 	fn owned_message_predicts_size() {

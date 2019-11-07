@@ -66,7 +66,7 @@ where
 
 /// A collection of traits and implementations for async streams.
 #[cfg(feature = "async")]
-pub mod async {
+pub mod r#async {
 	pub use super::ReadWritePair;
 	use futures::Poll;
 	use std::io::{self, Read, Write};

@@ -1,7 +1,7 @@
 //! This file contains some framework-agnostic aspects of WebSocket HTTP headers.
 
 extern crate rand;
-use std;
+
 
 /// WebSocket header names
 pub mod names {
@@ -15,9 +15,9 @@ extern crate base64;
 extern crate sha1;
 use self::sha1::Sha1;
 
-use result::{WebSocketError, WebSocketResult};
+use crate::result::{WebSocketError, WebSocketResult};
 use std::fmt::{self, Debug};
-use std::mem;
+
 use std::str::FromStr;
 
 /// Represents a Sec-WebSocket-Key header.

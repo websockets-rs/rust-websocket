@@ -1,14 +1,14 @@
 //! Module containing the default implementation for messages.
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use dataframe::Opcode;
-use result::{WebSocketError, WebSocketResult};
+use crate::dataframe::Opcode;
+use crate::result::{WebSocketError, WebSocketResult};
 use std::borrow::Cow;
 use std::io;
 use std::io::Write;
 use std::str::from_utf8;
-use ws;
-use ws::dataframe::DataFrame as DataFrameTrait;
-use ws::util::bytes_to_string;
+use crate::ws;
+use crate::ws::dataframe::DataFrame as DataFrameTrait;
+use crate::ws::util::bytes_to_string;
 
 const FALSE_RESERVED_BITS: &[bool; 3] = &[false; 3];
 
@@ -153,7 +153,7 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 		self.payload.len() + if self.cd_status_code.is_some() { 2 } else { 0 }
 	}
 
-	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
+	fn write_payload(&self, socket: &mut dyn Write) -> WebSocketResult<()> {
 		if let Some(reason) = self.cd_status_code {
 			socket.write_u16::<BigEndian>(reason)?;
 		}
@@ -176,7 +176,7 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 
 impl<'a> ws::Message for Message<'a> {
 	/// Attempt to form a message from a series of data frames
-	fn serialize(&self, writer: &mut Write, masked: bool) -> WebSocketResult<()> {
+	fn serialize(&self, writer: &mut dyn Write, masked: bool) -> WebSocketResult<()> {
 		self.write_to(writer, masked)
 	}
 
@@ -346,7 +346,7 @@ impl OwnedMessage {
 
 impl ws::Message for OwnedMessage {
 	/// Attempt to form a message from a series of data frames
-	fn serialize(&self, writer: &mut Write, masked: bool) -> WebSocketResult<()> {
+	fn serialize(&self, writer: &mut dyn Write, masked: bool) -> WebSocketResult<()> {
 		self.write_to(writer, masked)
 	}
 
@@ -399,7 +399,7 @@ impl ws::dataframe::DataFrame for OwnedMessage {
 		}
 	}
 
-	fn write_payload(&self, socket: &mut Write) -> WebSocketResult<()> {
+	fn write_payload(&self, socket: &mut dyn Write) -> WebSocketResult<()> {
 		match *self {
 			OwnedMessage::Text(ref txt) => socket.write_all(txt.as_bytes())?,
 			OwnedMessage::Binary(ref bin) => socket.write_all(bin.as_slice())?,
