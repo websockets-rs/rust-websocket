@@ -10,7 +10,10 @@
 //! alternative like `tungstenite`.
 
 extern crate byteorder;
+
+#[cfg(feature = "async")]
 extern crate bytes;
+#[cfg(feature = "async")]
 extern crate futures;
 extern crate rand;
 #[macro_use]
@@ -28,6 +31,7 @@ extern crate tokio_tcp;
 #[cfg(feature = "async-ssl")]
 extern crate tokio_tls;
 
+#[cfg(feature = "async")]
 pub mod codec;
 pub mod dataframe;
 pub mod header;
