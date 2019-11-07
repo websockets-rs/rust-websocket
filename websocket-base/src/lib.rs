@@ -3,10 +3,11 @@
 //! (after HTTP upgrade already happened)
 //! WebSocket message definition, some error type.
 //! 
-//! For now it still depends on `futures 0.1` and `tokio 0.1`, but that's going to
-//! be extracted to a separate crate.
+//! For now it still optionally depends on `futures 0.1` and `tokio-io 0.1`, but that's going to
+//! be extracted to a separate crate, if `rust-websocket`'s depelopment continues.
 //!
-//! Note that there is no normal example of usage so far.
+//! Note that there is no normal example of usage so far. See usual `websocket` crate or
+//! alternative like `tungstenite`.
 
 extern crate byteorder;
 extern crate bytes;
