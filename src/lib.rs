@@ -39,7 +39,7 @@ extern crate bytes;
 pub extern crate futures;
 extern crate hyper;
 #[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
-extern crate native_tls;
+pub extern crate native_tls;
 #[cfg(test)]
 extern crate tokio;
 #[cfg(feature = "async")]
