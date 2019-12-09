@@ -64,8 +64,22 @@ pub enum WebSocketOtherError {
 
 impl fmt::Display for WebSocketOtherError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-		fmt.write_str("WebSocketError: ")?;
-		fmt.write_str(self.description())?;
+		match self {
+			WebSocketOtherError::RequestError(e) => write!(fmt, "WebSocket request error: {}", e)?,
+			WebSocketOtherError::ResponseError(e) => write!(fmt, "WebSocket request error: {}", e)?,
+			WebSocketOtherError::StatusCodeError(e) => write!(
+				fmt,
+				"WebSocketError: Received unexpected status code ({})",
+				e
+			)?,
+			WebSocketOtherError::HttpError(e) => write!(fmt, "WebSocket HTTP error: {}", e)?,
+			WebSocketOtherError::UrlError(e) => write!(fmt, "WebSocket URL parse error: {}", e)?,
+			WebSocketOtherError::IoError(e) => write!(fmt, "WebSocket I/O error: {}", e)?,
+			WebSocketOtherError::WebSocketUrlError(e) => e.fmt(fmt)?,
+			#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
+			WebSocketOtherError::TlsError(e) => write!(fmt, "WebSocket SSL error: {}", e)?,
+			_ => write!(fmt, "WebSocketError: {}", self.description())?,
+		}
 		Ok(())
 	}
 }
