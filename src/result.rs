@@ -66,7 +66,7 @@ impl fmt::Display for WebSocketOtherError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match self {
 			WebSocketOtherError::RequestError(e) => write!(fmt, "WebSocket request error: {}", e)?,
-			WebSocketOtherError::ResponseError(e) => write!(fmt, "WebSocket request error: {}", e)?,
+			WebSocketOtherError::ResponseError(e) => write!(fmt, "WebSocket response error: {}", e)?,
 			WebSocketOtherError::StatusCodeError(e) => write!(
 				fmt,
 				"WebSocketError: Received unexpected status code ({})",
