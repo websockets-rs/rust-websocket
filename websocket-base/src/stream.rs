@@ -68,11 +68,11 @@ where
 #[cfg(feature = "async")]
 pub mod r#async {
 	pub use super::ReadWritePair;
-	use futures::Poll;
+	use futures::task::Poll;
 	use std::io::{self, Read, Write};
-	pub use tokio_io::io::{ReadHalf, WriteHalf};
-	pub use tokio_io::{AsyncRead, AsyncWrite};
-	pub use tokio_tcp::TcpStream;
+	pub use tokio::io::{ReadHalf, WriteHalf};
+	pub use tokio::io::{AsyncRead, AsyncWrite};
+	pub use tokio::net::TcpStream;
 
 	/// A stream that can be read from and written to asynchronously.
 	/// This let's us abstract over many async streams like tcp, ssl,
@@ -83,17 +83,17 @@ pub mod r#async {
 	impl<R, W> AsyncRead for ReadWritePair<R, W>
 	where
 		R: AsyncRead,
-		W: Write,
+		W: AsyncWrite,
 	{
 	}
 
 	impl<R, W> AsyncWrite for ReadWritePair<R, W>
 	where
 		W: AsyncWrite,
-		R: Read,
+		R: AsyncRead,
 	{
-		fn shutdown(&mut self) -> Poll<(), io::Error> {
-			self.1.shutdown()
+		fn poll_shutdown(&mut self) -> Poll<Result<(), io::Error>> {
+			self.1.poll_shutdown()
 		}
 	}
 }
