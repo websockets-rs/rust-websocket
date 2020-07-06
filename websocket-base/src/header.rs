@@ -12,7 +12,7 @@ pub mod names {
 
 extern crate base64;
 extern crate sha1;
-use self::sha1::Sha1;
+use sha1::{Digest, Sha1};
 
 use crate::result::{WebSocketError, WebSocketResult};
 use std::fmt::{self, Debug};
@@ -105,10 +105,8 @@ impl WebSocketAccept {
 		let mut concat_key = String::with_capacity(serialized.len() + 36);
 		concat_key.push_str(&serialized[..]);
 		concat_key.push_str(MAGIC_GUID);
-		let mut sha1 = Sha1::new();
-		sha1.update(concat_key.as_bytes());
-		let bytes = sha1.digest().bytes();
-		WebSocketAccept(bytes)
+		let hash = Sha1::digest(concat_key.as_bytes());
+		WebSocketAccept(hash.into())
 	}
 	/// Return the Base64 encoding of this WebSocketAccept
 	pub fn serialize(&self) -> String {
