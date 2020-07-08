@@ -41,8 +41,13 @@ pub enum WebSocketError {
 
 impl fmt::Display for WebSocketError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
-		fmt.write_str("WebSocketError: ")?;
-		fmt.write_str(self.description())?;
+		match self {
+			WebSocketError::Other(x) => x.fmt(fmt)?,
+			_ => {
+				fmt.write_str("WebSocketError: ")?;
+				fmt.write_str(self.description())?;
+			}
+		}
 		Ok(())
 	}
 }
