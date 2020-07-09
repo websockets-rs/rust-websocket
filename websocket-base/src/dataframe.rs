@@ -58,17 +58,17 @@ impl DataFrame {
 
 		let data = match header.mask {
 			Some(mask) => {
-				if !should_be_masked {
-					return Err(WebSocketError::DataFrameError(
-						"Expected unmasked data frame",
-					));
-				}
+				// if !should_be_masked {
+				// 	return Err(WebSocketError::DataFrameError(
+				// 		"Expected unmasked data frame",
+				// 	));
+				// }
 				mask::mask_data(mask, &body)
 			}
 			None => {
-				if should_be_masked {
-					return Err(WebSocketError::DataFrameError("Expected masked data frame"));
-				}
+				// if should_be_masked {
+				// 	return Err(WebSocketError::DataFrameError("Expected masked data frame"));
+				// }
 				body
 			}
 		};
