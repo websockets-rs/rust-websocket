@@ -73,7 +73,7 @@ where
 			None => BufReader::new(self.stream),
 		};
 
-		Ok(Client::unchecked(stream, self.headers, false, true))
+		Ok(Client::unchecked(stream, self.headers, false, false))
 	}
 
 	/// Reject the client's request to make a websocket connection.
