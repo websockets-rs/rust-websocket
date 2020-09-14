@@ -17,7 +17,7 @@ license = "MIT"
 
 [dependencies]
 byteorder = "1.0"
-rand = "0.6.1"
+rand = "0.7.3"
 bitflags = "1.0.4"
 base64 = "0.10.0"
 sha-1 = "0.8"
