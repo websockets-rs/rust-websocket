@@ -10,7 +10,7 @@ Rust-WebSocket is a WebSocket ([RFC6455](https://datatracker.ietf.org/doc/rfc645
 
 Rust-WebSocket provides a framework for dealing with WebSocket connections (both clients and servers). The library is currently in an experimental state, but provides functionality for both normal and secure WebSockets, a message level API supporting fragmentation, a data frame level API, and the ability to extend and customize behaviour.
 
-## Installation
+## Basic Installation
 
 To add a library release version from [crates.io](https://crates.io/crates/websocket) to a Cargo project, add this to the 'dependencies' section of your Cargo.toml:
 
