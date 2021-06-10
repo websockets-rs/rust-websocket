@@ -81,7 +81,7 @@ impl<'a> Message<'a> {
 	/// Create a new WebSocket message that signals the end of a WebSocket
 	/// connection, although messages can still be sent after sending this
 	pub fn close() -> Self {
-		Message::new(Type::Close, None, Cow::Borrowed(&[0 as u8; 0]))
+		Message::new(Type::Close, None, Cow::Borrowed(&[0u8; 0]))
 	}
 
 	/// Create a new WebSocket message that signals the end of a WebSocket
@@ -278,10 +278,7 @@ impl OwnedMessage {
 	///assert!(OwnedMessage::Close(None).is_close());
 	///```
 	pub fn is_close(&self) -> bool {
-		match *self {
-			OwnedMessage::Close(_) => true,
-			_ => false,
-		}
+		matches!(*self, OwnedMessage::Close(_))
 	}
 
 	/// Checks if this message is a control message.
@@ -294,12 +291,7 @@ impl OwnedMessage {
 	///assert!(OwnedMessage::Close(None).is_control());
 	///```
 	pub fn is_control(&self) -> bool {
-		match *self {
-			OwnedMessage::Close(_) => true,
-			OwnedMessage::Ping(_) => true,
-			OwnedMessage::Pong(_) => true,
-			_ => false,
-		}
+		matches!(*self, OwnedMessage::Close(_) | OwnedMessage::Ping(_) | OwnedMessage::Pong(_))
 	}
 
 	/// Checks if this message is a data message.
@@ -323,10 +315,7 @@ impl OwnedMessage {
 	///assert!(OwnedMessage::Ping("ping".to_string().into_bytes()).is_ping());
 	///```
 	pub fn is_ping(&self) -> bool {
-		match *self {
-			OwnedMessage::Ping(_) => true,
-			_ => false,
-		}
+		matches!(*self, OwnedMessage::Ping(_))
 	}
 
 	/// Checks if this message is a pong message.
@@ -337,10 +326,7 @@ impl OwnedMessage {
 	///assert!(OwnedMessage::Pong("pong".to_string().into_bytes()).is_pong());
 	///```
 	pub fn is_pong(&self) -> bool {
-		match *self {
-			OwnedMessage::Pong(_) => true,
-			_ => false,
-		}
+		matches!(*self, OwnedMessage::Pong(_))
 	}
 }
 

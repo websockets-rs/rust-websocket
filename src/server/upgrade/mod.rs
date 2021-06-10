@@ -16,13 +16,8 @@ use hyper::status::StatusCode;
 use hyper::uri::RequestUri;
 use unicase::UniCase;
 
-#[cfg(any(feature = "sync", feature = "async"))]
 use hyper::version::HttpVersion;
 
-#[cfg(feature = "async")]
-pub mod r#async;
-
-#[cfg(feature = "sync")]
 pub mod sync;
 
 /// A typical request from hyper
@@ -133,7 +128,6 @@ where
 		self.request.headers.get::<Origin>().map(|o| &o.0 as &str)
 	}
 
-	#[cfg(feature = "sync")]
 	fn send(&mut self, status: StatusCode) -> io::Result<()> {
 		let data = format!(
 			"{} {}\r\n{}\r\n",
@@ -233,17 +227,6 @@ impl From<::hyper::error::Error> for HyperIntoWsError {
 	}
 }
 
-#[cfg(feature = "async")]
-impl From<crate::codec::http::HttpCodecError> for HyperIntoWsError {
-	fn from(src: crate::codec::http::HttpCodecError) -> Self {
-		match src {
-			crate::codec::http::HttpCodecError::Io(e) => HyperIntoWsError::Io(e),
-			crate::codec::http::HttpCodecError::Http(e) => HyperIntoWsError::Parsing(e),
-		}
-	}
-}
-
-#[cfg(any(feature = "sync", feature = "async"))]
 /// Check whether an incoming request is a valid WebSocket upgrade attempt.
 pub fn validate(
 	method: &Method,

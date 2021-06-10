@@ -1,8 +1,4 @@
-//! Build and use asynchronously or synchronous websocket clients.
-//!
-//! This crate is split up into a synchronous and asynchronous half.
-//! These can be turned on and off by switching the `sync` and `async` features
-//! on and off (plus `sync-ssl` and `async-ssl` for SSL connections).
+//! Build and use synchronous websocket clients.
 //!
 //! In general pick a style you would like to write in and use `ClientBuilder`
 //! to create your websocket connections. Use the `.async_connect` functions to create
@@ -16,8 +12,5 @@
 pub mod builder;
 pub use self::builder::{ClientBuilder, ParseError, Url};
 
-#[cfg(feature = "async")]
-pub mod r#async;
 
-#[cfg(feature = "sync")]
 pub mod sync;

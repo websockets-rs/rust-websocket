@@ -1,4 +1,3 @@
-#![warn(missing_docs)]
 #![cfg_attr(all(test, feature = "nightly"), feature(test))]
 #![allow(
 	clippy::write_with_newline,
@@ -33,25 +32,11 @@
 //! # Extending Rust-WebSocket
 //! The `ws` module contains the traits and functions used by Rust-WebSocket at a lower
 //! level. Their usage is explained in the module documentation.
-#[cfg(feature = "async")]
-extern crate bytes;
-#[cfg(feature = "async")]
-pub extern crate futures;
+
 extern crate hyper;
-#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
-extern crate native_tls;
 #[cfg(test)]
 extern crate tokio;
-#[cfg(feature = "async")]
-extern crate tokio_codec;
-#[cfg(feature = "async")]
-extern crate tokio_io;
-#[cfg(feature = "async")]
-extern crate tokio_reactor;
-#[cfg(feature = "async")]
-extern crate tokio_tcp;
-#[cfg(feature = "async-ssl")]
-extern crate tokio_tls;
+
 extern crate unicase;
 pub extern crate url;
 
@@ -65,11 +50,11 @@ macro_rules! upsert_header {
 		if $headers.has::<$header>() {
 			if let Some($pat) = $headers.get_mut::<$header>() {
 				$some_match
-				}
+			}
 		} else {
 			$headers.set($default);
-			}
-		}};
+		}
+	}};
 }
 
 pub use websocket_base::dataframe;
@@ -77,21 +62,13 @@ pub mod header;
 pub use websocket_base::message;
 pub mod result;
 pub use websocket_base::ws;
-
-#[cfg(feature = "async")]
-pub mod codec;
-
-#[cfg(feature = "sync")]
 pub mod receiver;
-#[cfg(feature = "sync")]
 pub mod sender;
 
 pub mod client;
 pub mod server;
 pub use websocket_base::stream;
 
-/// A collection of handy synchronous-only parts of the crate.
-#[cfg(feature = "sync")]
 pub mod sync {
 	pub use crate::sender;
 	pub use crate::sender::Writer;
@@ -117,42 +94,6 @@ pub mod sync {
 		pub use crate::client::sync::*;
 	}
 	pub use crate::client::sync::Client;
-}
-
-/// A collection of handy asynchronous-only parts of the crate.
-#[cfg(feature = "async")]
-pub mod r#async {
-	pub use crate::codec;
-	pub use crate::codec::http::HttpClientCodec;
-	pub use crate::codec::http::HttpServerCodec;
-	pub use crate::codec::ws::Context as MsgCodecCtx;
-	pub use crate::codec::ws::MessageCodec;
-
-	pub use crate::stream::r#async as stream;
-	pub use crate::stream::r#async::Stream;
-
-	/// A collection of handy asynchronous-only parts of the `server` module.
-	pub mod server {
-		pub use crate::server::r#async::*;
-		pub use crate::server::upgrade::r#async as upgrade;
-		pub use crate::server::upgrade::r#async::IntoWs;
-		pub use crate::server::upgrade::r#async::Upgrade;
-	}
-	pub use crate::server::r#async::Server;
-
-	/// A collection of handy asynchronous-only parts of the `client` module.
-	pub mod client {
-		pub use crate::client::builder::ClientBuilder;
-		pub use crate::client::r#async::*;
-	}
-	pub use crate::client::r#async::Client;
-
-	pub use crate::result::r#async::WebSocketFuture;
-
-	pub use futures;
-	pub use tokio_reactor::Handle;
-	pub use tokio_tcp::TcpListener;
-	pub use tokio_tcp::TcpStream;
 }
 
 pub use self::client::builder::ClientBuilder;

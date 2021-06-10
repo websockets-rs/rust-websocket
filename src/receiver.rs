@@ -47,7 +47,7 @@ where
 
 	/// An iterator over incoming messsages.
 	/// This iterator will block until new messages arrive and will never halt.
-	pub fn incoming_messages<'a>(&'a mut self) -> MessageIterator<'a, Receiver, BufReader<R>> {
+	pub fn incoming_messages(&mut self) -> MessageIterator<Receiver, BufReader<R>> {
 		self.receiver.incoming_messages(&mut self.stream)
 	}
 }
@@ -73,19 +73,21 @@ where
 /// DataFrames and Messages.
 pub struct Receiver {
 	buffer: Vec<DataFrame>,
-	mask: bool,
 }
 
 impl Receiver {
 	/// Create a new Receiver using the specified Reader.
-	pub fn new(mask: bool) -> Receiver {
+	pub fn new() -> Receiver {
 		Receiver {
 			buffer: Vec::new(),
-			mask,
 		}
 	}
 }
-
+impl Default for Receiver {
+	    fn default() -> Self {
+	         Self::new()
+	    }
+ }
 impl ws::Receiver for Receiver {
 	type F = DataFrame;
 
@@ -96,7 +98,7 @@ impl ws::Receiver for Receiver {
 	where
 		R: Read,
 	{
-		DataFrame::read_dataframe(reader, self.mask)
+		DataFrame::read_dataframe(reader)
 	}
 
 	/// Returns the data frames that constitute one message.

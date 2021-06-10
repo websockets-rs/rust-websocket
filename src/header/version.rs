@@ -1,4 +1,3 @@
-use hyper;
 use hyper::header::parsing::from_one_raw_str;
 use hyper::header::{Header, HeaderFormat};
 use std::fmt::{self, Debug};

@@ -1,6 +1,5 @@
 //! The result type used within Rust-WebSocket
 
-use std;
 use std::convert::From;
 use std::error::Error;
 use std::fmt;
@@ -10,17 +9,6 @@ use std::str::Utf8Error;
 /// The type used for WebSocket results
 pub type WebSocketResult<T> = Result<T, WebSocketError>;
 
-/// This module contains convenience types to make working with Futures and
-/// websocket results easier.
-#[cfg(feature = "async")]
-pub mod r#async {
-	use super::WebSocketError;
-	use futures::Future;
-
-	/// The most common Future in this library, it is simply some result `I` or
-	/// a `WebSocketError`. This is analogous to the `WebSocketResult` type.
-	pub type WebSocketFuture<I> = Box<dyn Future<Item = I, Error = WebSocketError> + Send>;
-}
 
 /// Represents a WebSocket error
 #[derive(Debug)]
@@ -45,7 +33,8 @@ impl fmt::Display for WebSocketError {
 			WebSocketError::Other(x) => x.fmt(fmt)?,
 			_ => {
 				fmt.write_str("WebSocketError: ")?;
-				fmt.write_str(self.description())?;
+				self.fmt(fmt)?;
+				// fmt.write_str(self.description())?;
 			}
 		}
 		Ok(())

@@ -1,5 +1,4 @@
 //! Utility functions for masking data frame payload data
-use rand;
 use std::io::Result as IoResult;
 use std::io::Write;
 

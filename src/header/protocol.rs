@@ -1,4 +1,3 @@
-use hyper;
 use hyper::header::parsing::{fmt_comma_delimited, from_comma_delimited};
 use hyper::header::{Header, HeaderFormat};
 use std::fmt;

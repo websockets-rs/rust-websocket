@@ -64,46 +64,9 @@ where
 	}
 }
 
-/// A collection of traits and implementations for async streams.
-#[cfg(feature = "async")]
-pub mod r#async {
-	pub use super::ReadWritePair;
-	use futures::Poll;
-	use std::io::{self, Read, Write};
-	pub use tokio_io::io::{ReadHalf, WriteHalf};
-	pub use tokio_io::{AsyncRead, AsyncWrite};
-	pub use tokio_tcp::TcpStream;
-
-	/// A stream that can be read from and written to asynchronously.
-	/// This let's us abstract over many async streams like tcp, ssl,
-	/// udp, ssh, etc.
-	pub trait Stream: AsyncRead + AsyncWrite {}
-	impl<S> Stream for S where S: AsyncRead + AsyncWrite {}
-
-	impl<R, W> AsyncRead for ReadWritePair<R, W>
-	where
-		R: AsyncRead,
-		W: Write,
-	{
-	}
-
-	impl<R, W> AsyncWrite for ReadWritePair<R, W>
-	where
-		W: AsyncWrite,
-		R: Read,
-	{
-		fn shutdown(&mut self) -> Poll<(), io::Error> {
-			self.1.shutdown()
-		}
-	}
-}
-
 /// A collection of traits and implementations for synchronous streams.
-#[cfg(feature = "sync")]
 pub mod sync {
 	pub use super::ReadWritePair;
-	#[cfg(feature = "sync-ssl")]
-	pub use native_tls::TlsStream;
 	use std::io::{self, Read, Write};
 	pub use std::net::Shutdown;
 	pub use std::net::TcpStream;
@@ -168,12 +131,6 @@ pub mod sync {
 		}
 	}
 
-	#[cfg(feature = "sync-ssl")]
-	impl AsTcpStream for TlsStream<TcpStream> {
-		fn as_tcp(&self) -> &TcpStream {
-			self.get_ref()
-		}
-	}
 
 	impl<T> AsTcpStream for Box<T>
 	where
