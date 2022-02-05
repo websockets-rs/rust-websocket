@@ -217,7 +217,7 @@ impl Display for HyperIntoWsError {
 }
 
 impl Error for HyperIntoWsError {
-	fn cause(&self) -> Option<&dyn Error> {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
 		match *self {
 			HyperIntoWsError::Io(ref e) => Some(e),
 			HyperIntoWsError::Parsing(ref e) => Some(e),

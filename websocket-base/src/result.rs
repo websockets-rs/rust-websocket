@@ -54,12 +54,11 @@ impl fmt::Display for WebSocketError {
 }
 
 impl Error for WebSocketError {
-	#[allow(deprecated)]
-	fn cause(&self) -> Option<&dyn Error> {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
 		match *self {
 			WebSocketError::IoError(ref error) => Some(error),
 			WebSocketError::Utf8Error(ref error) => Some(error),
-			WebSocketError::Other(ref error) => error.cause(),
+			WebSocketError::Other(ref error) => error.source(),
 			_ => None,
 		}
 	}

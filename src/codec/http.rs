@@ -228,7 +228,7 @@ impl Display for HttpCodecError {
 }
 
 impl Error for HttpCodecError {
-	fn cause(&self) -> Option<&dyn Error> {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
 		match *self {
 			HttpCodecError::Io(ref error) => Some(error),
 			HttpCodecError::Http(ref error) => Some(error),

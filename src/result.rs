@@ -92,7 +92,7 @@ impl fmt::Display for WebSocketOtherError {
 }
 
 impl Error for WebSocketOtherError {
-	fn cause(&self) -> Option<&dyn Error> {
+	fn source(&self) -> Option<&(dyn Error + 'static)> {
 		match *self {
 			WebSocketOtherError::HttpError(ref error) => Some(error),
 			WebSocketOtherError::UrlError(ref error) => Some(error),
