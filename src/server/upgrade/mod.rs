@@ -191,27 +191,32 @@ pub enum HyperIntoWsError {
 
 impl Display for HyperIntoWsError {
 	fn fmt(&self, fmt: &mut Formatter) -> Result<(), fmt::Error> {
-		fmt.write_str(self.description())
+		match *self {
+			HyperIntoWsError::MethodNotGet => fmt.write_str("Request method must be GET"),
+			HyperIntoWsError::UnsupportedHttpVersion => {
+				fmt.write_str("Unsupported request HTTP version")
+			}
+			HyperIntoWsError::UnsupportedWebsocketVersion => {
+				fmt.write_str("Unsupported WebSocket version")
+			}
+			HyperIntoWsError::NoSecWsKeyHeader => fmt.write_str("Missing Sec-WebSocket-Key header"),
+			HyperIntoWsError::NoWsUpgradeHeader => {
+				fmt.write_str("Invalid Upgrade WebSocket header")
+			}
+			HyperIntoWsError::NoUpgradeHeader => fmt.write_str("Missing Upgrade WebSocket header"),
+			HyperIntoWsError::NoWsConnectionHeader => {
+				fmt.write_str("Invalid Connection WebSocket header")
+			}
+			HyperIntoWsError::NoConnectionHeader => {
+				fmt.write_str("Missing Connection WebSocket header")
+			}
+			HyperIntoWsError::Io(ref e) => fmt.write_str(e.to_string().as_str()),
+			HyperIntoWsError::Parsing(ref e) => fmt.write_str(e.to_string().as_str()),
+		}
 	}
 }
 
 impl Error for HyperIntoWsError {
-	fn description(&self) -> &str {
-		use self::HyperIntoWsError::*;
-		match *self {
-			MethodNotGet => "Request method must be GET",
-			UnsupportedHttpVersion => "Unsupported request HTTP version",
-			UnsupportedWebsocketVersion => "Unsupported WebSocket version",
-			NoSecWsKeyHeader => "Missing Sec-WebSocket-Key header",
-			NoWsUpgradeHeader => "Invalid Upgrade WebSocket header",
-			NoUpgradeHeader => "Missing Upgrade WebSocket header",
-			NoWsConnectionHeader => "Invalid Connection WebSocket header",
-			NoConnectionHeader => "Missing Connection WebSocket header",
-			Io(ref e) => e.description(),
-			Parsing(ref e) => e.description(),
-		}
-	}
-
 	fn cause(&self) -> Option<&dyn Error> {
 		match *self {
 			HyperIntoWsError::Io(ref e) => Some(e),

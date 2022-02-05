@@ -65,47 +65,33 @@ pub enum WebSocketOtherError {
 impl fmt::Display for WebSocketOtherError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		match self {
-			WebSocketOtherError::RequestError(e) => write!(fmt, "WebSocket request error: {}", e)?,
+			WebSocketOtherError::RequestError(e) => write!(fmt, "WebSocket request error: {}", e),
 			WebSocketOtherError::ResponseError(e) => {
-				write!(fmt, "WebSocket response error: {}", e)?
+				write!(fmt, "WebSocket response error: {}", e)
 			}
 			WebSocketOtherError::StatusCodeError(e) => write!(
 				fmt,
 				"WebSocketError: Received unexpected status code ({})",
 				e
-			)?,
-			WebSocketOtherError::HttpError(e) => write!(fmt, "WebSocket HTTP error: {}", e)?,
-			WebSocketOtherError::UrlError(e) => write!(fmt, "WebSocket URL parse error: {}", e)?,
-			WebSocketOtherError::IoError(e) => write!(fmt, "WebSocket I/O error: {}", e)?,
-			WebSocketOtherError::WebSocketUrlError(e) => e.fmt(fmt)?,
+			),
+			WebSocketOtherError::HttpError(e) => write!(fmt, "WebSocket HTTP error: {}", e),
+			WebSocketOtherError::UrlError(e) => write!(fmt, "WebSocket URL parse error: {}", e),
+			WebSocketOtherError::IoError(e) => write!(fmt, "WebSocket I/O error: {}", e),
+			WebSocketOtherError::WebSocketUrlError(e) => e.fmt(fmt),
 			#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
-			WebSocketOtherError::TlsError(e) => write!(fmt, "WebSocket SSL error: {}", e)?,
-			_ => write!(fmt, "WebSocketError: {}", self.description())?,
+			WebSocketOtherError::TlsError(e) => write!(fmt, "WebSocket SSL error: {}", e),
+			WebSocketOtherError::ProtocolError(e) => write!(fmt, "WebSocketError: {}", e),
+			WebSocketOtherError::TlsHandshakeFailure => {
+				write!(fmt, "WebSocketError: {}", "TLS Handshake failure")
+			}
+			WebSocketOtherError::TlsHandshakeInterruption => {
+				write!(fmt, "WebSocketError: {}", "TLS Handshake interrupted")
+			}
 		}
-		Ok(())
 	}
 }
 
 impl Error for WebSocketOtherError {
-	fn description(&self) -> &str {
-		match *self {
-			WebSocketOtherError::RequestError(_) => "WebSocket request error",
-			WebSocketOtherError::ResponseError(_) => "WebSocket response error",
-			WebSocketOtherError::HttpError(_) => "HTTP failure",
-			WebSocketOtherError::UrlError(_) => "URL failure",
-			#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
-			WebSocketOtherError::TlsError(_) => "TLS failure",
-			#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
-			WebSocketOtherError::TlsHandshakeFailure => "TLS Handshake failure",
-			#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
-			WebSocketOtherError::TlsHandshakeInterruption => "TLS Handshake interrupted",
-			WebSocketOtherError::WebSocketUrlError(_) => "WebSocket URL failure",
-			WebSocketOtherError::IoError(ref e) => e.description(),
-			WebSocketOtherError::ProtocolError(e) => e,
-			WebSocketOtherError::StatusCodeError(_) => "Received unexpected status code",
-		}
-	}
-
 	fn cause(&self) -> Option<&dyn Error> {
 		match *self {
 			WebSocketOtherError::HttpError(ref error) => Some(error),
@@ -197,20 +183,15 @@ pub enum WSUrlErrorKind {
 impl fmt::Display for WSUrlErrorKind {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
 		fmt.write_str("WebSocket Url Error: ")?;
-		fmt.write_str(self.description())?;
-		Ok(())
-	}
-}
-
-impl Error for WSUrlErrorKind {
-	fn description(&self) -> &str {
-		match *self {
-			WSUrlErrorKind::CannotSetFragment => "WebSocket URL cannot set fragment",
-			WSUrlErrorKind::InvalidScheme => "WebSocket URL invalid scheme",
-			WSUrlErrorKind::NoHostName => "WebSocket URL no host name provided",
+		match self {
+			WSUrlErrorKind::CannotSetFragment => fmt.write_str("WebSocket URL cannot set fragment"),
+			WSUrlErrorKind::InvalidScheme => fmt.write_str("WebSocket URL invalid scheme"),
+			WSUrlErrorKind::NoHostName => fmt.write_str("WebSocket URL no host name provided"),
 		}
 	}
 }
+
+impl Error for WSUrlErrorKind {}
 
 impl From<WebSocketOtherError> for WebSocketError {
 	fn from(e: WebSocketOtherError) -> WebSocketError {

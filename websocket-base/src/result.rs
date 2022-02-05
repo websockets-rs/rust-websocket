@@ -41,29 +41,19 @@ pub enum WebSocketError {
 
 impl fmt::Display for WebSocketError {
 	fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+		fmt.write_str("WebSocketError: ")?;
 		match self {
-			WebSocketError::Other(x) => x.fmt(fmt)?,
-			_ => {
-				fmt.write_str("WebSocketError: ")?;
-				fmt.write_str(self.description())?;
-			}
+			WebSocketError::ProtocolError(_) => fmt.write_str("WebSocket protocol error"),
+			WebSocketError::DataFrameError(_) => fmt.write_str("WebSocket data frame error"),
+			WebSocketError::NoDataAvailable => fmt.write_str("No data available"),
+			WebSocketError::IoError(_) => fmt.write_str("I/O failure"),
+			WebSocketError::Utf8Error(_) => fmt.write_str("UTF-8 failure"),
+			WebSocketError::Other(x) => x.fmt(fmt),
 		}
-		Ok(())
 	}
 }
 
 impl Error for WebSocketError {
-	fn description(&self) -> &str {
-		match *self {
-			WebSocketError::ProtocolError(_) => "WebSocket protocol error",
-			WebSocketError::DataFrameError(_) => "WebSocket data frame error",
-			WebSocketError::NoDataAvailable => "No data available",
-			WebSocketError::IoError(_) => "I/O failure",
-			WebSocketError::Utf8Error(_) => "UTF-8 failure",
-			WebSocketError::Other(ref e) => e.description(),
-		}
-	}
-
 	#[allow(deprecated)]
 	fn cause(&self) -> Option<&dyn Error> {
 		match *self {

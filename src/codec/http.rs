@@ -220,18 +220,14 @@ pub enum HttpCodecError {
 
 impl Display for HttpCodecError {
 	fn fmt(&self, fmt: &mut Formatter) -> Result<(), fmt::Error> {
-		fmt.write_str(self.description())
+		match self {
+			HttpCodecError::Io(e) => fmt.write_str(e.to_string().as_str()),
+			HttpCodecError::Http(e) => fmt.write_str(e.to_string().as_str()),
+		}
 	}
 }
 
 impl Error for HttpCodecError {
-	fn description(&self) -> &str {
-		match *self {
-			HttpCodecError::Io(ref e) => e.description(),
-			HttpCodecError::Http(ref e) => e.description(),
-		}
-	}
-
 	fn cause(&self) -> Option<&dyn Error> {
 		match *self {
 			HttpCodecError::Io(ref error) => Some(error),
