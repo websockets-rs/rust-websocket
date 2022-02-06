@@ -65,11 +65,11 @@ macro_rules! upsert_header {
 		if $headers.has::<$header>() {
 			if let Some($pat) = $headers.get_mut::<$header>() {
 				$some_match
-				}
+			}
 		} else {
 			$headers.set($default);
-			}
-		}};
+		}
+	}};
 }
 
 pub use websocket_base::dataframe;
