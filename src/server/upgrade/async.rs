@@ -32,7 +32,6 @@ use tokio_codec::{Decoder, Framed, FramedParts};
 ///
 /// ```rust,no_run
 /// # extern crate tokio;
-/// # extern crate websocket;
 /// use websocket::r#async::{TcpListener, TcpStream};
 /// use websocket::r#async::futures::{Stream, Future};
 /// use websocket::r#async::server::upgrade::IntoWs;
@@ -164,7 +163,6 @@ where
 ///
 /// ```rust,no_run
 /// # extern crate tokio;
-/// # extern crate websocket;
 /// use websocket::r#async::{TcpListener, TcpStream};
 /// use websocket::r#async::futures::{Stream, Future};
 /// use websocket::r#async::server::upgrade::IntoWs;

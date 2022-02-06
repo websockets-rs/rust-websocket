@@ -511,7 +511,6 @@ impl<'u> ClientBuilder<'u> {
 	/// # extern crate rand;
 	/// # extern crate tokio;
 	/// # extern crate futures;
-	/// # extern crate websocket;
 	/// use websocket::ClientBuilder;
 	/// use websocket::futures::{Future, Stream, Sink};
 	/// use websocket::Message;
@@ -597,7 +596,6 @@ impl<'u> ClientBuilder<'u> {
 	/// ```no_run
 	/// # extern crate tokio;
 	/// # extern crate futures;
-	/// # extern crate websocket;
 	/// use websocket::ClientBuilder;
 	/// use websocket::futures::{Future, Stream, Sink};
 	/// use websocket::Message;
@@ -660,7 +658,6 @@ impl<'u> ClientBuilder<'u> {
 	/// ```no_run
 	/// # extern crate tokio;
 	/// # extern crate futures;
-	/// # extern crate websocket;
 	/// use websocket::ClientBuilder;
 	/// use websocket::futures::{Future, Stream, Sink};
 	/// use websocket::Message;
@@ -709,7 +706,6 @@ impl<'u> ClientBuilder<'u> {
 	///
 	/// ```rust
 	/// # extern crate tokio;
-	/// # extern crate websocket;
 	/// use websocket::header::WebSocketProtocol;
 	/// use websocket::ClientBuilder;
 	/// use websocket::sync::stream::ReadWritePair;
