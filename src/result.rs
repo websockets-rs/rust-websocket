@@ -81,9 +81,11 @@ impl fmt::Display for WebSocketOtherError {
 			#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 			WebSocketOtherError::TlsError(e) => write!(fmt, "WebSocket SSL error: {}", e),
 			WebSocketOtherError::ProtocolError(e) => write!(fmt, "WebSocketError: {}", e),
+			#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 			WebSocketOtherError::TlsHandshakeFailure => {
 				write!(fmt, "WebSocketError: {}", "TLS Handshake failure")
 			}
+			#[cfg(any(feature = "sync-ssl", feature = "async-ssl"))]
 			WebSocketOtherError::TlsHandshakeInterruption => {
 				write!(fmt, "WebSocketError: {}", "TLS Handshake interrupted")
 			}
