@@ -1,6 +1,6 @@
 [package]
 name = "websocket"
-version = "0.26.3"
+version = "0.26.4"
 authors = ["cyderize <admin@cyderize.org>", "Michael Eden <themichaeleden@gmail.com>"]
 edition = "2018"
 
