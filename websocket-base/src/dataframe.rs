@@ -96,6 +96,25 @@ impl DataFrame {
 
 		DataFrame::read_dataframe_body(header, data, should_be_masked)
 	}
+
+	/// Reads a DataFrame from a Reader, or error out if header declares exceeding limit you specify
+	pub fn read_dataframe_with_limit<R>(reader: &mut R, should_be_masked: bool, limit: usize) -> WebSocketResult<Self>
+	where
+		R: Read,
+	{
+		let header = dfh::read_header(reader)?;
+
+		if header.len > limit as u64 {
+			return Err(io::Error::new(io::ErrorKind::InvalidData, "exceeded DataFrame length limit").into());
+		}
+		let mut data: Vec<u8> = Vec::with_capacity(header.len as usize);
+		let read = reader.take(header.len).read_to_end(&mut data)?;
+		if (read as u64) < header.len {
+			return Err(io::Error::new(io::ErrorKind::UnexpectedEof, "incomplete payload").into());
+		}
+
+		DataFrame::read_dataframe_body(header, data, should_be_masked)
+	}
 }
 
 impl DataFrameable for DataFrame {
