@@ -21,6 +21,9 @@ use hyper::status::StatusCode;
 use std::io::{self, ErrorKind};
 use tokio_codec::{Decoder, Framed, FramedParts};
 
+const DEFAULT_MAX_DATAFRAME_SIZE : usize = 1024*1024*100;
+const DEFAULT_MAX_MESSAGE_SIZE : usize = 1024*1024*200;
+
 /// An asynchronous websocket upgrade.
 ///
 /// This struct is given when a connection is being upgraded to a websocket
@@ -84,7 +87,22 @@ where
 		self.internal_accept(Some(custom_headers))
 	}
 
-	fn internal_accept(mut self, custom_headers: Option<&Headers>) -> ClientNew<S> {
+    /// Like `accept`, but also allows to set memory limits for incoming messages and dataframes
+	pub fn accept_with_limits(self, max_dataframe_size: usize, max_message_size: usize) -> ClientNew<S> {
+		self.internal_accept_with_limits(None, max_dataframe_size, max_message_size)
+	}
+
+	/// Like `accept_with`, but also allows to set memory limits for incoming messages and dataframes
+	pub fn accept_with_headers_and_limits(self, custom_headers: &Headers, max_dataframe_size: usize, max_message_size: usize) -> ClientNew<S> {
+		self.internal_accept_with_limits(Some(custom_headers), max_dataframe_size, max_message_size)
+	}
+
+
+	fn internal_accept(self, custom_headers: Option<&Headers>) -> ClientNew<S> {
+		self.internal_accept_with_limits(custom_headers, DEFAULT_MAX_DATAFRAME_SIZE, DEFAULT_MAX_MESSAGE_SIZE)
+	}
+
+	fn internal_accept_with_limits(mut self, custom_headers: Option<&Headers>, max_dataframe_size: usize, max_message_size: usize) -> ClientNew<S> {
 		let status = self.prepare_headers(custom_headers);
 		let WsUpgrade {
 			headers,
@@ -104,7 +122,7 @@ where
 				headers: headers.clone(),
 			})
 			.map(move |s| {
-				let codec = MessageCodec::default(Context::Server);
+				let codec = MessageCodec::new_with_limits(Context::Server, max_dataframe_size, max_message_size);
 				let client = update_framed_codec(s, codec);
 				(client, headers)
 			})

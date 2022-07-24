@@ -133,6 +133,23 @@ where
 		}
 	}
 
+	#[doc(hidden)]
+	pub fn unchecked_with_limits(
+		stream: BufReader<S>,
+		headers: Headers,
+		out_mask: bool,
+		in_mask: bool,
+		max_dataframe_size: usize,
+		max_message_size: usize,
+	) -> Self {
+		Client {
+			headers,
+			stream,
+			sender: Sender::new(out_mask),    // true
+			receiver: Receiver::new_with_limits(in_mask, max_dataframe_size, max_message_size), // false
+		}
+	}
+
 	/// Sends a single data frame to the remote endpoint.
 	pub fn send_dataframe<D>(&mut self, dataframe: &D) -> WebSocketResult<()>
 	where

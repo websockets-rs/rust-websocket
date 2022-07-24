@@ -10,6 +10,9 @@ use std::borrow::Cow;
 use std::convert::Into;
 pub use url::{ParseError, Url};
 
+const DEFAULT_MAX_DATAFRAME_SIZE : usize = 1024*1024*100;
+const DEFAULT_MAX_MESSAGE_SIZE : usize = 1024*1024*200;
+
 #[cfg(any(feature = "sync", feature = "async"))]
 mod common_imports {
 	pub use crate::header::WebSocketAccept;
@@ -114,6 +117,8 @@ pub struct ClientBuilder<'u> {
 	headers: Headers,
 	version_set: bool,
 	key_set: bool,
+	max_dataframe_size: usize,
+	max_message_size: usize,
 }
 
 impl<'u> ClientBuilder<'u> {
@@ -161,6 +166,8 @@ impl<'u> ClientBuilder<'u> {
 			version_set: false,
 			key_set: false,
 			headers: Headers::new(),
+			max_dataframe_size: DEFAULT_MAX_DATAFRAME_SIZE,
+			max_message_size: DEFAULT_MAX_MESSAGE_SIZE,
 		}
 	}
 
@@ -286,6 +293,21 @@ impl<'u> ClientBuilder<'u> {
 	/// Remove all the extensions added to the builder.
 	pub fn clear_extensions(mut self) -> Self {
 		self.headers.remove::<WebSocketExtensions>();
+		self
+	}
+
+	/// Set maximum dataframe size. Client will abort connection with error if it is exceed.
+	/// Values larger than `u32::MAX` are not supported.
+	pub fn max_dataframe_size(mut self, value: usize) -> Self {
+		self.max_dataframe_size = value;
+		self
+	}
+
+	/// Set maximum message size for which no more continuation dataframes are accepted.
+	/// Client will abort connection with error if it is exceed.
+	/// Values larger than `u32::MAX` are not supported.
+	pub fn max_message_size(mut self, value: usize) -> Self {
+		self.max_message_size = value;
 		self
 	}
 
@@ -493,7 +515,7 @@ impl<'u> ClientBuilder<'u> {
 		// validate
 		self.validate(&response)?;
 
-		Ok(Client::unchecked(reader, response.headers, true, false))
+		Ok(Client::unchecked_with_limits(reader, response.headers, true, false, self.max_dataframe_size, self.max_dataframe_size))
 	}
 
 	/// Connect to a websocket server asynchronously.
@@ -553,6 +575,8 @@ impl<'u> ClientBuilder<'u> {
 			headers: self.headers,
 			version_set: self.version_set,
 			key_set: self.key_set,
+			max_dataframe_size: self.max_dataframe_size,
+			max_message_size: self.max_message_size,
 		};
 
 		// check if we should connect over ssl or not
@@ -637,6 +661,8 @@ impl<'u> ClientBuilder<'u> {
 			headers: self.headers,
 			version_set: self.version_set,
 			key_set: self.key_set,
+			max_dataframe_size: self.max_dataframe_size,
+			max_message_size: self.max_message_size,
 		};
 
 		// put it all together
@@ -687,6 +713,8 @@ impl<'u> ClientBuilder<'u> {
 			headers: self.headers,
 			version_set: self.version_set,
 			key_set: self.key_set,
+			max_dataframe_size: self.max_dataframe_size,
+			max_message_size: self.max_message_size,
 		};
 
 		let future = tcp_stream.and_then(move |stream| builder.async_connect_on(stream));
@@ -746,6 +774,8 @@ impl<'u> ClientBuilder<'u> {
 			headers: self.headers,
 			version_set: self.version_set,
 			key_set: self.key_set,
+			max_dataframe_size: self.max_dataframe_size,
+			max_message_size: self.max_message_size,
 		};
 		let resource = builder.build_request();
 		let framed = crate::codec::http::HttpClientCodec.framed(stream);
@@ -755,6 +785,8 @@ impl<'u> ClientBuilder<'u> {
 			subject: (Method::Get, RequestUri::AbsolutePath(resource)),
 		};
 
+		let max_dataframe_size = self.max_dataframe_size;
+		let max_message_size = self.max_message_size;
 		let future = framed
 			// send request
 			.send(request)
@@ -770,8 +802,8 @@ impl<'u> ClientBuilder<'u> {
 					.and_then(|message| builder.validate(&message).map(|()| (message, stream)))
 			})
 			// output the final client and metadata
-			.map(|(message, stream)| {
-				let codec = MessageCodec::default(Context::Client);
+			.map(move |(message, stream)| {
+				let codec = MessageCodec::new_with_limits(Context::Client, max_dataframe_size, max_message_size);
 				let client = update_framed_codec(stream, codec);
 				(client, message.headers)
 			});

@@ -13,6 +13,9 @@ use hyper::http::h1::Incoming;
 use hyper::net::NetworkStream;
 use hyper::status::StatusCode;
 
+const DEFAULT_MAX_DATAFRAME_SIZE : usize = 1024*1024*100;
+const DEFAULT_MAX_MESSAGE_SIZE : usize = 1024*1024*200;
+
 /// This crate uses buffered readers to read in the handshake quickly, in order to
 /// interface with other use cases that don't use buffered readers the buffered readers
 /// is deconstructed when it is returned to the user and given as the underlying
@@ -61,7 +64,24 @@ where
 		self.internal_accept(Some(custom_headers))
 	}
 
-	fn internal_accept(mut self, headers: Option<&Headers>) -> Result<Client<S>, (S, io::Error)> {
+	/// Accept the handshake request and send a response,
+	/// if nothing goes wrong a client will be created.
+	pub fn accept_with_limits(self, max_dataframe_size: usize, max_message_size: usize) -> Result<Client<S>, (S, io::Error)> {
+		self.internal_accept_with_limits(None, max_dataframe_size, max_message_size)
+	}
+
+	/// Accept the handshake request and send a response while
+	/// adding on a few headers. These headers are added before the required
+	/// headers are, so some might be overwritten.
+	pub fn accept_with_headers_and_limits(self, custom_headers: &Headers, max_dataframe_size: usize, max_message_size: usize) -> Result<Client<S>, (S, io::Error)> {
+		self.internal_accept_with_limits(Some(custom_headers), max_dataframe_size, max_message_size)
+	}
+
+	fn internal_accept(self, headers: Option<&Headers>) -> Result<Client<S>, (S, io::Error)> {
+		self.internal_accept_with_limits(headers, DEFAULT_MAX_DATAFRAME_SIZE, DEFAULT_MAX_MESSAGE_SIZE)
+	}
+
+	fn internal_accept_with_limits(mut self, headers: Option<&Headers>, max_dataframe_size: usize, max_message_size: usize) -> Result<Client<S>, (S, io::Error)> {
 		let status = self.prepare_headers(headers);
 
 		if let Err(e) = self.send(status) {
@@ -73,7 +93,7 @@ where
 			None => BufReader::new(self.stream),
 		};
 
-		Ok(Client::unchecked(stream, self.headers, false, true))
+		Ok(Client::unchecked_with_limits(stream, self.headers, false, true, max_dataframe_size, max_message_size))
 	}
 
 	/// Reject the client's request to make a websocket connection.
