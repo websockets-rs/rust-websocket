@@ -17,6 +17,7 @@ use crate::ws::receiver::{DataFrameIterator, MessageIterator};
 const DEFAULT_MAX_DATAFRAME_SIZE : usize = 1024*1024*100;
 const DEFAULT_MAX_MESSAGE_SIZE : usize = 1024*1024*200;
 const MAX_DATAFRAMES_IN_ONE_MESSAGE: usize = 1024*1024;
+const PER_DATAFRAME_OVERHEAD : usize = 64; // not actually measured, just to prevent filling memory with empty buffers
 
 /// This reader bundles an existing stream with a parsing algorithm.
 /// It is used by the client in its `.split()` function as the reading component.
@@ -138,7 +139,7 @@ impl ws::Receiver for Receiver {
 			}
 
 			let finished = first.finished;
-			current_message_length += first.data.len();
+			current_message_length += first.data.len() + PER_DATAFRAME_OVERHEAD;
 			self.buffer.push(first);
 			finished
 		} else {
@@ -152,7 +153,7 @@ impl ws::Receiver for Receiver {
 			match next.opcode as u8 {
 				// Continuation opcode
 				0 => {
-					current_message_length += next.data.len();
+					current_message_length += next.data.len() + PER_DATAFRAME_OVERHEAD;
 					self.buffer.push(next)
 				}
 				// Control frame

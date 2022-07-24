@@ -30,6 +30,7 @@ use crate::ws::util::header::read_header;
 const DEFAULT_MAX_DATAFRAME_SIZE : usize = 1024*1024*100;
 const DEFAULT_MAX_MESSAGE_SIZE : usize = 1024*1024*200;
 const MAX_DATAFRAMES_IN_ONE_MESSAGE: usize = 1024*1024;
+const PER_DATAFRAME_OVERHEAD : usize = 64;
 
 /// Even though a websocket connection may look perfectly symmetrical
 /// in reality there are small differences between clients and servers.
@@ -299,7 +300,7 @@ where
 				}
 				// its good
 				_ => {
-					current_message_length += frame.data.len();
+					current_message_length += frame.data.len() + PER_DATAFRAME_OVERHEAD;
 					self.buffer.push(frame);
 				}
 			};
