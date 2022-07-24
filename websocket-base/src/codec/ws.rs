@@ -27,6 +27,10 @@ use crate::ws::dataframe::DataFrame as DataFrameTrait;
 use crate::ws::message::Message as MessageTrait;
 use crate::ws::util::header::read_header;
 
+const DEFAULT_MAX_DATAFRAME_SIZE : usize = 1024*1024*100;
+const DEFAULT_MAX_MESSAGE_SIZE : usize = 1024*1024*200;
+const MAX_DATAFRAMES_IN_ONE_MESSAGE: usize = 1024*1024;
+
 /// Even though a websocket connection may look perfectly symmetrical
 /// in reality there are small differences between clients and servers.
 /// This type is passed to the codecs to inform them of what role they are in
@@ -62,6 +66,7 @@ pub enum Context {
 pub struct DataFrameCodec<D> {
 	is_server: bool,
 	frame_type: PhantomData<D>,
+	max_dataframe_size: u32,
 }
 
 impl DataFrameCodec<DataFrame> {
@@ -82,10 +87,18 @@ impl<D> DataFrameCodec<D> {
 	///
 	/// If you only want to be able to send and receive the crate's
 	/// `DataFrame` struct use `.default(Context)` instead.
+	/// 
+	/// There is a default dataframe size limit imposed. Use `new_with_limits` to override it
 	pub fn new(context: Context) -> DataFrameCodec<D> {
+		DataFrameCodec::new_with_limits(context, DEFAULT_MAX_DATAFRAME_SIZE)
+	}
+
+	pub fn new_with_limits(context: Context, max_dataframe_size: usize) ->  DataFrameCodec<D> {
+		let max_dataframe_size: u32 = max_dataframe_size.min(u32::MAX as usize) as u32;
 		DataFrameCodec {
 			is_server: context == Context::Server,
 			frame_type: PhantomData,
+			max_dataframe_size,
 		}
 	}
 }
@@ -109,6 +122,12 @@ impl<D> Decoder for DataFrameCodec<D> {
 
 			(header, reader.position())
 		};
+
+		if header.len > self.max_dataframe_size as u64 {
+			return Err(WebSocketError::ProtocolError(
+				"Exceeded maximum incoming DataFrame size",
+			));
+		}
 
 		// check if we have enough bytes to continue
 		if header.len + bytes_read > src.len() as u64 {
@@ -203,6 +222,7 @@ where
 	buffer: Vec<DataFrame>,
 	dataframe_codec: DataFrameCodec<DataFrame>,
 	message_type: PhantomData<fn(M)>,
+	max_message_size: u32,
 }
 
 impl MessageCodec<OwnedMessage> {
@@ -229,11 +249,20 @@ where
 	///
 	/// If you just want to use a normal codec without a specific implementation
 	/// of a websocket message, take a look at `MessageCodec::default`.
+	/// 
+	/// The codec automatically imposes default limits on message and data frame size.
+	/// Use `new_with_limits` to override them.
 	pub fn new(context: Context) -> MessageCodec<M> {
+		MessageCodec::new_with_limits(context, DEFAULT_MAX_DATAFRAME_SIZE, DEFAULT_MAX_MESSAGE_SIZE)
+	}
+
+	pub fn new_with_limits(context: Context, max_dataframe_size: usize, max_message_size: usize) -> MessageCodec<M> {
+		let max_message_size: u32 = max_message_size.min(u32::MAX as usize) as u32;
 		MessageCodec {
 			buffer: Vec::new(),
-			dataframe_codec: DataFrameCodec::new(context),
+			dataframe_codec: DataFrameCodec::new_with_limits(context, max_dataframe_size),
 			message_type: PhantomData,
+			max_message_size,
 		}
 	}
 }
@@ -246,6 +275,7 @@ where
 	type Error = WebSocketError;
 
 	fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+		let mut current_message_length : usize = self.buffer.iter().map(|x|x.data.len()).sum();
 		while let Some(frame) = self.dataframe_codec.decode(src)? {
 			let is_first = self.buffer.is_empty();
 			let finished = frame.finished;
@@ -269,6 +299,7 @@ where
 				}
 				// its good
 				_ => {
+					current_message_length += frame.data.len();
 					self.buffer.push(frame);
 				}
 			};
@@ -276,6 +307,17 @@ where
 			if finished {
 				let buffer = mem::replace(&mut self.buffer, Vec::new());
 				return Ok(Some(OwnedMessage::from_dataframes(buffer)?));
+			} else {
+				if self.buffer.len() >= MAX_DATAFRAMES_IN_ONE_MESSAGE {
+					return Err(WebSocketError::ProtocolError(
+						"Exceeded count of data frames in one WebSocket message",
+					));
+				}
+				if current_message_length > self.max_message_size as usize {
+					return Err(WebSocketError::ProtocolError(
+						"Exceeded maximum WebSocket message size",
+					));
+				}
 			}
 		}
 
