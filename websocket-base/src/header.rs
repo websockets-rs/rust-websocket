@@ -101,11 +101,10 @@ impl FromStr for WebSocketAccept {
 impl WebSocketAccept {
 	/// Create a new WebSocketAccept from the given WebSocketKey
 	pub fn new(key: &WebSocketKey) -> WebSocketAccept {
-		let serialized = key.serialize();
-		let mut concat_key = String::with_capacity(serialized.len() + 36);
-		concat_key.push_str(&serialized[..]);
-		concat_key.push_str(MAGIC_GUID);
-		let hash = Sha1::digest(concat_key.as_bytes());
+		let mut serialized = key.serialize();
+		serialized.reserve_exact(MAGIC_GUID.len());
+		serialized.push_str(MAGIC_GUID);
+		let hash = Sha1::digest(serialized.as_bytes());
 		WebSocketAccept(hash.into())
 	}
 	/// Return the Base64 encoding of this WebSocketAccept
