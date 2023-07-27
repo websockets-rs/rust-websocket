@@ -25,8 +25,6 @@ fn main() {
 	let (usr_msg, stdin_ch) = mpsc::channel(0);
 
 	// Spawn new thread to read user input
-	// stdin isn't supported in mio yet, so we use a thread
-	// see https://github.com/carllerche/mio/issues/321
 	thread::spawn(|| {
 		let mut input = String::new();
 		let mut stdin_sink = usr_msg.wait();
