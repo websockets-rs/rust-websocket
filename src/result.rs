@@ -43,6 +43,8 @@ pub enum WebSocketOtherError {
 	ResponseError(&'static str),
 	/// Received unexpected status code
 	StatusCodeError(StatusCode),
+	/// Received 3XX status code with a Location header
+	RedirectError(StatusCode, String),
 	/// An HTTP parsing error
 	HttpError(HttpError),
 	/// A URL parsing error
@@ -73,6 +75,12 @@ impl fmt::Display for WebSocketOtherError {
 				fmt,
 				"WebSocketError: Received unexpected status code ({})",
 				e
+			),
+			WebSocketOtherError::RedirectError(st, loc) => write!(
+				fmt,
+				"WebSocketError: Redirected ({}) to {}",
+				st,
+				loc,
 			),
 			WebSocketOtherError::HttpError(e) => write!(fmt, "WebSocket HTTP error: {}", e),
 			WebSocketOtherError::UrlError(e) => write!(fmt, "WebSocket URL parse error: {}", e),

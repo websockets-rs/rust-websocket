@@ -888,6 +888,12 @@ impl<'u> ClientBuilder<'u> {
 		let status = StatusCode::from_u16(response.subject.0);
 
 		if status != StatusCode::SwitchingProtocols {
+			if status.is_redirection() {
+				match response.headers.get::<hyper::header::Location>() {
+					Some(x) => return Err(WebSocketOtherError::RedirectError(status, x.to_string())).map_err(towse),
+					None => (),
+				}
+			}
 			return Err(WebSocketOtherError::StatusCodeError(status)).map_err(towse);
 		}
 
