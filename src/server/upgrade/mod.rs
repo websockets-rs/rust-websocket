@@ -135,12 +135,7 @@ where
 
 	#[cfg(feature = "sync")]
 	fn send(&mut self, status: StatusCode) -> io::Result<()> {
-		let data = format!(
-			"{} {}\r\n{}\r\n",
-			self.request.version, status, self.headers
-		);
-		self.stream.write_all(data.as_bytes())?;
-		Ok(())
+		write!(self.stream, "{} {}\r\n{}\r\n", self.request.version, status, self.headers)
 	}
 
 	#[doc(hidden)]

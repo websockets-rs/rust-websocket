@@ -166,7 +166,7 @@ impl<'a> ws::dataframe::DataFrame for Message<'a> {
 			let mut buf = Vec::with_capacity(2 + self.payload.len());
 			buf.write_u16::<BigEndian>(reason)
 				.expect("failed to write close code in take_payload");
-			buf.append(&mut self.payload.into_owned());
+			buf.extend_from_slice(&self.payload);
 			buf
 		} else {
 			self.payload.into_owned()

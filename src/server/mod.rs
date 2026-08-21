@@ -55,9 +55,9 @@ where
 {
 	fn fmt(&self, fmt: &mut Formatter<'_>) -> FmtResult {
 		fmt.debug_struct("InvalidConnection")
-			.field("stream", &String::from("..."))
-			.field("parsed", &String::from("..."))
-			.field("buffer", &String::from("..."))
+			.field("stream", &"...")
+			.field("parsed", &"...")
+			.field("buffer", &"...")
 			.field("error", &self.error)
 			.finish()
 	}
